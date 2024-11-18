@@ -98,7 +98,7 @@ const startErasing = (x, y) => {
   totalErasedArea += erasedArea;
 
   // Проверяем, если стерта большая часть канваса
-  const totalCanvasArea = canvas.width * canvas.height;
+  const totalCanvasArea = (canvas.width * canvas.height) * 20;
   if (totalErasedArea >= totalCanvasArea) {
     console.log("Всё стерто!");
     canvas.removeEventListener("mousemove", handleMouseMove);
