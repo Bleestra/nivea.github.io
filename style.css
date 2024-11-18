@@ -1,0 +1,116 @@
+body{
+position: absolute;
+width: 320px;
+margin: 0;
+height: 480px;
+	clip: rect(0px, 320px, 480px, 0px);
+}
+
+#start {
+top: 0px;
+left: 0px;
+position: absolute;
+width: 320px;
+margin: 0;
+height: 480px;
+z-index: 1;
+	cursor: pointer;
+	opacity: 1;
+  }
+#start img:nth-child(1) {
+position: absolute;
+top: 0px;
+left: 0px;
+}
+#start img:nth-child(2) {
+position: absolute;
+top: 271px;
+left: 202px;
+z-index: 2;
+animation: pulse 2s infinite;
+}
+#start img:nth-child(3) {
+position: absolute;
+top: 180px;
+left: 115px;
+/*animation: pulse 2s infinite;*/
+}
+#game {
+top: 0px;
+left: 0px;
+position: absolute;
+width: 300px;
+margin: 0;
+height: 600px;
+z-index: 1;
+visibility: hidden;
+}
+#game img:nth-child(1) {
+position: absolute;
+top: 0px;
+left: 0px;
+}
+#game img:nth-child(2) {
+position: absolute;
+top: 316px;
+left: 100px;
+	z-index: 3;
+	opacity: 0;
+}
+#game img:nth-child(3) {
+position: absolute;
+top: 235px;
+left: 173px;
+	z-index: 3;
+	transform: scale(0.5);
+}
+#game img:nth-child(4) {
+position: absolute;
+top: 0px;
+left: 0px;
+z-index: 2;
+	opacity: 0;
+}
+#game img:nth-child(5) {
+position: absolute;
+top: 0px;
+left: 100px;
+}
+#game img:nth-child(6) {
+position: absolute;
+top: 180px;
+left: 0px;
+}
+
+#finish {
+top: 0px;
+left: 600px;
+position: absolute;
+width: 320px;
+margin: 0;
+height: 480px;
+z-index: 9999;
+visibility: hidden;
+}
+#finish img:nth-child(1) {
+position: absolute;
+top: 0px;
+left: 0px;
+}
+
+
+@keyframes pulse {
+    0% {
+		transform: scale(1);
+ 
+    }
+    
+    50% {
+		transform: scale(1.4);
+       
+    }
+	100% {
+		transform: scale(1);
+       
+    }
+}
