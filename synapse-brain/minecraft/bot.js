@@ -30,7 +30,7 @@ const dbg = (...a) => { if (process.env.DEBUG) console.log('[debug]', ...a) }
 const ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait',
   'craft_new', 'eat', 'back', 'strafe_left', 'strafe_right', 'jump', 'toggle_sprint', 'toggle_sneak',
   'look_up', 'look_down', 'attack', 'use_item', 'dig_down', 'equip_armor', 'equip_weapon',
-  'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk']
+  'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up']
 
 // ---------------------------------------------------------------- knowledge: recipes + advancements
 const K = path.join(__dirname, 'knowledge')
@@ -80,6 +80,32 @@ function observe () {  // 5x5 cells in front (rows = distance ahead, cols = left
     }
   }
   return obs
+}
+
+const solid = b => b && b.boundingBox === 'block' && !b.name.includes('leaves')
+function seesSky () {  // nothing solid above the head (leaves let light through)
+  const p = bot.entity.position.floored()
+  for (let dy = 2; dy < 64; dy++) { const b = bot.blockAt(p.offset(0, dy, 0)); if (b === null) break; if (solid(b)) return 0 }
+  return 1
+}
+
+function around () {  // touch and balance: what is right next to me on every side, above and below
+  const p = bot.entity.position.floored(); const out = []
+  for (let k = 0; k < 4; k++) {  // relative: front, right, back, left
+    const [fx, fz] = DIRS[(heading + k) % 4]
+    out.push(blockClass(bot.blockAt(p.offset(fx, 0, fz))) * 6 + blockClass(bot.blockAt(p.offset(fx, 1, fz))))
+  }
+  out.push(blockClass(bot.blockAt(p.offset(0, 2, 0))), blockClass(bot.blockAt(p.offset(0, -1, 0))))
+  return out
+}
+
+const trail = []  // where I have been in the last steps (for the feeling of being stuck)
+function stuck () {
+  const p = bot.entity.position
+  trail.push(p.clone()); if (trail.length > 12) trail.shift()
+  if (trail.length < 12) return 0
+  let far = 0; for (const q of trail) far = Math.max(far, q.distanceTo(p))
+  return far < 1.5 ? 1 : 0
 }
 
 function relDir (pos) {  // direction (1 ahead, 2 right, 3 behind, 4 left) and distance bucket (0..3)
@@ -237,6 +263,26 @@ async function dropJunk () {
   if (j) { try { await bot.tossStack(j) } catch (e) {} }
 }
 
+async function pillarUp () {
+  const full = n => mcData.blocksByName[n] && mcData.blocksByName[n].boundingBox === 'block' &&
+    !/table|furnace|bed|chest|sapling|torch|slab|stairs|wall|fence|door|trapdoor|sand|gravel|leaves|glass/.test(n)
+  const blk = items().filter(i => full(i.name)).sort((a, b) => b.count - a.count)[0]
+  if (!blk) { dbg('pillar: no blocks'); return }
+  const below = bot.blockAt(bot.entity.position.offset(0, -0.5, 0).floored())
+  if (!solid(below)) { dbg('pillar: nothing under me', below && below.name); return }
+  try {
+    await bot.equip(blk, 'hand'); await bot.look(bot.entity.yaw, -Math.PI / 2, true)
+    const y0 = bot.entity.position.y
+    bot.setControlState('jump', true)
+    for (let t = 0; t < 10 && bot.entity.position.y < y0 + 1.0; t++) await bot.waitForTicks(1)
+    bot.setControlState('jump', false)
+    dbg('pillar: jumped', y0, '->', bot.entity.position.y, 'placing on', below.name)
+    await bot.placeBlock(below, new Vec3(0, 1, 0))
+    dbg('pillar: placed, y', bot.entity.position.y)
+  } catch (e) { bot.setControlState('jump', false); dbg('pillar', e.message) }
+  await face()
+}
+
 async function digAt (dx, dy, dz) {
   const b = bot.blockAt(bot.entity.position.floored().offset(dx, dy, dz))
   if (b && b.boundingBox === 'block' && bot.canDigBlock(b)) { try { await bot.dig(b) } catch (e) {} }
@@ -272,6 +318,8 @@ async function act (a) {
     case 'smelt': await smelt(); break
     case 'sleep': await sleep(); break
     case 'drop_junk': await dropJunk(); break
+    case 'pillar_up': await pillarUp(); break  // jump and put a block under my feet
+    case 'dig_up': await digAt(0, 2, 0); break
   }
 }
 
@@ -316,6 +364,9 @@ async function selftest () {  // --selftest: prove every action works (needs op 
   await check('eat', () => give('bread 3').then(() => bot.chat('/effect give @s hunger 5 20')).then(() => bot.waitForTicks(100)), () => true)
   await check('dig_down', async () => {}, () => true)
   await check('drop_junk', () => give('dirt 5'), () => !items().some(i => i.name === 'dirt'))
+  let y0 = 0
+  await check('pillar_up', () => give('cobblestone 8').then(() => { y0 = bot.entity.position.y }), () => bot.entity.position.y >= y0 + 0.9)
+  await check('dig_up', () => { bot.chat('/setblock ~ ~2 ~ dirt'); return bot.waitForTicks(10) }, () => { const b = bot.blockAt(bot.entity.position.floored().offset(0, 2, 0)); return b && b.name === 'air' })
   console.log('SELFTEST ' + JSON.stringify(res))
   process.exit(0)
 }
@@ -342,6 +393,7 @@ bot.once('spawn', async () => {
       obs: observe(), inv: logs, goal: goal(), reward: done ? r - 1 : r, done, n_actions: ACTIONS.length,
       items: inventory(), chunk: [Math.floor(pos.x / 16), Math.floor(pos.z / 16)], food: bot.food, health: bot.health,
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
+      sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)
     })
     if (reply.say) bot.chat(reply.say.slice(0, 250))

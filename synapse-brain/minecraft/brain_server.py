@@ -33,10 +33,19 @@ p.add_argument("--see", action="store_true", help="feed the visual cortex code t
 p.add_argument("--blind", action="store_true", help="with --see: drop the direct block senses, act from vision")
 p.add_argument("--self", default="", help="path of self.json: intrinsic motivation + autobiographical memory")
 p.add_argument("--voice", default="", help="trained language brain (train_voice.py) to answer in chat")
+p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, reasoning, self-knowledge (needs --self)")
 args = p.parse_args()
 
-N_ACT = 26 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
-agent = BrainAgent(N_ACT, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
+N_ACT = 28 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+mind = None
+if args.mind:
+    from mind import Mind  # noqa: E402
+    from mind_bridge import ru_thought, state_from, talk  # noqa: E402
+
+    mind = Mind(N_ACT, curiosity=args.curiosity, fear=not args.no_fear, emotions=not args.no_fear)
+    agent = mind.flat  # habits: the same striatum as before (childhood skills are kept)
+else:
+    agent = BrainAgent(N_ACT, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
 voice = None
 if args.voice and os.path.exists(args.voice):
     from voice import Voice
@@ -68,11 +77,26 @@ if os.path.exists(args.load):
     if agent.FQ is not None and "FQ" in z.files:
         agent.FQ[:, :na] = z["FQ"][:, :na]
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
+if mind is not None and mind.load(args.mind):
+    print(f"mind loaded: {len(mind.names)} concepts, {int(mind.nev.sum())} events remembered", flush=True)
+teacher = None
+if cortex is not None:
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vision"))
+    from teacher import SensorTeacher  # noqa: E402
+
+    teacher = SensorTeacher(cortex.n)
+    tpath = os.path.splitext(args.load)[0] + "_eyes.npz"
+    if os.path.exists(tpath):
+        teacher.load(tpath)
 
 
 def save():
     extra = {"FQ": agent.FQ} if agent.FQ is not None else {}
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
+    if mind is not None:
+        mind.save(args.mind)
+    if teacher is not None:
+        teacher.save(os.path.splitext(args.load)[0] + "_eyes.npz")
     if me:
         me.save()
 
@@ -111,6 +135,7 @@ class Handler(socketserver.StreamRequestHandler):
         eyes, n_msg = None, 0
         rec = []
         prev = None  # (cells, action)
+        last_target, last_said = None, 0.0
         total, t0 = 0.0, time.time()
         for line in self.rfile:
             m = json.loads(line)
@@ -124,26 +149,47 @@ class Handler(socketserver.StreamRequestHandler):
                 frame = eyes.look()
                 if frame is not None and cortex is not None:
                     code = cortex(retina(frame), plasticity=True)  # the cortex keeps developing live
+                    # the direct senses teach the eyes; blind: act from what the eyes perceive
+                    pg, ps, pt = teacher.teach(code, obs[0], int(m.get("sky", 0)), obs[2] // 4)
+                    if args.blind:
+                        obs = (pg, obs[1], pt * 4 + 2)
+                        m["sky"] = ps
                     obs = obs + (code,)
                 if frame is not None and args.record:
                     rec.append((frame, obs[0].copy(), obs[2]))
                     if len(rec) >= 500:
                         save_rec(rec)
                         rec = []
+            if len(obs) == 3:
+                obs = obs + (None,)
             say, reward = None, float(m["reward"])
             if me:  # the reward comes from inside: novelty, places, hunger, pain, advancements
                 reward, say = me.feel(m)
+                # inner senses + touch/balance all around + sky + the feeling of being stuck
+                inner = me.drives(m) + list(m.get("around", [])) + [m.get("sky", 0), m.get("stuck", 0)]
+                obs = obs + ([int(x or 0) for x in inner],)  # a sense not ready yet (at spawn) reads 0
             for user, text in m.get("heard", []):  # someone spoke to us
+                if mind is not None and not say:
+                    say = talk(mind, text)  # questions about itself and about how to do things
                 if voice and not say:
                     say = voice.reply(text, me)
                 if me:
                     me.note(f"{user} сказал: «{text}»" + (f"; я ответил: «{say}»" if say else ""), None)
-                obs = obs + ((None,) if len(obs) == 3 else ()) + (me.drives(m),)
-            eps = me.exploration() if me else max(0.02, args.eps * (1 - agent.steps / 20000))
-            a, cells, qv = agent.act(obs, eps)
-            if prev is not None:
-                agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, bool(m.get("done")))
-            prev = None if m.get("done") else (cells, a)
+            done = bool(m.get("done"))
+            if mind is not None:
+                a = mind.step(obs, state_from(m), reward, done, explore=me.exploration() if me else 0.1)
+                if mind.target is not None and mind.target != last_target and time.time() - last_said > 60:
+                    last_target, last_said = mind.target, time.time()
+                    thought = ru_thought(mind)
+                    if me:
+                        me.note("думаю: " + thought, None)
+                    say = say or thought
+            else:
+                eps = me.exploration() if me else max(0.02, args.eps * (1 - agent.steps / 20000))
+                a, cells, qv = agent.act(obs, eps)
+                if prev is not None:
+                    agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, done)
+                prev = None if done else (cells, a)
             total += reward
             reply = {"action": a}
             if say:
@@ -155,6 +201,8 @@ class Handler(socketserver.StreamRequestHandler):
                       f"({agent.steps / max(time.time() - t0, 1e-9):.1f} steps/s)", flush=True)
             if agent.steps % 2000 == 0:
                 save()
+                if teacher is not None:
+                    print("eyes agree with the senses:", teacher.report(), flush=True)
         if rec:
             save_rec(rec)
         save()
