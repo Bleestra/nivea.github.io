@@ -51,7 +51,7 @@ class BrainAgent:
         self.mood_fast, self.mood_slow, self.bored = 0.0, 0.0, 0.0
 
     def cells(self, obs):
-        v, inv = obs
+        v, inv = obs[0], obs[1]
         c = [_h(1, i, v[i]) for i in range(25)]
         c.append(_h(2, v[6], v[7], v[8]))                      # just ahead
         c.append(_h(3, *v[0:15]))                               # 3 rows ahead
@@ -59,6 +59,9 @@ class BrainAgent:
         c.append(_h(5, *v))                                     # whole view
         c += [_h(6, k, v[a], v[b], v[d]) for k, (a, b, d) in enumerate(self.trip)]
         c.append(_h(7, inv, v[7]))
+        if len(obs) > 2:                                        # far vision (direction to a goal)
+            c.append(_h(9, obs[2]))
+            c.append(_h(10, obs[2], v[7]))
         c.append(_h(8))                                         # bias cell
         return np.array(c, np.int64)
 

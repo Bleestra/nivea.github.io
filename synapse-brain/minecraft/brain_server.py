@@ -50,7 +50,7 @@ class Handler(socketserver.StreamRequestHandler):
         total, t0 = 0.0, time.time()
         for line in self.rfile:
             m = json.loads(line)
-            obs = (np.array(m["obs"], np.int64), min(int(m.get("inv", 0)), 7))
+            obs = (np.array(m["obs"], np.int64), min(int(m.get("inv", 0)), 7), int(m.get("goal", 0)))
             eps = max(0.02, args.eps * (1 - agent.steps / 20000))
             a, cells, qv = agent.act(obs, eps)
             if prev is not None:
@@ -66,6 +66,8 @@ class Handler(socketserver.StreamRequestHandler):
         save()
         print("bot disconnected, brain saved", flush=True)
 
+
+socketserver.ThreadingTCPServer.allow_reuse_address = True
 
 if __name__ == "__main__":
     with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler) as srv:

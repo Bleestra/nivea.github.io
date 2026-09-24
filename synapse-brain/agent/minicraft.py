@@ -47,7 +47,26 @@ class MiniCraft:
         for a in range(5):
             for b in range(5):
                 v[a * 5 + b] = self.cell(self.pos[0] + dy * a + ry * (b - 2), self.pos[1] + dx * a + rx * (b - 2))
-        return v, min(self.inv, 7)
+        return v, min(self.inv, 7), self.goal()
+
+    def goal(self):
+        """Far vision: direction (0 none, 1 ahead, 2 right, 3 behind, 4 left) and distance bucket
+        of the nearest tree, like a player spotting a tree across the field."""
+        ys, xs = np.nonzero(self.g == TREE)
+        if len(ys) == 0:
+            return 0
+        d = np.abs(ys - self.pos[0]) + np.abs(xs - self.pos[1])
+        k = int(np.argmin(d))
+        dy, dx = ys[k] - self.pos[0], xs[k] - self.pos[1]
+        fy, fx = DIRS[self.dir]
+        ahead, right = dy * fy + dx * fx, dy * DIRS[(self.dir + 1) % 4][0] + dx * DIRS[(self.dir + 1) % 4][1]
+        if abs(ahead) >= abs(right):
+            dirc = 1 if ahead > 0 else 3
+        else:
+            dirc = 2 if right > 0 else 4
+        dist = int(d[k])
+        db = 0 if dist <= 1 else 1 if dist <= 3 else 2 if dist <= 8 else 3
+        return dirc * 4 + db
 
     def step(self, act):
         self.t += 1

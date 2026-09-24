@@ -21,14 +21,14 @@ const replies = readline.createInterface({ input: brain })
 const STEP_MS = +arg('step', 250)
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]  // N E S W as (dx, dz)
 
-let heading = 0, lastHealth = 20, lastLogs = 0, lastStone = 0, waiting = null
+let step = 0, lastNear = 9, heading = 0, lastHealth = 20, lastLogs = 0, lastStone = 0, waiting = null
 
 function blockClass (b) {
   if (!b) return 5
   const n = b.name
   if (n.includes('lava')) return 3
   if (n.includes('water')) return 4
-  if (n.endsWith('_log') || n.endsWith('_leaves') || n.endsWith('_wood')) return 1
+  if (n.endsWith('_log') || n.endsWith('_wood')) return 1
   if (n === 'stone' || n.includes('ore') || n === 'cobblestone' || n === 'deepslate') return 2
   if (b.boundingBox === 'empty') return 0
   return 5
@@ -44,10 +44,32 @@ function observe () {
       const x = p.x + fx * a + rx * b, z = p.z + fz * a + rz * b
       const feet = blockClass(bot.blockAt(p.offset(x - p.x, 0, z - p.z)))
       const head = blockClass(bot.blockAt(p.offset(x - p.x, 1, z - p.z)))
-      obs.push(feet === 0 ? head : feet)
+      const above = blockClass(bot.blockAt(p.offset(x - p.x, 2, z - p.z)))
+      let c
+      if (feet === 1 || head === 1) c = 1                 // a tree trunk or leaves
+      else if (feet === 3 || head === 3) c = 3            // lava
+      else if (feet === 4) c = 4                          // water
+      else if (feet === 2 || head === 2) c = 2            // stone / ore
+      else if (head === 0 && (feet === 0 || above === 0)) c = 0  // walkable (or a 1-block step up)
+      else c = 5                                          // wall
+      obs.push(c)
     }
   }
   return obs
+}
+
+function goal () {  // far vision: direction + distance bucket of the nearest log (0 = none)
+  const y = bot.entity.position.y  // only logs we can actually reach (feet or head level)
+  const t = bot.findBlock({ matching: b => b.name.endsWith('_log') && b.position.y >= Math.floor(y) - 1 &&
+    b.position.y <= Math.floor(y) + 1, useExtraInfo: true, maxDistance: 32 })
+  if (!t) return 0
+  const p = bot.entity.position.floored()
+  const dx = t.position.x - p.x, dz = t.position.z - p.z
+  const [fx, fz] = DIRS[heading], [rx, rz] = DIRS[(heading + 1) % 4]
+  const ahead = dx * fx + dz * fz, right = dx * rx + dz * rz
+  const dir = Math.abs(ahead) >= Math.abs(right) ? (ahead > 0 ? 1 : 3) : (right > 0 ? 2 : 4)
+  const dist = Math.abs(dx) + Math.abs(dz)
+  return dir * 4 + (dist <= 1 ? 0 : dist <= 3 ? 1 : dist <= 8 ? 2 : 3)
 }
 
 const count = (pred) => bot.inventory.items().filter(i => pred(i.name)).reduce((s, i) => s + i.count, 0)
@@ -55,7 +77,14 @@ const count = (pred) => bot.inventory.items().filter(i => pred(i.name)).reduce((
 function reward () {
   const logs = count(n => n.endsWith('_log'))
   const stone = count(n => n === 'cobblestone' || n === 'stone')
-  let r = -0.01 + (logs - lastLogs) * 1.0 + (stone - lastStone) * 0.3
+  let r = -0.01 + Math.max(0, logs - lastLogs) * 1.0 + Math.max(0, stone - lastStone) * 0.3
+  // appetite: a little dopamine for getting closer to a visible tree, a little less for moving away
+  const obs = observe()
+  let near = 9
+  obs.forEach((c, i) => { if (c === 1) near = Math.min(near, Math.floor(i / 5) + Math.abs(i % 5 - 2)) })
+  if (near < lastNear) r += 0.05
+  else if (near > lastNear && lastNear < 9) r -= 0.05
+  lastNear = near
   if (bot.health < lastHealth) r -= 1.0
   lastLogs = logs; lastStone = stone; lastHealth = bot.health
   return { r, logs }
@@ -63,7 +92,10 @@ function reward () {
 
 async function act (a) {
   const face = () => { const [fx, fz] = DIRS[heading]; return bot.lookAt(bot.entity.position.offset(fx * 3, 1.6, fz * 3), true) }
-  if (a === 0) { await face(); bot.setControlState('forward', true); await bot.waitForTicks(4); bot.setControlState('forward', false) }
+  if (a === 0) {  // step forward, hopping up 1-block ledges like a player
+    await face(); bot.setControlState('forward', true); bot.setControlState('jump', true)
+    await bot.waitForTicks(5); bot.setControlState('forward', false); bot.setControlState('jump', false)
+  }
   if (a === 1) { heading = (heading + 3) % 4; await face() }
   if (a === 2) { heading = (heading + 1) % 4; await face() }
   if (a === 3) {
@@ -85,8 +117,16 @@ bot.once('spawn', async () => {
   bot.on('death', () => { done = true })
   for (;;) {
     const { r, logs } = reward()
-    const a = await ask({ obs: observe(), inv: logs, reward: done ? r - 1 : r, done })
+    const a = await ask({ obs: observe(), inv: logs, goal: goal(), reward: done ? r - 1 : r, done })
     done = false
+    step++
+    if (step % 100 === 0) {
+      const p = bot.entity.position
+      const obs = observe()
+      const trees = bot.findBlocks({ matching: b => b.name.endsWith('_log'), maxDistance: 16, count: 50 }).length
+      console.log(`step ${step} pos ${p.x.toFixed(0)},${p.y.toFixed(0)},${p.z.toFixed(0)} logs ${logs} ` +
+        `hp ${bot.health} trees<16m ${trees} goal ${goal()} view ${obs.join('')}`)
+    }
     await act(a)
     await new Promise(res => setTimeout(res, STEP_MS))
   }

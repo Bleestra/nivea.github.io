@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 def encode(obs):
-    v, inv = obs
+    v, inv = obs[0], obs[1]
     x = np.zeros(25 * 6 + 8, np.float32)
     x[np.arange(25) * 6 + v] = 1
     x[150 + inv] = 1
