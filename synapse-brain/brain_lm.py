@@ -58,6 +58,11 @@ MATCH_BITS = 22
 def _huge(n, dtype, fill=0):
     """Zeroed array on 2 MB pages (fewer TLB misses on random access into GBs of synapses)."""
     dtype = np.dtype(dtype)
+    if not hasattr(mmap, "MAP_PRIVATE"):  # Windows: plain zeroed memory
+        a = np.zeros(n, dtype)
+        if fill:
+            a[:] = fill
+        return a
     m = mmap.mmap(-1, max(1, n * dtype.itemsize), flags=mmap.MAP_PRIVATE | mmap.MAP_ANONYMOUS)
     if hasattr(mmap, "MADV_HUGEPAGE"):
         m.madvise(mmap.MADV_HUGEPAGE)

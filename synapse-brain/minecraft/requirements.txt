@@ -1,0 +1,5 @@
+numpy
+numba
+scikit-learn
+opencv-python-headless
+playwright

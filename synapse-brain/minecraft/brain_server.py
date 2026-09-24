@@ -32,10 +32,17 @@ p.add_argument("--record", default="", help="directory to save (frame, senses) p
 p.add_argument("--see", action="store_true", help="feed the visual cortex code to the striatum")
 p.add_argument("--blind", action="store_true", help="with --see: drop the direct block senses, act from vision")
 p.add_argument("--self", default="", help="path of self.json: intrinsic motivation + autobiographical memory")
+p.add_argument("--voice", default="", help="trained language brain (train_voice.py) to answer in chat")
 args = p.parse_args()
 
-N_ACT = 7 if args.self else 5  # + craft something new, eat
+N_ACT = 26 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
 agent = BrainAgent(N_ACT, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
+voice = None
+if args.voice and os.path.exists(args.voice):
+    from voice import Voice
+
+    voice = Voice(args.voice)
+    print("voice loaded", flush=True)
 me = None
 if args.self:
     from personality import Self
@@ -50,7 +57,7 @@ if args.see:
     from visual_cortex import VisualCortex, retina  # noqa: E402
 
     cortex = VisualCortex(seed=1)
-    vc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "visual_cortex.npz")
+    vc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "visual_cortex.npz")
     if os.path.exists(vc):
         cortex.syn[:] = np.load(vc)["syn"]
         print("visual cortex loaded (developed)", flush=True)
@@ -124,8 +131,13 @@ class Handler(socketserver.StreamRequestHandler):
                         save_rec(rec)
                         rec = []
             say, reward = None, float(m["reward"])
-            if me:  # the reward comes from inside: novelty, places, hunger, pain
+            if me:  # the reward comes from inside: novelty, places, hunger, pain, advancements
                 reward, say = me.feel(m)
+            for user, text in m.get("heard", []):  # someone spoke to us
+                if voice and not say:
+                    say = voice.reply(text, me)
+                if me:
+                    me.note(f"{user} сказал: «{text}»" + (f"; я ответил: «{say}»" if say else ""), None)
                 obs = obs + ((None,) if len(obs) == 3 else ()) + (me.drives(m),)
             eps = me.exploration() if me else max(0.02, args.eps * (1 - agent.steps / 20000))
             a, cells, qv = agent.act(obs, eps)

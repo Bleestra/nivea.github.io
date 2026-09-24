@@ -1,0 +1,112 @@
+Advancement "Hot Stuff" (story/lava_bucket): Fill a Bucket with lava Comes after story/smelt_iron.
+Advancement "Diamonds!" (story/mine_diamond): Acquire diamonds Comes after story/iron_tools.
+Advancement "Acquire Hardware" (story/smelt_iron): Smelt an Iron Ingot Comes after story/upgrade_tools.
+Advancement "Not Today, Thank You" (story/deflect_arrow): Deflect a projectile with a Shield Comes after story/obtain_armor.
+Advancement "Cover Me with Diamonds" (story/shiny_gear): Diamond armor saves lives Comes after story/mine_diamond.
+Advancement "Minecraft" (story/root): The heart and story of the game
+Advancement "Ice Bucket Challenge" (story/form_obsidian): Obtain a block of Obsidian Comes after story/lava_bucket.
+Advancement "We Need to Go Deeper" (story/enter_the_nether): Build, light and enter a Nether Portal Comes after story/form_obsidian.
+Advancement "Eye Spy" (story/follow_ender_eye): Follow an Eye of Ender Comes after story/enter_the_nether.
+Advancement "Suit Up" (story/obtain_armor): Protect yourself with a piece of iron armor Comes after story/smelt_iron.
+Advancement "Stone Age" (story/mine_stone): Mine Stone with your new Pickaxe Comes after story/root.
+Advancement "Enchanter" (story/enchant_item): Enchant an item at an Enchanting Table Comes after story/mine_diamond.
+Advancement "Isn't It Iron Pick" (story/iron_tools): Upgrade your Pickaxe Comes after story/smelt_iron.
+Advancement "Zombie Doctor" (story/cure_zombie_villager): Weaken and then cure a Zombie Villager Comes after story/enter_the_nether.
+Advancement "Getting an Upgrade" (story/upgrade_tools): Construct a better Pickaxe Comes after story/mine_stone.
+Advancement "The End?" (story/enter_the_end): Enter the End Portal Comes after story/follow_ender_eye.
+Advancement "Into Fire" (nether/obtain_blaze_rod): Relieve a Blaze of its rod Comes after nether/find_fortress.
+Advancement "Subspace Bubble" (nether/fast_travel): Use the Nether to travel 7 km in the Overworld Comes after nether/root.
+Advancement "War Pigs" (nether/loot_bastion): Loot a Chest in a Bastion Remnant Comes after nether/find_bastion.
+Advancement "This Boat Has Legs" (nether/ride_strider): Ride a Strider with a Warped Fungus on a Stick Comes after nether/root.
+Advancement "Hidden in the Depths" (nether/obtain_ancient_debris): Obtain Ancient Debris Comes after nether/root.
+Advancement "Nether" (nether/root): Bring summer clothes
+Advancement "Oh Shiny" (nether/distract_piglin): Distract Piglins with gold Comes after nether/root.
+Advancement "Country Lode, Take Me Home" (nether/use_lodestone): Use a Compass on a Lodestone Comes after nether/obtain_ancient_debris.
+Advancement "Who is Cutting Onions?" (nether/obtain_crying_obsidian): Obtain Crying Obsidian Comes after nether/root.
+Advancement "Beaconator" (nether/create_full_beacon): Bring a Beacon to full power Comes after nether/create_beacon.
+Advancement "Uneasy Alliance" (nether/uneasy_alliance): Rescue a Ghast from the Nether, bring it safely home to the Overworld... and then kill it Comes after nether/return_to_sender.
+Advancement "A Furious Cocktail" (nether/all_potions): Have every potion effect applied at the same time Comes after nether/brew_potion.
+Advancement "Not Quite "Nine" Lives" (nether/charge_respawn_anchor): Charge a Respawn Anchor to the maximum Comes after nether/obtain_crying_obsidian.
+Advancement "A Terrible Fortress" (nether/find_fortress): Break your way into a Nether Fortress Comes after nether/root.
+Advancement "Feels Like Home" (nether/ride_strider_in_overworld_lava): Take a Strider for a loooong ride on a lava lake in the Overworld Comes after nether/ride_strider.
+Advancement "Spooky Scary Skeleton" (nether/get_wither_skull): Obtain a Wither Skeleton's skull Comes after nether/find_fortress.
+Advancement "Return to Sender" (nether/return_to_sender): Destroy a Ghast with a fireball Comes after nether/root.
+Advancement "Those Were the Days" (nether/find_bastion): Enter a Bastion Remnant Comes after nether/root.
+Advancement "Cover Me in Debris" (nether/netherite_armor): Get a full suit of Netherite armor Comes after nether/obtain_ancient_debris.
+Advancement "Bring Home the Beacon" (nether/create_beacon): Construct and place a Beacon Comes after nether/summon_wither.
+Advancement "How Did We Get Here?" (nether/all_effects): Have every effect applied at the same time Comes after nether/all_potions.
+Advancement "Withering Heights" (nether/summon_wither): Summon the Wither Comes after nether/get_wither_skull.
+Advancement "Hot Tourist Destinations" (nether/explore_nether): Explore all Nether biomes Comes after nether/ride_strider.
+Advancement "Local Brewery" (nether/brew_potion): Brew a Potion Comes after nether/obtain_blaze_rod.
+Advancement "Star Trader" (adventure/trade_at_world_height): Trade with a Villager at the build height limit Comes after adventure/trade.
+Advancement "Sniper Duel" (adventure/sniper_duel): Kill a Skeleton from at least 50 meters away Comes after adventure/shoot_arrow.
+Advancement "The Power of Books" (adventure/read_power_of_chiseled_bookshelf): Read the power signal of a Chiseled Bookshelf using a Comparator Comes after adventure/root.
+Advancement "Is It a Plane?" (adventure/spyglass_at_dragon): Look at the Ender Dragon through a Spyglass Comes after adventure/spyglass_at_ghast.
+Advancement "Sneak 100" (adventure/avoid_vibration): Sneak near a Sculk Sensor or Warden to prevent it from detecting you Comes after adventure/root.
+Advancement "Hired Help" (adventure/summon_iron_golem): Summon an Iron Golem to help defend a village Comes after adventure/trade.
+Advancement "Is It a Bird?" (adventure/spyglass_at_parrot): Look at a Parrot through a Spyglass Comes after adventure/root.
+Advancement "Who's the Pillager Now?" (adventure/whos_the_pillager_now): Give a Pillager a taste of their own medicine Comes after adventure/ol_betsy.
+Advancement "Adventure" (adventure/root): Adventure, exploration and combat
+Advancement "Sweet Dreams" (adventure/sleep_in_bed): Sleep in a Bed to change your respawn point Comes after adventure/root.
+Advancement "Ol' Betsy" (adventure/ol_betsy): Shoot a Crossbow Comes after adventure/root.
+Advancement "Monster Hunter" (adventure/kill_a_mob): Kill any hostile monster Comes after adventure/root.
+Advancement "Caves & Cliffs" (adventure/fall_from_world_height): Free fall from the top of the world (build limit) to the bottom of the world and survive Comes after adventure/root.
+Advancement "Surge Protector" (adventure/lightning_rod_with_villager_no_fire): Protect a Villager from an undesired shock without starting a fire Comes after adventure/root.
+Advancement "Arbalistic" (adventure/arbalistic): Kill five unique mobs with one crossbow shot Comes after adventure/ol_betsy.
+Advancement "Voluntary Exile" (adventure/voluntary_exile): Kill a raid captain.
+Maybe consider staying away from villages for the time being... Comes after adventure/root.
+Advancement "Monsters Hunted" (adventure/kill_all_mobs): Kill one of every hostile monster Comes after adventure/kill_a_mob.
+Advancement "Postmortal" (adventure/totem_of_undying): Use a Totem of Undying to cheat death Comes after adventure/kill_a_mob.
+Advancement "Is It a Balloon?" (adventure/spyglass_at_ghast): Look at a Ghast through a Spyglass Comes after adventure/spyglass_at_parrot.
+Advancement "Very Very Frightening" (adventure/very_very_frightening): Strike a Villager with lightning Comes after adventure/throw_trident.
+Advancement "Light as a Rabbit" (adventure/walk_on_powder_snow_with_leather_boots): Walk on Powder Snow... without sinking in it Comes after adventure/sleep_in_bed.
+Advancement "Careful Restoration" (adventure/craft_decorated_pot_using_only_sherds): Make a Decorated Pot out of 4 Pottery Sherds Comes after adventure/salvage_sherd.
+Advancement "What a Deal!" (adventure/trade): Successfully trade with a Villager Comes after adventure/root.
+Advancement "It Spreads" (adventure/kill_mob_near_sculk_catalyst): Kill a mob near a Sculk Catalyst Comes after adventure/kill_a_mob.
+Advancement "Take Aim" (adventure/shoot_arrow): Shoot something with an Arrow Comes after adventure/kill_a_mob.
+Advancement "Hero of the Village" (adventure/hero_of_the_village): Successfully defend a village from a raid Comes after adventure/voluntary_exile.
+Advancement "Smithing with Style" (adventure/trim_with_all_exclusive_armor_patterns): Apply these smithing templates at least once: Spire, Snout, Rib, Ward, Silence, Vex, Tide, Wayfinder Comes after adventure/trim_with_any_armor_pattern.
+Advancement "Two Birds, One Arrow" (adventure/two_birds_one_arrow): Kill two Phantoms with a piercing Arrow Comes after adventure/ol_betsy.
+Advancement "Respecting the Remnants" (adventure/salvage_sherd): Brush a Suspicious block to obtain a Pottery Sherd Comes after adventure/root.
+Advancement "Adventuring Time" (adventure/adventuring_time): Discover every biome Comes after adventure/sleep_in_bed.
+Advancement "Crafting a New Look" (adventure/trim_with_any_armor_pattern): Craft a trimmed armor at a Smithing Table Comes after adventure/root.
+Advancement "A Throwaway Joke" (adventure/throw_trident): Throw a Trident at something.
+Note: Throwing away your only weapon is not a good idea. Comes after adventure/kill_a_mob.
+Advancement "Sound of Music" (adventure/play_jukebox_in_meadows): Make the Meadows come alive with the sound of music from a Jukebox Comes after adventure/sleep_in_bed.
+Advancement "Sticky Situation" (adventure/honey_block_slide): Jump into a Honey Block to break your fall Comes after adventure/root.
+Advancement "Bullseye" (adventure/bullseye): Hit the bullseye of a Target block from at least 30 meters away Comes after adventure/shoot_arrow.
+Advancement "Great View From Up Here" (end/levitate): Levitate up 50 blocks from the attacks of a Shulker Comes after end/find_end_city.
+Advancement "You Need a Mint" (end/dragon_breath): Collect Dragon's Breath in a Glass Bottle Comes after end/kill_dragon.
+Advancement "The End" (end/root): Or the beginning?
+Advancement "Free the End" (end/kill_dragon): Good luck Comes after end/root.
+Advancement "Remote Getaway" (end/enter_end_gateway): Escape the island Comes after end/kill_dragon.
+Advancement "The End... Again..." (end/respawn_dragon): Respawn the Ender Dragon Comes after end/kill_dragon.
+Advancement "Sky's the Limit" (end/elytra): Find Elytra Comes after end/find_end_city.
+Advancement "The City at the End of the Game" (end/find_end_city): Go on in, what could happen? Comes after end/enter_end_gateway.
+Advancement "The Next Generation" (end/dragon_egg): Hold the Dragon Egg Comes after end/kill_dragon.
+Advancement "Total Beelocation" (husbandry/silk_touch_nest): Move a Bee Nest, with 3 Bees inside, using Silk Touch Comes after husbandry/root.
+Advancement "Best Friends Forever" (husbandry/tame_an_animal): Tame an animal Comes after husbandry/root.
+Advancement "Glow and Behold!" (husbandry/make_a_sign_glow): Make the text of any kind of sign glow Comes after husbandry/root.
+Advancement "A Seedy Place" (husbandry/plant_seed): Plant a seed and watch it grow Comes after husbandry/root.
+Advancement "When the Squad Hops into Town" (husbandry/leash_all_frog_variants): Get each Frog variant on a Lead Comes after husbandry/tadpole_in_a_bucket.
+Advancement "A Balanced Diet" (husbandry/balanced_diet): Eat everything that is edible, even if it's not good for you Comes after husbandry/plant_seed.
+Advancement "The Healing Power of Friendship!" (husbandry/kill_axolotl_target): Team up with an Axolotl and win a fight Comes after husbandry/axolotl_in_a_bucket.
+Advancement "Husbandry" (husbandry/root): The world is full of friends and food
+Advancement "With Our Powers Combined!" (husbandry/froglights): Have all Froglights in your inventory Comes after husbandry/leash_all_frog_variants.
+Advancement "You've Got a Friend in Me" (husbandry/allay_deliver_item_to_player): Have an Allay deliver items to you Comes after husbandry/root.
+Advancement "Whatever Floats Your Goat!" (husbandry/ride_a_boat_with_a_goat): Get in a Boat and float with a Goat Comes after husbandry/root.
+Advancement "Wax On" (husbandry/wax_on): Apply Honeycomb to a Copper block! Comes after husbandry/safely_harvest_honey.
+Advancement "Planting the Past" (husbandry/plant_any_sniffer_seed): Plant any Sniffer seed Comes after husbandry/feed_snifflet.
+Advancement "Serious Dedication" (husbandry/obtain_netherite_hoe): Use a Netherite Ingot to upgrade a Hoe, and then reevaluate your life choices Comes after husbandry/plant_seed.
+Advancement "The Parrots and the Bats" (husbandry/breed_an_animal): Breed two animals together Comes after husbandry/root.
+Advancement "Smells Interesting" (husbandry/obtain_sniffer_egg): Obtain a Sniffer Egg Comes after husbandry/root.
+Advancement "Bukkit Bukkit" (husbandry/tadpole_in_a_bucket): Catch a Tadpole in a Bucket Comes after husbandry/root.
+Advancement "Fishy Business" (husbandry/fishy_business): Catch a fish Comes after husbandry/root.
+Advancement "Wax Off" (husbandry/wax_off): Scrape Wax off of a Copper block! Comes after husbandry/wax_on.
+Advancement "A Complete Catalogue" (husbandry/complete_catalogue): Tame all Cat variants! Comes after husbandry/tame_an_animal.
+Advancement "Two by Two" (husbandry/bred_all_animals): Breed all the animals! Comes after husbandry/breed_an_animal.
+Advancement "The Cutest Predator" (husbandry/axolotl_in_a_bucket): Catch an Axolotl in a Bucket Comes after husbandry/tactical_fishing.
+Advancement "Tactical Fishing" (husbandry/tactical_fishing): Catch a Fish... without a Fishing Rod! Comes after husbandry/fishy_business.
+Advancement "Little Sniffs" (husbandry/feed_snifflet): Feed a Snifflet Comes after husbandry/obtain_sniffer_egg.
+Advancement "Birthday Song" (husbandry/allay_deliver_cake_to_note_block): Have an Allay drop a Cake at a Note Block Comes after husbandry/allay_deliver_item_to_player.
+Advancement "Bee Our Guest" (husbandry/safely_harvest_honey): Use a Campfire to collect Honey from a Beehive using a Glass Bottle without aggravating the Bees Comes after husbandry/root.

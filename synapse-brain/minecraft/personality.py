@@ -70,6 +70,12 @@ class Self:
             r += 0.5
         if hp < self.prev_health:
             r -= 1.0
+        for adv_id, title in m.get("advancements", []):  # an advancement: a big, lasting joy
+            if adv_id not in self.me.setdefault("advancements", []):
+                self.me["advancements"].append(adv_id)
+                r += 2.0
+                say = self.note(f"получил достижение «{title}»", f"Ура! Достижение «{title}»! "
+                                f"Это уже {len(self.me['advancements'])}-е.")
         if m.get("died"):
             say = self.remember_death(m["died"])
         self.prev_food, self.prev_health = food, hp
@@ -93,6 +99,12 @@ class Self:
         self.save()  # a discovery is never forgotten
         return f"Я впервые получил {name}! Это моё открытие №{n}."
 
+    def note(self, what, speech):
+        with open(self.diary, "a") as f:
+            f.write(f"- шаг {self.me['age_steps']} ({time.strftime('%H:%M:%S')}): {what}\n")
+        self.save()
+        return speech
+
     def remember_death(self, cause):
         ru = {"drowned": "утонул", "fell from a high place": "упал с высоты", "burned to death": "сгорел",
               "tried to swim in lava": "попал в лаву", "suffocated in a wall": "задохнулся в стене",
@@ -113,4 +125,5 @@ class Self:
     def drives(self, m):
         """Internal state as extra senses for the brain (hunger level, what it could still discover)."""
         food = m.get("food", 20)
-        return [min(food // 5, 4), int(bool(m.get("can_craft_new"))), min(len(self.me["known_items"]), 15)]
+        return ([min(food // 5, 4), int(bool(m.get("can_craft_new"))), min(len(self.me["known_items"]), 15)]
+                + list(m.get("feat", [])))

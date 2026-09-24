@@ -1,0 +1,729 @@
+To craft Granite (x1): 1 Diorite, 1 Nether Quartz.
+To craft Polished Granite (x4): 4 Granite.
+To craft Diorite (x2): 2 Cobblestone, 2 Nether Quartz.
+To craft Polished Diorite (x4): 4 Diorite.
+To craft Andesite (x2): 1 Diorite, 1 Cobblestone.
+To craft Polished Andesite (x4): 4 Andesite.
+To craft Polished Deepslate (x4): 4 Cobbled Deepslate.
+To craft Dripstone Block (x1): 4 Pointed Dripstone.
+To craft Coarse Dirt (x4): 2 Dirt, 2 Gravel.
+To craft Oak Planks (x4): 1 Oak Log.
+To craft Spruce Planks (x4): 1 Spruce Log.
+To craft Birch Planks (x4): 1 Birch Log.
+To craft Jungle Planks (x4): 1 Jungle Log.
+To craft Acacia Planks (x4): 1 Acacia Log.
+To craft Cherry Planks (x4): 1 Cherry Log.
+To craft Dark Oak Planks (x4): 1 Dark Oak Log.
+To craft Mangrove Planks (x4): 1 Mangrove Log.
+To craft Bamboo Planks (x2): 1 Block of Bamboo.
+To craft Crimson Planks (x4): 1 Crimson Stem.
+To craft Warped Planks (x4): 1 Warped Stem.
+To craft Bamboo Mosaic (x1): 2 Bamboo Slab.
+To craft Block of Coal (x1, at a crafting table): 9 Coal.
+To craft Block of Raw Iron (x1, at a crafting table): 9 Raw Iron.
+To craft Block of Raw Copper (x1, at a crafting table): 9 Raw Copper.
+To craft Block of Raw Gold (x1, at a crafting table): 9 Raw Gold.
+To craft Block of Amethyst (x1): 4 Amethyst Shard.
+To craft Block of Iron (x1, at a crafting table): 9 Iron Ingot.
+To craft Block of Copper (x1, at a crafting table): 9 Copper Ingot.
+To craft Block of Gold (x1, at a crafting table): 9 Gold Ingot.
+To craft Block of Diamond (x1, at a crafting table): 9 Diamond.
+To craft Block of Netherite (x1, at a crafting table): 9 Netherite Ingot.
+To craft Cut Copper (x4): 4 Block of Copper.
+To craft Exposed Cut Copper (x4): 4 Exposed Copper.
+To craft Weathered Cut Copper (x4): 4 Weathered Copper.
+To craft Oxidized Cut Copper (x4): 4 Oxidized Copper.
+To craft Cut Copper Stairs (x4, at a crafting table): 6 Cut Copper.
+To craft Exposed Cut Copper Stairs (x4, at a crafting table): 6 Exposed Cut Copper.
+To craft Weathered Cut Copper Stairs (x4, at a crafting table): 6 Weathered Cut Copper.
+To craft Oxidized Cut Copper Stairs (x4, at a crafting table): 6 Oxidized Cut Copper.
+To craft Cut Copper Slab (x6, at a crafting table): 3 Cut Copper.
+To craft Exposed Cut Copper Slab (x6, at a crafting table): 3 Exposed Cut Copper.
+To craft Weathered Cut Copper Slab (x6, at a crafting table): 3 Weathered Cut Copper.
+To craft Oxidized Cut Copper Slab (x6, at a crafting table): 3 Oxidized Cut Copper.
+To craft Waxed Block of Copper (x1): 1 Block of Copper, 1 Honeycomb.
+To craft Waxed Exposed Copper (x1): 1 Exposed Copper, 1 Honeycomb.
+To craft Waxed Weathered Copper (x1): 1 Weathered Copper, 1 Honeycomb.
+To craft Waxed Oxidized Copper (x1): 1 Oxidized Copper, 1 Honeycomb.
+To craft Waxed Cut Copper (x4): 4 Waxed Block of Copper.
+To craft Waxed Exposed Cut Copper (x4): 4 Waxed Exposed Copper.
+To craft Waxed Weathered Cut Copper (x4): 4 Waxed Weathered Copper.
+To craft Waxed Oxidized Cut Copper (x4): 4 Waxed Oxidized Copper.
+To craft Waxed Cut Copper Stairs (x4, at a crafting table): 6 Waxed Cut Copper.
+To craft Waxed Exposed Cut Copper Stairs (x4, at a crafting table): 6 Waxed Exposed Cut Copper.
+To craft Waxed Weathered Cut Copper Stairs (x4, at a crafting table): 6 Waxed Weathered Cut Copper.
+To craft Waxed Oxidized Cut Copper Stairs (x4, at a crafting table): 6 Waxed Oxidized Cut Copper.
+To craft Waxed Cut Copper Slab (x6, at a crafting table): 3 Waxed Cut Copper.
+To craft Waxed Exposed Cut Copper Slab (x6, at a crafting table): 3 Waxed Exposed Cut Copper.
+To craft Waxed Weathered Cut Copper Slab (x6, at a crafting table): 3 Waxed Weathered Cut Copper.
+To craft Waxed Oxidized Cut Copper Slab (x6, at a crafting table): 3 Waxed Oxidized Cut Copper.
+To craft Muddy Mangrove Roots (x1): 1 Mud, 1 Mangrove Roots.
+To craft Block of Bamboo (x1, at a crafting table): 9 Bamboo.
+To craft Stripped Oak Wood (x3): 4 Stripped Oak Log.
+To craft Stripped Spruce Wood (x3): 4 Stripped Spruce Log.
+To craft Stripped Birch Wood (x3): 4 Stripped Birch Log.
+To craft Stripped Jungle Wood (x3): 4 Stripped Jungle Log.
+To craft Stripped Acacia Wood (x3): 4 Stripped Acacia Log.
+To craft Stripped Cherry Wood (x3): 4 Stripped Cherry Log.
+To craft Stripped Dark Oak Wood (x3): 4 Stripped Dark Oak Log.
+To craft Stripped Mangrove Wood (x3): 4 Stripped Mangrove Log.
+To craft Stripped Crimson Hyphae (x3): 4 Stripped Crimson Stem.
+To craft Stripped Warped Hyphae (x3): 4 Stripped Warped Stem.
+To craft Oak Wood (x3): 4 Oak Log.
+To craft Spruce Wood (x3): 4 Spruce Log.
+To craft Birch Wood (x3): 4 Birch Log.
+To craft Jungle Wood (x3): 4 Jungle Log.
+To craft Acacia Wood (x3): 4 Acacia Log.
+To craft Cherry Wood (x3): 4 Cherry Log.
+To craft Dark Oak Wood (x3): 4 Dark Oak Log.
+To craft Mangrove Wood (x3): 4 Mangrove Log.
+To craft Crimson Hyphae (x3): 4 Crimson Stem.
+To craft Warped Hyphae (x3): 4 Warped Stem.
+To craft Tinted Glass (x2, at a crafting table): 4 Amethyst Shard, 1 Glass.
+To craft Block of Lapis Lazuli (x1, at a crafting table): 9 Lapis Lazuli.
+To craft Sandstone (x1): 4 Sand.
+To craft Chiseled Sandstone (x1): 2 Sandstone Slab.
+To craft Cut Sandstone (x4): 4 Sandstone.
+To craft White Wool (x1): 1 White Dye, 1 Black Wool.
+To craft Orange Wool (x1): 1 Orange Dye, 1 Black Wool.
+To craft Magenta Wool (x1): 1 Magenta Dye, 1 Black Wool.
+To craft Light Blue Wool (x1): 1 Light Blue Dye, 1 Black Wool.
+To craft Yellow Wool (x1): 1 Yellow Dye, 1 Black Wool.
+To craft Lime Wool (x1): 1 Lime Dye, 1 Black Wool.
+To craft Pink Wool (x1): 1 Pink Dye, 1 Black Wool.
+To craft Gray Wool (x1): 1 Gray Dye, 1 Black Wool.
+To craft Light Gray Wool (x1): 1 Light Gray Dye, 1 Black Wool.
+To craft Cyan Wool (x1): 1 Cyan Dye, 1 Black Wool.
+To craft Purple Wool (x1): 1 Purple Dye, 1 Black Wool.
+To craft Blue Wool (x1): 1 Blue Dye, 1 Black Wool.
+To craft Brown Wool (x1): 1 Brown Dye, 1 Black Wool.
+To craft Green Wool (x1): 1 Green Dye, 1 Black Wool.
+To craft Red Wool (x1): 1 Red Dye, 1 Black Wool.
+To craft Black Wool (x1): 1 Black Dye, 1 Blue Wool.
+To craft Moss Carpet (x3): 2 Moss Block.
+To craft Oak Slab (x6, at a crafting table): 3 Oak Planks.
+To craft Spruce Slab (x6, at a crafting table): 3 Spruce Planks.
+To craft Birch Slab (x6, at a crafting table): 3 Birch Planks.
+To craft Jungle Slab (x6, at a crafting table): 3 Jungle Planks.
+To craft Acacia Slab (x6, at a crafting table): 3 Acacia Planks.
+To craft Cherry Slab (x6, at a crafting table): 3 Cherry Planks.
+To craft Dark Oak Slab (x6, at a crafting table): 3 Dark Oak Planks.
+To craft Mangrove Slab (x6, at a crafting table): 3 Mangrove Planks.
+To craft Bamboo Slab (x6, at a crafting table): 3 Bamboo Planks.
+To craft Bamboo Mosaic Slab (x6, at a crafting table): 3 Bamboo Mosaic.
+To craft Crimson Slab (x6, at a crafting table): 3 Crimson Planks.
+To craft Warped Slab (x6, at a crafting table): 3 Warped Planks.
+To craft Stone Slab (x6, at a crafting table): 3 Stone.
+To craft Smooth Stone Slab (x6, at a crafting table): 3 Smooth Stone.
+To craft Sandstone Slab (x6, at a crafting table): 3 Sandstone.
+To craft Cut Sandstone Slab (x6, at a crafting table): 3 Cut Sandstone.
+To craft Cobblestone Slab (x6, at a crafting table): 3 Cobblestone.
+To craft Brick Slab (x6, at a crafting table): 3 Bricks.
+To craft Stone Brick Slab (x6, at a crafting table): 3 Stone Bricks.
+To craft Mud Brick Slab (x6, at a crafting table): 3 Mud Bricks.
+To craft Nether Brick Slab (x6, at a crafting table): 3 Nether Bricks.
+To craft Quartz Slab (x6, at a crafting table): 3 Chiseled Quartz Block.
+To craft Red Sandstone Slab (x6, at a crafting table): 3 Red Sandstone.
+To craft Cut Red Sandstone Slab (x6, at a crafting table): 3 Cut Red Sandstone.
+To craft Purpur Slab (x6, at a crafting table): 3 Purpur Block.
+To craft Prismarine Slab (x6, at a crafting table): 3 Prismarine.
+To craft Prismarine Brick Slab (x6, at a crafting table): 3 Prismarine Bricks.
+To craft Dark Prismarine Slab (x6, at a crafting table): 3 Dark Prismarine.
+To craft Bricks (x1): 4 Brick.
+To craft Bookshelf (x1, at a crafting table): 6 Oak Planks, 3 Book.
+To craft Chiseled Bookshelf (x1, at a crafting table): 6 Oak Planks, 3 Oak Slab.
+To craft Decorated Pot (x1, at a crafting table): 4 Brick.
+To craft Mossy Cobblestone (x1): 1 Cobblestone, 1 Moss Block.
+To craft Torch (x4): 1 Coal, 1 Stick.
+To craft End Rod (x4): 1 Blaze Rod, 1 Popped Chorus Fruit.
+To craft Purpur Block (x4): 4 Popped Chorus Fruit.
+To craft Purpur Pillar (x1): 2 Purpur Slab.
+To craft Purpur Stairs (x4, at a crafting table): 6 Purpur Block.
+To craft Chest (x1, at a crafting table): 8 Oak Planks.
+To craft Crafting Table (x1): 4 Oak Planks.
+To craft Furnace (x1, at a crafting table): 8 Cobblestone.
+To craft Ladder (x3, at a crafting table): 7 Stick.
+To craft Cobblestone Stairs (x4, at a crafting table): 6 Cobblestone.
+To craft Snow (x6, at a crafting table): 3 Snow Block.
+To craft Snow Block (x1): 4 Snowball.
+To craft Clay (x1): 4 Clay Ball.
+To craft Jukebox (x1, at a crafting table): 8 Oak Planks, 1 Diamond.
+To craft Oak Fence (x3, at a crafting table): 4 Oak Planks, 2 Stick.
+To craft Spruce Fence (x3, at a crafting table): 4 Spruce Planks, 2 Stick.
+To craft Birch Fence (x3, at a crafting table): 4 Birch Planks, 2 Stick.
+To craft Jungle Fence (x3, at a crafting table): 4 Jungle Planks, 2 Stick.
+To craft Acacia Fence (x3, at a crafting table): 4 Acacia Planks, 2 Stick.
+To craft Cherry Fence (x3, at a crafting table): 4 Cherry Planks, 2 Stick.
+To craft Dark Oak Fence (x3, at a crafting table): 4 Dark Oak Planks, 2 Stick.
+To craft Mangrove Fence (x3, at a crafting table): 4 Mangrove Planks, 2 Stick.
+To craft Bamboo Fence (x3, at a crafting table): 4 Bamboo Planks, 2 Stick.
+To craft Crimson Fence (x3, at a crafting table): 4 Crimson Planks, 2 Stick.
+To craft Warped Fence (x3, at a crafting table): 4 Warped Planks, 2 Stick.
+To craft Jack o'Lantern (x1): 1 Carved Pumpkin, 1 Torch.
+To craft Polished Basalt (x4): 4 Basalt.
+To craft Soul Torch (x4, at a crafting table): 1 Coal, 1 Stick, 1 Soul Sand.
+To craft Glowstone (x1): 4 Glowstone Dust.
+To craft Stone Bricks (x4): 4 Stone.
+To craft Mossy Stone Bricks (x1): 1 Stone Bricks, 1 Moss Block.
+To craft Chiseled Stone Bricks (x1): 2 Stone Brick Slab.
+To craft Packed Mud (x1): 1 Mud, 1 Wheat.
+To craft Mud Bricks (x4): 4 Packed Mud.
+To craft Deepslate Bricks (x4): 4 Polished Deepslate.
+To craft Deepslate Tiles (x4): 4 Deepslate Bricks.
+To craft Chiseled Deepslate (x1): 2 Cobbled Deepslate Slab.
+To craft Iron Bars (x16, at a crafting table): 6 Iron Ingot.
+To craft Chain (x1, at a crafting table): 2 Iron Nugget, 1 Iron Ingot.
+To craft Glass Pane (x16, at a crafting table): 6 Glass.
+To craft Melon (x1, at a crafting table): 9 Melon Slice.
+To craft Brick Stairs (x4, at a crafting table): 6 Bricks.
+To craft Stone Brick Stairs (x4, at a crafting table): 6 Stone Bricks.
+To craft Mud Brick Stairs (x4, at a crafting table): 6 Mud Bricks.
+To craft Nether Bricks (x1): 4 Nether Brick.
+To craft Chiseled Nether Bricks (x1): 2 Nether Brick Slab.
+To craft Nether Brick Fence (x6, at a crafting table): 4 Nether Bricks, 2 Nether Brick.
+To craft Nether Brick Stairs (x4, at a crafting table): 6 Nether Bricks.
+To craft Enchanting Table (x1, at a crafting table): 1 Book, 2 Diamond, 4 Obsidian.
+To craft End Stone Bricks (x4): 4 End Stone.
+To craft Sandstone Stairs (x4, at a crafting table): 6 Sandstone.
+To craft Ender Chest (x1, at a crafting table): 8 Obsidian, 1 Eye of Ender.
+To craft Block of Emerald (x1, at a crafting table): 9 Emerald.
+To craft Oak Stairs (x4, at a crafting table): 6 Oak Planks.
+To craft Spruce Stairs (x4, at a crafting table): 6 Spruce Planks.
+To craft Birch Stairs (x4, at a crafting table): 6 Birch Planks.
+To craft Jungle Stairs (x4, at a crafting table): 6 Jungle Planks.
+To craft Acacia Stairs (x4, at a crafting table): 6 Acacia Planks.
+To craft Cherry Stairs (x4, at a crafting table): 6 Cherry Planks.
+To craft Dark Oak Stairs (x4, at a crafting table): 6 Dark Oak Planks.
+To craft Mangrove Stairs (x4, at a crafting table): 6 Mangrove Planks.
+To craft Bamboo Stairs (x4, at a crafting table): 6 Bamboo Planks.
+To craft Bamboo Mosaic Stairs (x4, at a crafting table): 6 Bamboo Mosaic.
+To craft Crimson Stairs (x4, at a crafting table): 6 Crimson Planks.
+To craft Warped Stairs (x4, at a crafting table): 6 Warped Planks.
+To craft Beacon (x1, at a crafting table): 5 Glass, 1 Nether Star, 3 Obsidian.
+To craft Cobblestone Wall (x6, at a crafting table): 6 Cobblestone.
+To craft Mossy Cobblestone Wall (x6, at a crafting table): 6 Mossy Cobblestone.
+To craft Brick Wall (x6, at a crafting table): 6 Bricks.
+To craft Prismarine Wall (x6, at a crafting table): 6 Prismarine.
+To craft Red Sandstone Wall (x6, at a crafting table): 6 Red Sandstone.
+To craft Mossy Stone Brick Wall (x6, at a crafting table): 6 Mossy Stone Bricks.
+To craft Granite Wall (x6, at a crafting table): 6 Granite.
+To craft Stone Brick Wall (x6, at a crafting table): 6 Stone Bricks.
+To craft Mud Brick Wall (x6, at a crafting table): 6 Mud Bricks.
+To craft Nether Brick Wall (x6, at a crafting table): 6 Nether Bricks.
+To craft Andesite Wall (x6, at a crafting table): 6 Andesite.
+To craft Red Nether Brick Wall (x6, at a crafting table): 6 Red Nether Bricks.
+To craft Sandstone Wall (x6, at a crafting table): 6 Sandstone.
+To craft End Stone Brick Wall (x6, at a crafting table): 6 End Stone Bricks.
+To craft Diorite Wall (x6, at a crafting table): 6 Diorite.
+To craft Blackstone Wall (x6, at a crafting table): 6 Blackstone.
+To craft Polished Blackstone Wall (x6, at a crafting table): 6 Polished Blackstone.
+To craft Polished Blackstone Brick Wall (x6, at a crafting table): 6 Polished Blackstone Bricks.
+To craft Cobbled Deepslate Wall (x6, at a crafting table): 6 Cobbled Deepslate.
+To craft Polished Deepslate Wall (x6, at a crafting table): 6 Polished Deepslate.
+To craft Deepslate Brick Wall (x6, at a crafting table): 6 Deepslate Bricks.
+To craft Deepslate Tile Wall (x6, at a crafting table): 6 Deepslate Tiles.
+To craft Anvil (x1, at a crafting table): 3 Block of Iron, 4 Iron Ingot.
+To craft Chiseled Quartz Block (x1): 2 Quartz Slab.
+To craft Block of Quartz (x1): 4 Nether Quartz.
+To craft Quartz Bricks (x4): 4 Block of Quartz.
+To craft Quartz Pillar (x2): 2 Block of Quartz.
+To craft Quartz Stairs (x4, at a crafting table): 6 Chiseled Quartz Block.
+To craft White Terracotta (x8, at a crafting table): 8 Terracotta, 1 White Dye.
+To craft Orange Terracotta (x8, at a crafting table): 8 Terracotta, 1 Orange Dye.
+To craft Magenta Terracotta (x8, at a crafting table): 8 Terracotta, 1 Magenta Dye.
+To craft Light Blue Terracotta (x8, at a crafting table): 8 Terracotta, 1 Light Blue Dye.
+To craft Yellow Terracotta (x8, at a crafting table): 8 Terracotta, 1 Yellow Dye.
+To craft Lime Terracotta (x8, at a crafting table): 8 Terracotta, 1 Lime Dye.
+To craft Pink Terracotta (x8, at a crafting table): 8 Terracotta, 1 Pink Dye.
+To craft Gray Terracotta (x8, at a crafting table): 8 Terracotta, 1 Gray Dye.
+To craft Light Gray Terracotta (x8, at a crafting table): 8 Terracotta, 1 Light Gray Dye.
+To craft Cyan Terracotta (x8, at a crafting table): 8 Terracotta, 1 Cyan Dye.
+To craft Purple Terracotta (x8, at a crafting table): 8 Terracotta, 1 Purple Dye.
+To craft Blue Terracotta (x8, at a crafting table): 8 Terracotta, 1 Blue Dye.
+To craft Brown Terracotta (x8, at a crafting table): 8 Terracotta, 1 Brown Dye.
+To craft Green Terracotta (x8, at a crafting table): 8 Terracotta, 1 Green Dye.
+To craft Red Terracotta (x8, at a crafting table): 8 Terracotta, 1 Red Dye.
+To craft Black Terracotta (x8, at a crafting table): 8 Terracotta, 1 Black Dye.
+To craft Hay Bale (x1, at a crafting table): 9 Wheat.
+To craft White Carpet (x1): 1 White Dye, 1 Black Carpet.
+To craft Orange Carpet (x1): 1 Orange Dye, 1 Black Carpet.
+To craft Magenta Carpet (x1): 1 Magenta Dye, 1 Black Carpet.
+To craft Light Blue Carpet (x1): 1 Light Blue Dye, 1 Black Carpet.
+To craft Yellow Carpet (x1): 1 Yellow Dye, 1 Black Carpet.
+To craft Lime Carpet (x1): 1 Lime Dye, 1 Black Carpet.
+To craft Pink Carpet (x1): 1 Pink Dye, 1 Black Carpet.
+To craft Gray Carpet (x1): 1 Gray Dye, 1 Black Carpet.
+To craft Light Gray Carpet (x1): 1 Light Gray Dye, 1 Black Carpet.
+To craft Cyan Carpet (x3): 2 Cyan Wool.
+To craft Purple Carpet (x1): 1 Purple Dye, 1 Black Carpet.
+To craft Blue Carpet (x3): 2 Blue Wool.
+To craft Brown Carpet (x3): 2 Brown Wool.
+To craft Green Carpet (x1): 1 Green Dye, 1 Black Carpet.
+To craft Red Carpet (x1): 1 Red Dye, 1 Black Carpet.
+To craft Black Carpet (x3): 2 Black Wool.
+To craft Packed Ice (x1, at a crafting table): 9 Ice.
+To craft White Stained Glass (x8, at a crafting table): 8 Glass, 1 White Dye.
+To craft Orange Stained Glass (x8, at a crafting table): 8 Glass, 1 Orange Dye.
+To craft Magenta Stained Glass (x8, at a crafting table): 8 Glass, 1 Magenta Dye.
+To craft Light Blue Stained Glass (x8, at a crafting table): 8 Glass, 1 Light Blue Dye.
+To craft Yellow Stained Glass (x8, at a crafting table): 8 Glass, 1 Yellow Dye.
+To craft Lime Stained Glass (x8, at a crafting table): 8 Glass, 1 Lime Dye.
+To craft Pink Stained Glass (x8, at a crafting table): 8 Glass, 1 Pink Dye.
+To craft Gray Stained Glass (x8, at a crafting table): 8 Glass, 1 Gray Dye.
+To craft Light Gray Stained Glass (x8, at a crafting table): 8 Glass, 1 Light Gray Dye.
+To craft Cyan Stained Glass (x8, at a crafting table): 8 Glass, 1 Cyan Dye.
+To craft Purple Stained Glass (x8, at a crafting table): 8 Glass, 1 Purple Dye.
+To craft Blue Stained Glass (x8, at a crafting table): 8 Glass, 1 Blue Dye.
+To craft Brown Stained Glass (x8, at a crafting table): 8 Glass, 1 Brown Dye.
+To craft Green Stained Glass (x8, at a crafting table): 8 Glass, 1 Green Dye.
+To craft Red Stained Glass (x8, at a crafting table): 8 Glass, 1 Red Dye.
+To craft Black Stained Glass (x8, at a crafting table): 8 Glass, 1 Black Dye.
+To craft White Stained Glass Pane (x16, at a crafting table): 6 White Stained Glass.
+To craft Orange Stained Glass Pane (x16, at a crafting table): 6 Orange Stained Glass.
+To craft Magenta Stained Glass Pane (x16, at a crafting table): 6 Magenta Stained Glass.
+To craft Light Blue Stained Glass Pane (x16, at a crafting table): 6 Light Blue Stained Glass.
+To craft Yellow Stained Glass Pane (x16, at a crafting table): 6 Yellow Stained Glass.
+To craft Lime Stained Glass Pane (x16, at a crafting table): 6 Lime Stained Glass.
+To craft Pink Stained Glass Pane (x16, at a crafting table): 6 Pink Stained Glass.
+To craft Gray Stained Glass Pane (x16, at a crafting table): 6 Gray Stained Glass.
+To craft Light Gray Stained Glass Pane (x16, at a crafting table): 6 Light Gray Stained Glass.
+To craft Cyan Stained Glass Pane (x16, at a crafting table): 6 Cyan Stained Glass.
+To craft Purple Stained Glass Pane (x16, at a crafting table): 6 Purple Stained Glass.
+To craft Blue Stained Glass Pane (x16, at a crafting table): 6 Blue Stained Glass.
+To craft Brown Stained Glass Pane (x16, at a crafting table): 6 Brown Stained Glass.
+To craft Green Stained Glass Pane (x16, at a crafting table): 6 Green Stained Glass.
+To craft Red Stained Glass Pane (x16, at a crafting table): 6 Red Stained Glass.
+To craft Black Stained Glass Pane (x16, at a crafting table): 6 Black Stained Glass.
+To craft Prismarine (x1): 4 Prismarine Shard.
+To craft Prismarine Bricks (x1, at a crafting table): 9 Prismarine Shard.
+To craft Dark Prismarine (x1, at a crafting table): 8 Prismarine Shard, 1 Black Dye.
+To craft Prismarine Stairs (x4, at a crafting table): 6 Prismarine.
+To craft Prismarine Brick Stairs (x4, at a crafting table): 6 Prismarine Bricks.
+To craft Dark Prismarine Stairs (x4, at a crafting table): 6 Dark Prismarine.
+To craft Sea Lantern (x1, at a crafting table): 4 Prismarine Shard, 5 Prismarine Crystals.
+To craft Red Sandstone (x1): 4 Red Sand.
+To craft Chiseled Red Sandstone (x1): 2 Red Sandstone Slab.
+To craft Cut Red Sandstone (x4): 4 Red Sandstone.
+To craft Red Sandstone Stairs (x4, at a crafting table): 6 Red Sandstone.
+To craft Magma Block (x1): 4 Magma Cream.
+To craft Nether Wart Block (x1, at a crafting table): 9 Nether Wart.
+To craft Red Nether Bricks (x1): 2 Nether Brick, 2 Nether Wart.
+To craft Bone Block (x1, at a crafting table): 9 Bone Meal.
+To craft Shulker Box (x1, at a crafting table): 2 Shulker Shell, 1 Chest.
+To craft White Concrete Powder (x8, at a crafting table): 1 White Dye, 4 Sand, 4 Gravel.
+To craft Orange Concrete Powder (x8, at a crafting table): 1 Orange Dye, 4 Sand, 4 Gravel.
+To craft Magenta Concrete Powder (x8, at a crafting table): 1 Magenta Dye, 4 Sand, 4 Gravel.
+To craft Light Blue Concrete Powder (x8, at a crafting table): 1 Light Blue Dye, 4 Sand, 4 Gravel.
+To craft Yellow Concrete Powder (x8, at a crafting table): 1 Yellow Dye, 4 Sand, 4 Gravel.
+To craft Lime Concrete Powder (x8, at a crafting table): 1 Lime Dye, 4 Sand, 4 Gravel.
+To craft Pink Concrete Powder (x8, at a crafting table): 1 Pink Dye, 4 Sand, 4 Gravel.
+To craft Gray Concrete Powder (x8, at a crafting table): 1 Gray Dye, 4 Sand, 4 Gravel.
+To craft Light Gray Concrete Powder (x8, at a crafting table): 1 Light Gray Dye, 4 Sand, 4 Gravel.
+To craft Cyan Concrete Powder (x8, at a crafting table): 1 Cyan Dye, 4 Sand, 4 Gravel.
+To craft Purple Concrete Powder (x8, at a crafting table): 1 Purple Dye, 4 Sand, 4 Gravel.
+To craft Blue Concrete Powder (x8, at a crafting table): 1 Blue Dye, 4 Sand, 4 Gravel.
+To craft Brown Concrete Powder (x8, at a crafting table): 1 Brown Dye, 4 Sand, 4 Gravel.
+To craft Green Concrete Powder (x8, at a crafting table): 1 Green Dye, 4 Sand, 4 Gravel.
+To craft Red Concrete Powder (x8, at a crafting table): 1 Red Dye, 4 Sand, 4 Gravel.
+To craft Black Concrete Powder (x8, at a crafting table): 1 Black Dye, 4 Sand, 4 Gravel.
+To craft Blue Ice (x1, at a crafting table): 9 Packed Ice.
+To craft Conduit (x1, at a crafting table): 8 Nautilus Shell, 1 Heart of the Sea.
+To craft Polished Granite Stairs (x4, at a crafting table): 6 Polished Granite.
+To craft Smooth Red Sandstone Stairs (x4, at a crafting table): 6 Smooth Red Sandstone.
+To craft Mossy Stone Brick Stairs (x4, at a crafting table): 6 Mossy Stone Bricks.
+To craft Polished Diorite Stairs (x4, at a crafting table): 6 Polished Diorite.
+To craft Mossy Cobblestone Stairs (x4, at a crafting table): 6 Mossy Cobblestone.
+To craft End Stone Brick Stairs (x4, at a crafting table): 6 End Stone Bricks.
+To craft Stone Stairs (x4, at a crafting table): 6 Stone.
+To craft Smooth Sandstone Stairs (x4, at a crafting table): 6 Smooth Sandstone.
+To craft Smooth Quartz Stairs (x4, at a crafting table): 6 Smooth Quartz Block.
+To craft Granite Stairs (x4, at a crafting table): 6 Granite.
+To craft Andesite Stairs (x4, at a crafting table): 6 Andesite.
+To craft Red Nether Brick Stairs (x4, at a crafting table): 6 Red Nether Bricks.
+To craft Polished Andesite Stairs (x4, at a crafting table): 6 Polished Andesite.
+To craft Diorite Stairs (x4, at a crafting table): 6 Diorite.
+To craft Cobbled Deepslate Stairs (x4, at a crafting table): 6 Cobbled Deepslate.
+To craft Polished Deepslate Stairs (x4, at a crafting table): 6 Polished Deepslate.
+To craft Deepslate Brick Stairs (x4, at a crafting table): 6 Deepslate Bricks.
+To craft Deepslate Tile Stairs (x4, at a crafting table): 6 Deepslate Tiles.
+To craft Polished Granite Slab (x6, at a crafting table): 3 Polished Granite.
+To craft Smooth Red Sandstone Slab (x6, at a crafting table): 3 Smooth Red Sandstone.
+To craft Mossy Stone Brick Slab (x6, at a crafting table): 3 Mossy Stone Bricks.
+To craft Polished Diorite Slab (x6, at a crafting table): 3 Polished Diorite.
+To craft Mossy Cobblestone Slab (x6, at a crafting table): 3 Mossy Cobblestone.
+To craft End Stone Brick Slab (x6, at a crafting table): 3 End Stone Bricks.
+To craft Smooth Sandstone Slab (x6, at a crafting table): 3 Smooth Sandstone.
+To craft Smooth Quartz Slab (x6, at a crafting table): 3 Smooth Quartz Block.
+To craft Granite Slab (x6, at a crafting table): 3 Granite.
+To craft Andesite Slab (x6, at a crafting table): 3 Andesite.
+To craft Red Nether Brick Slab (x6, at a crafting table): 3 Red Nether Bricks.
+To craft Polished Andesite Slab (x6, at a crafting table): 3 Polished Andesite.
+To craft Diorite Slab (x6, at a crafting table): 3 Diorite.
+To craft Cobbled Deepslate Slab (x6, at a crafting table): 3 Cobbled Deepslate.
+To craft Polished Deepslate Slab (x6, at a crafting table): 3 Polished Deepslate.
+To craft Deepslate Brick Slab (x6, at a crafting table): 3 Deepslate Bricks.
+To craft Deepslate Tile Slab (x6, at a crafting table): 3 Deepslate Tiles.
+To craft Scaffolding (x6, at a crafting table): 6 Bamboo, 1 String.
+To craft Redstone Dust (x9): 1 Block of Redstone.
+To craft Redstone Torch (x1): 1 Redstone Dust, 1 Stick.
+To craft Block of Redstone (x1, at a crafting table): 9 Redstone Dust.
+To craft Redstone Repeater (x1, at a crafting table): 2 Redstone Torch, 1 Redstone Dust, 3 Stone.
+To craft Redstone Comparator (x1, at a crafting table): 3 Redstone Torch, 1 Nether Quartz, 3 Stone.
+To craft Piston (x1, at a crafting table): 3 Oak Planks, 4 Cobblestone, 1 Iron Ingot, 1 Redstone Dust.
+To craft Sticky Piston (x1): 1 Slimeball, 1 Piston.
+To craft Slime Block (x1, at a crafting table): 9 Slimeball.
+To craft Honey Block (x1): 4 Honey Bottle.
+To craft Observer (x1, at a crafting table): 6 Cobblestone, 2 Redstone Dust, 1 Nether Quartz.
+To craft Hopper (x1, at a crafting table): 5 Iron Ingot, 1 Chest.
+To craft Dispenser (x1, at a crafting table): 7 Cobblestone, 1 Bow, 1 Redstone Dust.
+To craft Dropper (x1, at a crafting table): 7 Cobblestone, 1 Redstone Dust.
+To craft Lectern (x1, at a crafting table): 4 Oak Slab, 1 Bookshelf.
+To craft Target (x1, at a crafting table): 4 Redstone Dust, 1 Hay Bale.
+To craft Lever (x1): 1 Stick, 1 Cobblestone.
+To craft Lightning Rod (x1, at a crafting table): 3 Copper Ingot.
+To craft Daylight Detector (x1, at a crafting table): 3 Glass, 3 Nether Quartz, 3 Oak Slab.
+To craft Calibrated Sculk Sensor (x1, at a crafting table): 3 Amethyst Shard, 1 Sculk Sensor.
+To craft Tripwire Hook (x2, at a crafting table): 1 Iron Ingot, 1 Stick, 1 Oak Planks.
+To craft Trapped Chest (x1): 1 Chest, 1 Tripwire Hook.
+To craft TNT (x1, at a crafting table): 5 Gunpowder, 4 Sand.
+To craft Redstone Lamp (x1, at a crafting table): 4 Redstone Dust, 1 Glowstone.
+To craft Note Block (x1, at a crafting table): 8 Oak Planks, 1 Redstone Dust.
+To craft Stone Button (x1): 1 Stone.
+To craft Polished Blackstone Button (x1): 1 Polished Blackstone.
+To craft Oak Button (x1): 1 Oak Planks.
+To craft Spruce Button (x1): 1 Spruce Planks.
+To craft Birch Button (x1): 1 Birch Planks.
+To craft Jungle Button (x1): 1 Jungle Planks.
+To craft Acacia Button (x1): 1 Acacia Planks.
+To craft Cherry Button (x1): 1 Cherry Planks.
+To craft Dark Oak Button (x1): 1 Dark Oak Planks.
+To craft Mangrove Button (x1): 1 Mangrove Planks.
+To craft Bamboo Button (x1): 1 Bamboo Planks.
+To craft Crimson Button (x1): 1 Crimson Planks.
+To craft Warped Button (x1): 1 Warped Planks.
+To craft Stone Pressure Plate (x1): 2 Stone.
+To craft Polished Blackstone Pressure Plate (x1): 2 Polished Blackstone.
+To craft Light Weighted Pressure Plate (x1): 2 Gold Ingot.
+To craft Heavy Weighted Pressure Plate (x1): 2 Iron Ingot.
+To craft Oak Pressure Plate (x1): 2 Oak Planks.
+To craft Spruce Pressure Plate (x1): 2 Spruce Planks.
+To craft Birch Pressure Plate (x1): 2 Birch Planks.
+To craft Jungle Pressure Plate (x1): 2 Jungle Planks.
+To craft Acacia Pressure Plate (x1): 2 Acacia Planks.
+To craft Cherry Pressure Plate (x1): 2 Cherry Planks.
+To craft Dark Oak Pressure Plate (x1): 2 Dark Oak Planks.
+To craft Mangrove Pressure Plate (x1): 2 Mangrove Planks.
+To craft Bamboo Pressure Plate (x1): 2 Bamboo Planks.
+To craft Crimson Pressure Plate (x1): 2 Crimson Planks.
+To craft Warped Pressure Plate (x1): 2 Warped Planks.
+To craft Iron Door (x3, at a crafting table): 6 Iron Ingot.
+To craft Oak Door (x3, at a crafting table): 6 Oak Planks.
+To craft Spruce Door (x3, at a crafting table): 6 Spruce Planks.
+To craft Birch Door (x3, at a crafting table): 6 Birch Planks.
+To craft Jungle Door (x3, at a crafting table): 6 Jungle Planks.
+To craft Acacia Door (x3, at a crafting table): 6 Acacia Planks.
+To craft Cherry Door (x3, at a crafting table): 6 Cherry Planks.
+To craft Dark Oak Door (x3, at a crafting table): 6 Dark Oak Planks.
+To craft Mangrove Door (x3, at a crafting table): 6 Mangrove Planks.
+To craft Bamboo Door (x3, at a crafting table): 6 Bamboo Planks.
+To craft Crimson Door (x3, at a crafting table): 6 Crimson Planks.
+To craft Warped Door (x3, at a crafting table): 6 Warped Planks.
+To craft Iron Trapdoor (x1): 4 Iron Ingot.
+To craft Oak Trapdoor (x2, at a crafting table): 6 Oak Planks.
+To craft Spruce Trapdoor (x2, at a crafting table): 6 Spruce Planks.
+To craft Birch Trapdoor (x2, at a crafting table): 6 Birch Planks.
+To craft Jungle Trapdoor (x2, at a crafting table): 6 Jungle Planks.
+To craft Acacia Trapdoor (x2, at a crafting table): 6 Acacia Planks.
+To craft Cherry Trapdoor (x2, at a crafting table): 6 Cherry Planks.
+To craft Dark Oak Trapdoor (x2, at a crafting table): 6 Dark Oak Planks.
+To craft Mangrove Trapdoor (x2, at a crafting table): 6 Mangrove Planks.
+To craft Bamboo Trapdoor (x2, at a crafting table): 6 Bamboo Planks.
+To craft Crimson Trapdoor (x2, at a crafting table): 6 Crimson Planks.
+To craft Warped Trapdoor (x2, at a crafting table): 6 Warped Planks.
+To craft Oak Fence Gate (x1, at a crafting table): 4 Stick, 2 Oak Planks.
+To craft Spruce Fence Gate (x1, at a crafting table): 4 Stick, 2 Spruce Planks.
+To craft Birch Fence Gate (x1, at a crafting table): 4 Stick, 2 Birch Planks.
+To craft Jungle Fence Gate (x1, at a crafting table): 4 Stick, 2 Jungle Planks.
+To craft Acacia Fence Gate (x1, at a crafting table): 4 Stick, 2 Acacia Planks.
+To craft Cherry Fence Gate (x1, at a crafting table): 4 Stick, 2 Cherry Planks.
+To craft Dark Oak Fence Gate (x1, at a crafting table): 4 Stick, 2 Dark Oak Planks.
+To craft Mangrove Fence Gate (x1, at a crafting table): 4 Stick, 2 Mangrove Planks.
+To craft Bamboo Fence Gate (x1, at a crafting table): 4 Stick, 2 Bamboo Planks.
+To craft Crimson Fence Gate (x1, at a crafting table): 4 Stick, 2 Crimson Planks.
+To craft Warped Fence Gate (x1, at a crafting table): 4 Stick, 2 Warped Planks.
+To craft Powered Rail (x6, at a crafting table): 6 Gold Ingot, 1 Stick, 1 Redstone Dust.
+To craft Detector Rail (x6, at a crafting table): 6 Iron Ingot, 1 Stone Pressure Plate, 1 Redstone Dust.
+To craft Rail (x16, at a crafting table): 6 Iron Ingot, 1 Stick.
+To craft Activator Rail (x6, at a crafting table): 6 Iron Ingot, 2 Stick, 1 Redstone Torch.
+To craft Minecart (x1, at a crafting table): 5 Iron Ingot.
+To craft Minecart with Chest (x1): 1 Chest, 1 Minecart.
+To craft Minecart with Furnace (x1): 1 Furnace, 1 Minecart.
+To craft Minecart with TNT (x1): 1 TNT, 1 Minecart.
+To craft Minecart with Hopper (x1): 1 Hopper, 1 Minecart.
+To craft Carrot on a Stick (x1): 1 Fishing Rod, 1 Carrot.
+To craft Warped Fungus on a Stick (x1): 1 Fishing Rod, 1 Warped Fungus.
+To craft Oak Boat (x1, at a crafting table): 5 Oak Planks.
+To craft Oak Boat with Chest (x1): 1 Chest, 1 Oak Boat.
+To craft Spruce Boat (x1, at a crafting table): 5 Spruce Planks.
+To craft Spruce Boat with Chest (x1): 1 Chest, 1 Spruce Boat.
+To craft Birch Boat (x1, at a crafting table): 5 Birch Planks.
+To craft Birch Boat with Chest (x1): 1 Chest, 1 Birch Boat.
+To craft Jungle Boat (x1, at a crafting table): 5 Jungle Planks.
+To craft Jungle Boat with Chest (x1): 1 Chest, 1 Jungle Boat.
+To craft Acacia Boat (x1, at a crafting table): 5 Acacia Planks.
+To craft Acacia Boat with Chest (x1): 1 Chest, 1 Acacia Boat.
+To craft Cherry Boat (x1, at a crafting table): 5 Cherry Planks.
+To craft Cherry Boat with Chest (x1): 1 Chest, 1 Cherry Boat.
+To craft Dark Oak Boat (x1, at a crafting table): 5 Dark Oak Planks.
+To craft Dark Oak Boat with Chest (x1): 1 Chest, 1 Dark Oak Boat.
+To craft Mangrove Boat (x1, at a crafting table): 5 Mangrove Planks.
+To craft Mangrove Boat with Chest (x1): 1 Chest, 1 Mangrove Boat.
+To craft Bamboo Raft (x1, at a crafting table): 5 Bamboo Planks.
+To craft Bamboo Raft with Chest (x1): 1 Chest, 1 Bamboo Raft.
+To craft Turtle Shell (x1, at a crafting table): 5 Scute.
+To craft Flint and Steel (x1): 1 Iron Ingot, 1 Flint.
+To craft Bow (x1, at a crafting table): 3 Stick, 3 String.
+To craft Arrow (x4, at a crafting table): 1 Flint, 1 Stick, 1 Feather.
+To craft Coal (x9): 1 Block of Coal.
+To craft Diamond (x9): 1 Block of Diamond.
+To craft Emerald (x9): 1 Block of Emerald.
+To craft Lapis Lazuli (x9): 1 Block of Lapis Lazuli.
+To craft Raw Iron (x9): 1 Block of Raw Iron.
+To craft Iron Ingot (x9): 1 Block of Iron.
+To craft Raw Copper (x9): 1 Block of Raw Copper.
+To craft Copper Ingot (x9): 1 Block of Copper.
+To craft Raw Gold (x9): 1 Block of Raw Gold.
+To craft Gold Ingot (x9): 1 Block of Gold.
+To craft Netherite Ingot (x1, at a crafting table): 4 Netherite Scrap, 4 Gold Ingot.
+To craft Wooden Sword (x1, at a crafting table): 2 Oak Planks, 1 Stick.
+To craft Wooden Shovel (x1, at a crafting table): 1 Oak Planks, 2 Stick.
+To craft Wooden Pickaxe (x1, at a crafting table): 3 Oak Planks, 2 Stick.
+To craft Wooden Axe (x1, at a crafting table): 3 Oak Planks, 2 Stick.
+To craft Wooden Hoe (x1, at a crafting table): 2 Oak Planks, 2 Stick.
+To craft Stone Sword (x1, at a crafting table): 2 Cobblestone, 1 Stick.
+To craft Stone Shovel (x1, at a crafting table): 1 Cobblestone, 2 Stick.
+To craft Stone Pickaxe (x1, at a crafting table): 3 Cobblestone, 2 Stick.
+To craft Stone Axe (x1, at a crafting table): 3 Cobblestone, 2 Stick.
+To craft Stone Hoe (x1, at a crafting table): 2 Cobblestone, 2 Stick.
+To craft Golden Sword (x1, at a crafting table): 2 Gold Ingot, 1 Stick.
+To craft Golden Shovel (x1, at a crafting table): 1 Gold Ingot, 2 Stick.
+To craft Golden Pickaxe (x1, at a crafting table): 3 Gold Ingot, 2 Stick.
+To craft Golden Axe (x1, at a crafting table): 3 Gold Ingot, 2 Stick.
+To craft Golden Hoe (x1, at a crafting table): 2 Gold Ingot, 2 Stick.
+To craft Iron Sword (x1, at a crafting table): 2 Iron Ingot, 1 Stick.
+To craft Iron Shovel (x1, at a crafting table): 1 Iron Ingot, 2 Stick.
+To craft Iron Pickaxe (x1, at a crafting table): 3 Iron Ingot, 2 Stick.
+To craft Iron Axe (x1, at a crafting table): 3 Iron Ingot, 2 Stick.
+To craft Iron Hoe (x1, at a crafting table): 2 Iron Ingot, 2 Stick.
+To craft Diamond Sword (x1, at a crafting table): 2 Diamond, 1 Stick.
+To craft Diamond Shovel (x1, at a crafting table): 1 Diamond, 2 Stick.
+To craft Diamond Pickaxe (x1, at a crafting table): 3 Diamond, 2 Stick.
+To craft Diamond Axe (x1, at a crafting table): 3 Diamond, 2 Stick.
+To craft Diamond Hoe (x1, at a crafting table): 2 Diamond, 2 Stick.
+To craft Stick (x4): 2 Oak Planks.
+To craft Bowl (x4, at a crafting table): 3 Oak Planks.
+To craft Mushroom Stew (x1): 1 Brown Mushroom, 1 Red Mushroom, 1 Bowl.
+To craft Wheat (x9): 1 Hay Bale.
+To craft Bread (x1, at a crafting table): 3 Wheat.
+To craft Leather Cap (x1, at a crafting table): 5 Leather.
+To craft Leather Tunic (x1, at a crafting table): 8 Leather.
+To craft Leather Pants (x1, at a crafting table): 7 Leather.
+To craft Leather Boots (x1, at a crafting table): 4 Leather.
+To craft Iron Helmet (x1, at a crafting table): 5 Iron Ingot.
+To craft Iron Chestplate (x1, at a crafting table): 8 Iron Ingot.
+To craft Iron Leggings (x1, at a crafting table): 7 Iron Ingot.
+To craft Iron Boots (x1, at a crafting table): 4 Iron Ingot.
+To craft Diamond Helmet (x1, at a crafting table): 5 Diamond.
+To craft Diamond Chestplate (x1, at a crafting table): 8 Diamond.
+To craft Diamond Leggings (x1, at a crafting table): 7 Diamond.
+To craft Diamond Boots (x1, at a crafting table): 4 Diamond.
+To craft Golden Helmet (x1, at a crafting table): 5 Gold Ingot.
+To craft Golden Chestplate (x1, at a crafting table): 8 Gold Ingot.
+To craft Golden Leggings (x1, at a crafting table): 7 Gold Ingot.
+To craft Golden Boots (x1, at a crafting table): 4 Gold Ingot.
+To craft Painting (x1, at a crafting table): 8 Stick, 1 White Wool.
+To craft Golden Apple (x1, at a crafting table): 8 Gold Ingot, 1 Apple.
+To craft Oak Sign (x3, at a crafting table): 6 Oak Planks, 1 Stick.
+To craft Spruce Sign (x3, at a crafting table): 6 Spruce Planks, 1 Stick.
+To craft Birch Sign (x3, at a crafting table): 6 Birch Planks, 1 Stick.
+To craft Jungle Sign (x3, at a crafting table): 6 Jungle Planks, 1 Stick.
+To craft Acacia Sign (x3, at a crafting table): 6 Acacia Planks, 1 Stick.
+To craft Cherry Sign (x3, at a crafting table): 6 Cherry Planks, 1 Stick.
+To craft Dark Oak Sign (x3, at a crafting table): 6 Dark Oak Planks, 1 Stick.
+To craft Mangrove Sign (x3, at a crafting table): 6 Mangrove Planks, 1 Stick.
+To craft Bamboo Sign (x3, at a crafting table): 6 Bamboo Planks, 1 Stick.
+To craft Crimson Sign (x3, at a crafting table): 6 Crimson Planks, 1 Stick.
+To craft Warped Sign (x3, at a crafting table): 6 Warped Planks, 1 Stick.
+To craft Oak Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Oak Log.
+To craft Spruce Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Spruce Log.
+To craft Birch Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Birch Log.
+To craft Jungle Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Jungle Log.
+To craft Acacia Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Acacia Log.
+To craft Cherry Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Cherry Log.
+To craft Dark Oak Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Dark Oak Log.
+To craft Mangrove Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Mangrove Log.
+To craft Bamboo Hanging Sign (x6, at a crafting table): 2 Chain, 6 Block of Stripped Bamboo.
+To craft Crimson Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Crimson Stem.
+To craft Warped Hanging Sign (x6, at a crafting table): 2 Chain, 6 Stripped Warped Stem.
+To craft Bucket (x1, at a crafting table): 3 Iron Ingot.
+To craft Leather (x1): 4 Rabbit Hide.
+To craft Dried Kelp Block (x1, at a crafting table): 9 Dried Kelp.
+To craft Paper (x3, at a crafting table): 3 Sugar Cane.
+To craft Book (x1): 3 Paper, 1 Leather.
+To craft Slimeball (x9): 1 Slime Block.
+To craft Compass (x1, at a crafting table): 4 Iron Ingot, 1 Redstone Dust.
+To craft Recovery Compass (x1, at a crafting table): 8 Echo Shard, 1 Compass.
+To craft Fishing Rod (x1, at a crafting table): 3 Stick, 2 String.
+To craft Clock (x1, at a crafting table): 4 Gold Ingot, 1 Redstone Dust.
+To craft Spyglass (x1, at a crafting table): 1 Amethyst Shard, 2 Copper Ingot.
+To craft White Dye (x1): 1 Bone Meal.
+To craft Orange Dye (x1): 1 Orange Tulip.
+To craft Magenta Dye (x1): 1 Allium.
+To craft Light Blue Dye (x1): 1 Blue Orchid.
+To craft Yellow Dye (x1): 1 Dandelion.
+To craft Lime Dye (x2): 1 Green Dye, 1 White Dye.
+To craft Pink Dye (x2): 1 Peony.
+To craft Gray Dye (x2): 1 Black Dye, 1 White Dye.
+To craft Light Gray Dye (x1): 1 Azure Bluet.
+To craft Cyan Dye (x2): 1 Blue Dye, 1 Green Dye.
+To craft Purple Dye (x2): 1 Blue Dye, 1 Red Dye.
+To craft Blue Dye (x1): 1 Lapis Lazuli.
+To craft Brown Dye (x1): 1 Cocoa Beans.
+To craft Red Dye (x1): 1 Beetroot.
+To craft Black Dye (x1): 1 Ink Sac.
+To craft Bone Meal (x3): 1 Bone.
+To craft Sugar (x3): 1 Honey Bottle.
+To craft Cake (x1, at a crafting table): 3 Milk Bucket, 2 Sugar, 1 Egg, 3 Wheat.
+To craft White Bed (x1): 1 White Dye, 1 Black Bed.
+To craft Orange Bed (x1): 1 Orange Dye, 1 Black Bed.
+To craft Magenta Bed (x1): 1 Magenta Dye, 1 Black Bed.
+To craft Light Blue Bed (x1): 1 Light Blue Dye, 1 Black Bed.
+To craft Yellow Bed (x1): 1 Yellow Dye, 1 Black Bed.
+To craft Lime Bed (x1): 1 Lime Dye, 1 Black Bed.
+To craft Pink Bed (x1): 1 Pink Dye, 1 Black Bed.
+To craft Gray Bed (x1): 1 Gray Dye, 1 Black Bed.
+To craft Light Gray Bed (x1): 1 Light Gray Dye, 1 Black Bed.
+To craft Cyan Bed (x1, at a crafting table): 3 Cyan Wool, 3 Oak Planks.
+To craft Purple Bed (x1): 1 Purple Dye, 1 Black Bed.
+To craft Blue Bed (x1, at a crafting table): 3 Blue Wool, 3 Oak Planks.
+To craft Brown Bed (x1, at a crafting table): 3 Brown Wool, 3 Oak Planks.
+To craft Green Bed (x1): 1 Green Dye, 1 Black Bed.
+To craft Red Bed (x1): 1 Red Dye, 1 Black Bed.
+To craft Black Bed (x1, at a crafting table): 3 Black Wool, 3 Oak Planks.
+To craft Cookie (x8, at a crafting table): 2 Wheat, 1 Cocoa Beans.
+To craft Shears (x1): 2 Iron Ingot.
+To craft Dried Kelp (x9): 1 Dried Kelp Block.
+To craft Pumpkin Seeds (x4): 1 Pumpkin.
+To craft Melon Seeds (x1): 1 Melon Slice.
+To craft Gold Nugget (x9): 1 Gold Ingot.
+To craft Glass Bottle (x3, at a crafting table): 3 Glass.
+To craft Fermented Spider Eye (x1): 1 Spider Eye, 1 Brown Mushroom, 1 Sugar.
+To craft Blaze Powder (x2): 1 Blaze Rod.
+To craft Magma Cream (x1): 1 Blaze Powder, 1 Slimeball.
+To craft Brewing Stand (x1, at a crafting table): 1 Blaze Rod, 3 Cobblestone.
+To craft Cauldron (x1, at a crafting table): 7 Iron Ingot.
+To craft Eye of Ender (x1): 1 Ender Pearl, 1 Blaze Powder.
+To craft Glistering Melon Slice (x1, at a crafting table): 8 Gold Nugget, 1 Melon Slice.
+To craft Fire Charge (x3): 1 Gunpowder, 1 Blaze Powder, 1 Coal.
+To craft Book and Quill (x1): 1 Book, 1 Ink Sac, 1 Feather.
+To craft Item Frame (x1, at a crafting table): 8 Stick, 1 Leather.
+To craft Glow Item Frame (x1): 1 Item Frame, 1 Glow Ink Sac.
+To craft Flower Pot (x1, at a crafting table): 3 Brick.
+To craft Empty Map (x1, at a crafting table): 8 Paper, 1 Compass.
+To craft Golden Carrot (x1, at a crafting table): 8 Gold Nugget, 1 Carrot.
+To craft Pumpkin Pie (x1): 1 Pumpkin, 1 Sugar, 1 Egg.
+To craft Firework Rocket (x3): 1 Gunpowder, 1 Paper.
+To craft Rabbit Stew (x1, at a crafting table): 1 Baked Potato, 1 Cooked Rabbit, 1 Bowl, 1 Carrot, 1 Brown Mushroom.
+To craft Armor Stand (x1, at a crafting table): 6 Stick, 1 Smooth Stone Slab.
+To craft Leather Horse Armor (x1, at a crafting table): 7 Leather.
+To craft Lead (x2, at a crafting table): 4 String, 1 Slimeball.
+To craft White Banner (x1, at a crafting table): 6 White Wool, 1 Stick.
+To craft Orange Banner (x1, at a crafting table): 6 Orange Wool, 1 Stick.
+To craft Magenta Banner (x1, at a crafting table): 6 Magenta Wool, 1 Stick.
+To craft Light Blue Banner (x1, at a crafting table): 6 Light Blue Wool, 1 Stick.
+To craft Yellow Banner (x1, at a crafting table): 6 Yellow Wool, 1 Stick.
+To craft Lime Banner (x1, at a crafting table): 6 Lime Wool, 1 Stick.
+To craft Pink Banner (x1, at a crafting table): 6 Pink Wool, 1 Stick.
+To craft Gray Banner (x1, at a crafting table): 6 Gray Wool, 1 Stick.
+To craft Light Gray Banner (x1, at a crafting table): 6 Light Gray Wool, 1 Stick.
+To craft Cyan Banner (x1, at a crafting table): 6 Cyan Wool, 1 Stick.
+To craft Purple Banner (x1, at a crafting table): 6 Purple Wool, 1 Stick.
+To craft Blue Banner (x1, at a crafting table): 6 Blue Wool, 1 Stick.
+To craft Brown Banner (x1, at a crafting table): 6 Brown Wool, 1 Stick.
+To craft Green Banner (x1, at a crafting table): 6 Green Wool, 1 Stick.
+To craft Red Banner (x1, at a crafting table): 6 Red Wool, 1 Stick.
+To craft Black Banner (x1, at a crafting table): 6 Black Wool, 1 Stick.
+To craft End Crystal (x1, at a crafting table): 7 Glass, 1 Eye of Ender, 1 Ghast Tear.
+To craft Beetroot Soup (x1, at a crafting table): 1 Bowl, 6 Beetroot.
+To craft Spectral Arrow (x2, at a crafting table): 4 Glowstone Dust, 1 Arrow.
+To craft Shield (x1, at a crafting table): 6 Oak Planks, 1 Iron Ingot.
+To craft Iron Nugget (x9): 1 Iron Ingot.
+To craft Music Disc (x1, at a crafting table): 9 Disc Fragment.
+To craft Crossbow (x1, at a crafting table): 3 Stick, 1 Iron Ingot, 2 String, 1 Tripwire Hook.
+To craft Loom (x1): 2 String, 2 Oak Planks.
+To craft Banner Pattern (x1): 1 Paper, 1 Oxeye Daisy.
+To craft Banner Pattern (x1): 1 Paper, 1 Creeper Head.
+To craft Banner Pattern (x1): 1 Paper, 1 Wither Skeleton Skull.
+To craft Banner Pattern (x1): 1 Paper, 1 Enchanted Golden Apple.
+To craft Composter (x1, at a crafting table): 7 Oak Slab.
+To craft Barrel (x1, at a crafting table): 6 Oak Planks, 2 Oak Slab.
+To craft Smoker (x1, at a crafting table): 4 Dark Oak Log, 1 Furnace.
+To craft Blast Furnace (x1, at a crafting table): 5 Iron Ingot, 1 Furnace, 3 Smooth Stone.
+To craft Cartography Table (x1, at a crafting table): 2 Paper, 4 Oak Planks.
+To craft Fletching Table (x1, at a crafting table): 2 Flint, 4 Oak Planks.
+To craft Grindstone (x1, at a crafting table): 2 Stick, 1 Stone Slab, 2 Oak Planks.
+To craft Smithing Table (x1, at a crafting table): 2 Iron Ingot, 4 Oak Planks.
+To craft Stonecutter (x1, at a crafting table): 1 Iron Ingot, 3 Stone.
+To craft Lantern (x1, at a crafting table): 8 Iron Nugget, 1 Torch.
+To craft Soul Lantern (x1, at a crafting table): 8 Iron Nugget, 1 Soul Torch.
+To craft Campfire (x1, at a crafting table): 3 Stick, 1 Coal, 3 Dark Oak Log.
+To craft Soul Campfire (x1, at a crafting table): 3 Stick, 1 Soul Sand, 3 Dark Oak Log.
+To craft Beehive (x1, at a crafting table): 6 Oak Planks, 3 Honeycomb.
+To craft Honey Bottle (x4, at a crafting table): 1 Honey Block, 4 Glass Bottle.
+To craft Honeycomb Block (x1): 4 Honeycomb.
+To craft Lodestone (x1, at a crafting table): 8 Chiseled Stone Bricks, 1 Netherite Ingot.
+To craft Blackstone Slab (x6, at a crafting table): 3 Blackstone.
+To craft Blackstone Stairs (x4, at a crafting table): 6 Blackstone.
+To craft Polished Blackstone (x4): 4 Blackstone.
+To craft Polished Blackstone Slab (x6, at a crafting table): 3 Polished Blackstone.
+To craft Polished Blackstone Stairs (x4, at a crafting table): 6 Polished Blackstone.
+To craft Chiseled Polished Blackstone (x1): 2 Polished Blackstone Slab.
+To craft Polished Blackstone Bricks (x4): 4 Polished Blackstone.
+To craft Polished Blackstone Brick Slab (x6, at a crafting table): 3 Polished Blackstone Bricks.
+To craft Polished Blackstone Brick Stairs (x4, at a crafting table): 6 Polished Blackstone Bricks.
+To craft Respawn Anchor (x1, at a crafting table): 6 Crying Obsidian, 3 Glowstone.
+To craft Candle (x1): 1 String, 1 Honeycomb.
+To craft White Candle (x1): 1 Candle, 1 White Dye.
+To craft Orange Candle (x1): 1 Candle, 1 Orange Dye.
+To craft Magenta Candle (x1): 1 Candle, 1 Magenta Dye.
+To craft Light Blue Candle (x1): 1 Candle, 1 Light Blue Dye.
+To craft Yellow Candle (x1): 1 Candle, 1 Yellow Dye.
+To craft Lime Candle (x1): 1 Candle, 1 Lime Dye.
+To craft Pink Candle (x1): 1 Candle, 1 Pink Dye.
+To craft Gray Candle (x1): 1 Candle, 1 Gray Dye.
+To craft Light Gray Candle (x1): 1 Candle, 1 Light Gray Dye.
+To craft Cyan Candle (x1): 1 Candle, 1 Cyan Dye.
+To craft Purple Candle (x1): 1 Candle, 1 Purple Dye.
+To craft Blue Candle (x1): 1 Candle, 1 Blue Dye.
+To craft Brown Candle (x1): 1 Candle, 1 Brown Dye.
+To craft Green Candle (x1): 1 Candle, 1 Green Dye.
+To craft Red Candle (x1): 1 Candle, 1 Red Dye.
+To craft Black Candle (x1): 1 Candle, 1 Black Dye.
+To craft Brush (x1, at a crafting table): 1 Feather, 1 Copper Ingot, 1 Stick.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Netherrack.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Cobblestone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Sandstone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Cobblestone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Mossy Cobblestone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Cobbled Deepslate.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 End Stone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Cobblestone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Prismarine.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Blackstone.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Netherrack.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Purpur Block.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Terracotta.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Terracotta.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Cobbled Deepslate.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Terracotta.
+To craft Smithing Template (x2, at a crafting table): 7 Diamond, 1 Smithing Template, 1 Terracotta.

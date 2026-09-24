@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright
 url = sys.argv[1]
 with sync_playwright() as pw:
     import glob
-    exe = (glob.glob("/opt/pw-browsers/chromium-*/chrome-linux/chrome") or [None])[0]  # preinstalled build
+    exe = (glob.glob("/opt/pw-browsers/chromium-*/chrome-linux/chrome") or [None])[0]  # else Playwright's own
     browser = pw.chromium.launch(executable_path=exe, args=["--use-gl=swiftshader", "--enable-webgl",
                                                             "--ignore-gpu-blocklist"])
     page = browser.new_page(viewport={"width": 128, "height": 128})

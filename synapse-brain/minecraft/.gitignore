@@ -1,2 +1,6 @@
 node_modules/
 *.npz
+!models/*.npz
+voice/
+life/
+server/
