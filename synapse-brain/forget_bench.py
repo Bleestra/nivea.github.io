@@ -51,7 +51,7 @@ def main():
     def brain_eval():
         """Frozen weights (working memory on); the brain is restored afterwards."""
         np.save(park, st["T"])
-        small = {k: st[k].copy() for k in ("MT", "MT2", "S", "LN")}
+        small = {k: st[k].copy() for k in ("MT", "MT2", "MT3", "MT4", "WC", "S", "LN")}
         out = []
         for a, b in [(B, C), (C, len(X))]:
             bits, n = process(X, st, a, b, 0, a, stp=True)

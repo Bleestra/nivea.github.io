@@ -20,6 +20,11 @@ Every byte is predicted bit by bit (8 binary decisions, like a population of bin
                    contexts were seen before) x recall state, previous byte - and learn from
                    the prediction error (climbing fibre) with a local delta rule. The learning
                    rate starts high and settles (developmental critical period).
+  semantic memory: Hebbian word associations (words seen together wire together) plus a ring of
+                   recently used words; at a word start the associates of the current topic are
+                   pre-activated (priming), which keeps generated text on topic.
+  working memory : a short-range episodic index (3 bytes, last 2 kB) - the brain's version of
+                   an induction head.
   basal ganglia  : a second, tiny mixer arbitrates between the microzone outputs.
   thalamic gain  : adaptive probability maps (APM) re-calibrate the final confidence, one of
                    them keyed by the byte the hippocampus recalled.
@@ -32,13 +37,16 @@ import mmap
 import numpy as np
 from numba import njit
 
-N_CTX = 16         # granule populations
-N_IN = 2 * N_CTX + 5   # direct + history votes per population, 2 x 2 hippocampal inputs, bias
+N_CTX = 18         # granule populations
+N_IN = 2 * N_CTX + 13  # votes per population, 4 x 2 hippocampal, 2 word-cache, 2 semantic, bias
+ASSOC_BITS = 20    # semantic memory: 2^20 words x 8 associate synapses
+RECENT = 2048      # reach of the short-range episodic index (working memory)
+N_CACHE = 64       # recently used content words kept "primed"
 MATCH_LONG = 16    # bytes of context for the second (precise) hippocampal index
 # columns per population (log2): tiny for short contexts, large for long ones - like giving
 # each brain area the number of synapses its job needs. 64 bytes per column.
-#            o1  o2  o3  o4  o6  o8  word word2 o5  skip word3 skip34 place wplace shape vert
-LOG_COLS = (16, 21, 23, 23, 23, 23, 22, 23, 23, 21, 23, 21, 22, 22, 22, 21)
+#            o1  o2  o3  o4  o6  o8  word word2 o5  skip word3 skip34 place wplace shape vert topic sent
+LOG_COLS = (16, 21, 23, 23, 23, 23, 22, 23, 23, 21, 23, 21, 22, 22, 22, 21, 22, 22)
 LOG_WM = 18        # working-memory columns per population (used only when weights are frozen)
 MATCH_MIN = 6      # bytes of context needed for hippocampal recall
 MATCH_BITS = 22
@@ -82,10 +90,18 @@ def make_state(shrink=0, n_bytes=100_000_000):
         "MP": np.full(64 * 2 * 8, 32768, np.uint16),           # recall reliability
         "MT2": _huge(1 << MATCH_BITS, np.int64),               # precise (long-context) index
         "MP2": np.full(32 * 2 * 8, 32768, np.uint16),
+        "MT3": _huge(1 << 20, np.int64),                       # lexical priming: word start -> last use
+        "MP3": np.full(16 * 2 * 8, 32768, np.uint16),
+        "WC": np.zeros((N_CACHE, 3), np.int64),                # primed words: (start, length, id)
+        "AW": _huge((1 << ASSOC_BITS) * 8 * 4, np.int64).reshape(1 << ASSOC_BITS, 8, 4),
+        "MP6": np.full(16 * 9 * 8, 32768, np.uint16),
+        "MP4": np.full(16 * 9 * 8, 32768, np.uint16),
+        "MT4": _huge(1 << 16, np.int64),                       # recent-only index on 3 bytes
+        "MP5": np.full(16 * 8 * 2 * 8, 32768, np.uint16),
         "A1": np.zeros(256 * 33, np.uint16),                   # thalamic gain maps
         "A2": _huge(65536 * 33, np.uint16),
         "buf": _huge(n_bytes + 8, np.uint8),                   # episodic store (the text)
-        "S": np.zeros(16, np.int64),                           # scalar state
+        "S": np.zeros(32, np.int64),                           # scalar state
     }
     st["HM"][:] = 32768
     for a in (st["A1"], st["A2"], st["A3"], st["A4"]):
@@ -115,6 +131,28 @@ def _learn(w, x, e):
 
 
 @njit(cache=True, inline="always")
+def _associate(AW, a, b, bs, bl):
+    """Hebbian synapse a -> b in semantic memory (8 slots per word, weakest one decays)."""
+    row = AW[a & ((1 << ASSOC_BITS) - 1)]
+    weak = 0
+    for q in range(8):
+        if row[q, 0] == b:
+            row[q, 1] = bs
+            row[q, 2] = bl
+            row[q, 3] += 1
+            return
+        if row[q, 3] < row[weak, 3]:
+            weak = q
+    if row[weak, 3] > 0:
+        row[weak, 3] -= 1
+    else:
+        row[weak, 0] = b
+        row[weak, 1] = bs
+        row[weak, 2] = bl
+        row[weak, 3] = 1
+
+
+@njit(cache=True, inline="always")
 def _squash(x, SQ):
     """Logistic function from a table (x in [-16, 16), step 1/64, linear interpolation)."""
     t = (x + 16.0) * 64.0
@@ -128,9 +166,9 @@ def _squash(x, SQ):
 
 
 @njit(cache=True, fastmath=True)
-def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, final_mix, MT2, MP2, W1, W2, W3, MT, MP, A1, A2, buf, S,
+def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, final_mix, MT2, MP2, MT3, MP3, WC, MP4, MT4, MP5, AW, MP6, W1, W2, W3, MT, MP, A1, A2, buf, S,
         lr, limit, HM, W4, A3, use_w4, use_a3, hm_j, lr_decay, stp, A4, W5, CM, use_a4, use_w5, wm_cells,
-        gen, temp, seed):
+        gen, temp, seed, recall):
     """Process data[start:end]. Synapses learn while pos < learn_end; log-loss (bits) is
     summed for pos >= loss_start. Returns (bits, n_bytes_scored)."""
     STR = np.empty(4096, np.float32)
@@ -155,6 +193,14 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
     shape = S[8]  # rhythm of character classes (letter/digit/space/punct/...)
     mptr2 = S[9]
     mlen2 = S[10]
+    topic = S[11]    # semantic memory: the last two content words (5+ letters)
+    sent = S[12]     # word index inside the current sentence
+    wlen = S[13]     # letters in the current word
+    wci = S[14]      # next slot in the primed-word ring
+    mptr4 = S[15]
+    mlen4 = S[16]
+    cands = np.zeros(N_CACHE, np.int64)
+    acands = np.zeros(64, np.int64)
     base = np.zeros(N_CTX, np.int64)
     hx = np.zeros(N_CTX, np.int64)
     x = np.zeros(N_IN, np.float32)
@@ -191,6 +237,8 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
         colp = pos - LN[0]
         above = buf[LN[1] + colp] if LN[1] + colp < LN[0] else 0
         hx[15] = _hash(20, (above * 256 + (c4 & 0xFF)) * 64 + min(colp, 63))
+        hx[16] = _hash(21, topic * 1000003 + wh)
+        hx[17] = _hash(22, (min(sent, 15) * 1000003 + pw) * 31 + (c4 & 0xFF))
         h2 = _hash(15, c4 & 0xFFFF)
         # ---- hippocampus: recall the byte that followed the last identical context ---
         if mlen > 0 and mptr < pos and buf[mptr] == (c4 & 0xFF):
@@ -236,6 +284,64 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
                         mptr2 = cand
             MT2[mh2] = pos
         pbyte2 = (buf[mptr2] | 256) if mlen2 > 0 else 0
+        # primed vocabulary: which recent content words fit the letters typed so far?
+        nc = 0
+        prev = c4 & 0xFF
+        if wlen > 0 or prev == 32 or prev == 91 or prev == 40:
+            for q in range(N_CACHE):
+                ws_, wl_ = WC[q, 0], WC[q, 1]
+                if wl_ > wlen:
+                    same = True
+                    for r in range(wlen):
+                        if buf[ws_ + r] != buf[pos - wlen + r]:
+                            same = False
+                            break
+                    if same:
+                        cands[nc] = buf[ws_ + wlen]
+                        nc += 1
+        # semantic memory: letters of words associated with the last 8 content words
+        na = 0
+        if wlen > 0 or prev == 32 or prev == 91 or prev == 40:
+            for back in range(1, 9):
+                row = AW[WC[(wci - back) % N_CACHE, 2] & ((1 << ASSOC_BITS) - 1)]
+                for q in range(8):
+                    if row[q, 3] >= 2 and row[q, 2] > wlen and na < 64:
+                        ws_ = row[q, 1]
+                        same = True
+                        for r in range(wlen):
+                            if buf[ws_ + r] != buf[pos - wlen + r]:
+                                same = False
+                                break
+                        if same:
+                            acands[na] = buf[ws_ + wlen]
+                            na += 1
+        # working-memory recall: where in the last RECENT bytes did these 3 bytes occur?
+        if mlen4 > 0 and mptr4 < pos and buf[mptr4] == (c4 & 0xFF):
+            mlen4 += 1
+            mptr4 += 1
+        else:
+            mlen4 = 0
+        if pos >= 3:
+            k4 = _hash(96, c4 & 0xFFFFFF) & ((1 << 16) - 1)
+            if mlen4 == 0:
+                cand = MT4[k4]
+                if cand > 0 and pos - cand < RECENT and buf[cand - 1] == buf[pos - 1] and \
+                        buf[cand - 2] == buf[pos - 2] and buf[cand - 3] == buf[pos - 3]:
+                    mlen4 = 3
+                    mptr4 = cand
+            MT4[k4] = pos
+        if mlen4 > 0 and pos - mptr4 >= RECENT:
+            mlen4 = 0
+        pbyte4 = (buf[mptr4] | 256) if mlen4 > 0 else 0
+        dist4 = min((pos - mptr4) // 256, 7) if mlen4 > 0 else 0
+        # lexical priming: how did the most recent word with this same beginning go on?
+        pbyte3 = 0
+        if wh != 0:
+            k3 = _hash(97, wh) & ((1 << 20) - 1)
+            cand = MT3[k3]
+            if cand > 0 and cand < pos:
+                pbyte3 = buf[cand] | 256
+            MT3[k3] = pos
         mb = mlen if mlen < 15 else 15
         if mlen >= 32:
             mb = 15 + min((mlen - 15) // 16, 16)
@@ -294,8 +400,8 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
                 expb = (pbyte >> (7 - j)) & 1
             if expb >= 0:
                 mi = (min(mlen, 63) * 2 + expb) * 8 + j
-                x[2 * N_CTX] = STR[MP[mi] >> 4]
-                x[2 * N_CTX + 1] = (2 * expb - 1) * min(mlen, 32) / 8.0
+                x[2 * N_CTX] = STR[MP[mi] >> 4] * recall
+                x[2 * N_CTX + 1] = (2 * expb - 1) * min(mlen, 32) / 8.0 * recall
             else:
                 mi = -1
                 x[2 * N_CTX] = 0.0
@@ -305,13 +411,67 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
                 expb2 = (pbyte2 >> (7 - j)) & 1
             if expb2 >= 0:
                 mi2 = (min(mlen2 // 4, 31) * 2 + expb2) * 8 + j
-                x[2 * N_CTX + 2] = STR[MP2[mi2] >> 4]
-                x[2 * N_CTX + 3] = (2 * expb2 - 1) * min(mlen2, 64) / 16.0
+                x[2 * N_CTX + 2] = STR[MP2[mi2] >> 4] * recall
+                x[2 * N_CTX + 3] = (2 * expb2 - 1) * min(mlen2, 64) / 16.0 * recall
             else:
                 mi2 = -1
                 x[2 * N_CTX + 2] = 0.0
                 x[2 * N_CTX + 3] = 0.0
-            x[2 * N_CTX + 4] = 0.25
+            expb3 = -1
+            if pbyte3 > 0 and (pbyte3 >> (8 - j)) == c0:
+                expb3 = (pbyte3 >> (7 - j)) & 1
+            if expb3 >= 0:
+                mi3 = (min(wlen, 15) * 2 + expb3) * 8 + j
+                x[2 * N_CTX + 4] = STR[MP3[mi3] >> 4]
+                x[2 * N_CTX + 5] = (2 * expb3 - 1) * 0.5
+            else:
+                mi3 = -1
+                x[2 * N_CTX + 4] = 0.0
+                x[2 * N_CTX + 5] = 0.0
+            n0 = 0
+            n1 = 0
+            for q in range(nc):
+                if ((cands[q] | 256) >> (8 - j)) == c0:
+                    if (cands[q] >> (7 - j)) & 1:
+                        n1 += 1
+                    else:
+                        n0 += 1
+            if n0 + n1 > 0:
+                x[2 * N_CTX + 6] = min(max(math.log((n1 + 0.3) / (n0 + 0.3)), -4.0), 4.0)
+                mi4 = (min(n0 + n1, 15) * 9 + (8 * n1) // (n0 + n1)) * 8 + j
+                x[2 * N_CTX + 7] = STR[MP4[mi4] >> 4]
+            else:
+                mi4 = -1
+                x[2 * N_CTX + 6] = 0.0
+                x[2 * N_CTX + 7] = 0.0
+            expb4 = -1
+            if pbyte4 > 0 and (pbyte4 >> (8 - j)) == c0:
+                expb4 = (pbyte4 >> (7 - j)) & 1
+            if expb4 >= 0:
+                mi5 = ((min(mlen4, 15) * 8 + dist4) * 2 + expb4) * 8 + j
+                x[2 * N_CTX + 8] = STR[MP5[mi5] >> 4]
+                x[2 * N_CTX + 9] = (2 * expb4 - 1) * min(mlen4, 16) / 8.0
+            else:
+                mi5 = -1
+                x[2 * N_CTX + 8] = 0.0
+                x[2 * N_CTX + 9] = 0.0
+            n0 = 0
+            n1 = 0
+            for q in range(na):
+                if ((acands[q] | 256) >> (8 - j)) == c0:
+                    if (acands[q] >> (7 - j)) & 1:
+                        n1 += 1
+                    else:
+                        n0 += 1
+            if n0 + n1 > 0:
+                x[2 * N_CTX + 10] = min(max(math.log((n1 + 0.3) / (n0 + 0.3)), -4.0), 4.0)
+                mi6 = (min(n0 + n1, 15) * 9 + (8 * n1) // (n0 + n1)) * 8 + j
+                x[2 * N_CTX + 11] = STR[MP6[mi6] >> 4]
+            else:
+                mi6 = -1
+                x[2 * N_CTX + 10] = 0.0
+                x[2 * N_CTX + 11] = 0.0
+            x[2 * N_CTX + 12] = 0.25
             # cerebellar microzones
             z1 = c0
             z2 = ((mb * 2 + (1 if expb >= 0 else 0)) * 7 + conf) * 8 + j
@@ -423,6 +583,22 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
                     pv = np.int64(MP2[mi2])
                     pv += ((bit << 16) - bit - pv) >> 6
                     MP2[mi2] = pv
+                if mi3 >= 0:
+                    pv = np.int64(MP3[mi3])
+                    pv += ((bit << 16) - bit - pv) >> 6
+                    MP3[mi3] = pv
+                if mi4 >= 0:
+                    pv = np.int64(MP4[mi4])
+                    pv += ((bit << 16) - bit - pv) >> 6
+                    MP4[mi4] = pv
+                if mi6 >= 0:
+                    pv = np.int64(MP6[mi6])
+                    pv += ((bit << 16) - bit - pv) >> 6
+                    MP6[mi6] = pv
+                if mi5 >= 0:
+                    pv = np.int64(MP5[mi5])
+                    pv += ((bit << 16) - bit - pv) >> 6
+                    MP5[mi5] = pv
             elif stp:
                 # short-term plasticity only: cells remember their last outcomes (working
                 # memory); long-term synapses (probabilities, counts, mixers, maps) stay frozen
@@ -450,10 +626,28 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
             ch += 32
         if 97 <= ch <= 122 or ch >= 128:
             wh = (wh * 773 + ch) & 0xFFFFFFFFFFFF
+            wlen += 1
         elif wh != 0:
             ppw = pw
             pw = wh
+            if wlen >= 5:
+                topic = ((topic & 0xFFFFFF) * 16777619 + (wh & 0xFFFFFF)) & 0xFFFFFFFFFFFF
+            if wlen >= 4:
+                if learn:  # Hebb: words that appear together wire together
+                    for back in range(1, 17):
+                        o = (wci - back) % N_CACHE
+                        if WC[o, 1] > 0 and WC[o, 2] != wh:
+                            _associate(AW, WC[o, 2], wh, pos - wlen, wlen)
+                            _associate(AW, wh, WC[o, 2], WC[o, 0], WC[o, 1])
+                WC[wci, 0] = pos - wlen
+                WC[wci, 1] = wlen
+                WC[wci, 2] = wh
+                wci = (wci + 1) % N_CACHE
             wh = 0
+            wlen = 0
+            sent += 1
+        if byte == 46 or byte == 10 or byte == 33 or byte == 63:
+            sent = 0
         # place cells: bracket depth of [[links]], {{templates}}, <tags>, line start, column
         lk = place & 3
         tp = (place >> 2) & 3
@@ -502,20 +696,26 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
     S[8] = shape
     S[9] = mptr2
     S[10] = mlen2
+    S[11] = topic
+    S[12] = sent
+    S[13] = wlen
+    S[14] = wci
+    S[15] = mptr4
+    S[16] = mlen4
     return bits, scored
 
 
 def process(data, st, start, end, learn_end, loss_start, lr=0.002, limit=255, use_w4=True, use_a3=True,
             hm_j=True, lr_decay=5.0, stp=False, use_a4=True, use_w5=True, wm_cells=True, final_mix=True,
-            gen=False, temp=1.0, seed=0):
+            gen=False, temp=1.0, seed=0, recall=1.0):
     return run(data, start, end, learn_end, loss_start, st["T"], st["TO"], st["TM"], st["WO"], st["WM"],
-               st["LN"], st["WF"], final_mix, st["MT2"], st["MP2"], st["W1"], st["W2"], st["W3"],
+               st["LN"], st["WF"], final_mix, st["MT2"], st["MP2"], st["MT3"], st["MP3"], st["WC"], st["MP4"], st["MT4"], st["MP5"], st["AW"], st["MP6"], st["W1"], st["W2"], st["W3"],
                st["MT"], st["MP"], st["A1"], st["A2"], st["buf"], st["S"], lr, limit, st["HM"],
                st["W4"], st["A3"], use_w4, use_a3, hm_j, lr_decay, stp, st["A4"], st["W5"], st["CM"],
-               use_a4, use_w5, wm_cells, gen, temp, seed)
+               use_a4, use_w5, wm_cells, gen, temp, seed, recall)
 
 
-def generate(st, data, pos, n, temp=0.8, seed=0, prompt=None):
+def generate(st, data, pos, n, temp=0.8, seed=0, prompt=None, recall=1.0):
     """Write `prompt` at data[pos:], let the brain read it (weights frozen, working memory on),
     then let it speak n bytes. `data` must be a writable uint8 array with room for the text.
     Returns the generated bytes."""
@@ -523,5 +723,6 @@ def generate(st, data, pos, n, temp=0.8, seed=0, prompt=None):
         data[pos : pos + len(prompt)] = np.frombuffer(prompt, np.uint8)
         process(data, st, pos, pos + len(prompt), 0, 1 << 62, stp=True)
         pos += len(prompt)
-    process(data, st, pos, pos + n, 0, 1 << 62, stp=True, gen=True, temp=temp, seed=seed)
+    # while speaking, recall from the global episodic index can be damped (recall < 1)
+    process(data, st, pos, pos + n, 0, 1 << 62, stp=True, gen=True, temp=temp, seed=seed, recall=recall)
     return bytes(data[pos : pos + n])

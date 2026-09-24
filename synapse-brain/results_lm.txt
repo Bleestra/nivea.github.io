@@ -1,52 +1,38 @@
-# SynapseBrain-LM vs transformer: raw outputs
-
-## brain, full memory (lm_bench.py 0)
-train: 90 MB in 366.3 s (0.25 MB/s)
-{"shrink": 0, "train_time": 366.311505837999, "train_MBps": 0.2456925282598206, "memory_MB": 5858.946488, "test_bpc_strict_frozen": 1.7389219678047436, "t_strict_frozen": 29.091399533994263, "test_bpc_frozen_weights_working_memory": 1.4848036337430808, "t_frozen_weights_working_memory": 33.563477675998, "test_bpc_continual": 1.4084715481521588, "t_continual": 39.6941155530003}
-
-## brain, 1/8 and 1/64 memory (lm_bench.py 3 / 6)
-{"shrink": 3, "train_time": 366.393348632002, "train_MBps": 0.24563764690606912, "memory_MB": 922.774968, "test_bpc_strict_frozen": 1.8336775824198466, "t_strict_frozen": 29.966302599998016, "test_bpc_frozen_weights_working_memory": 1.5772886489353863, "t_frozen_weights_working_memory": 36.42356320199906, "test_bpc_continual": 1.4814179945798016, "t_continual": 40.213318740999966}
-{"shrink": 6, "train_time": 350.8191137629983, "train_MBps": 0.25654246439035533, "memory_MB": 305.753528, "test_bpc_strict_frozen": 1.9627551809745807, "t_strict_frozen": 28.02253764499619, "test_bpc_frozen_weights_working_memory": 1.7317750931973983, "t_frozen_weights_working_memory": 35.75930436499766, "test_bpc_continual": 1.5662157907366367, "t_continual": 40.83960761100025}
-
-## transformers (transformer_baseline.py), one JSON per run
-{"params": 1678336, "layers": 2, "dim": 256, "ctx": 128, "budget": 266.0, "train_time": 266.0487480163574, "steps": 4202, "tokens_seen": 17211392, "tok_per_s": 64692.625424201564, "test_bpc": 1.980893060923878, "eval_bytes": 4999936, "eval_time": 36.607152700424194}
-{"params": 3290624, "layers": 4, "dim": 256, "ctx": 256, "budget": 2660.0, "train_time": 2660.1020033359528, "steps": 12653, "tokens_seen": 103653376, "tok_per_s": 38965.940354923034, "test_bpc": 1.4891850428781965, "eval_bytes": 4999936, "eval_time": 52.424458026885986}
-{"params": 1678336, "layers": 2, "dim": 256, "ctx": 128, "budget": 366.0, "train_time": 366.082181930542, "steps": 6082, "tokens_seen": 24911872, "tok_per_s": 68049.94405525755, "test_bpc": 1.9058849381258292, "eval_bytes": 4999936, "eval_time": 37.295294523239136}
-
-## transformer config sweep at 140 s (after init fix), test = first 1 MB
-L2 d128 ctx128 params 0.45M  99k tok/s  steps 1692 seen 13.9M  test(1MB) 2.247 bpc
-L2 d128 ctx128 params 0.45M  92k tok/s  steps 3133 seen 12.8M  test(1MB) 2.174 bpc
-L3 d128 ctx128 params 0.64M  64k tok/s  steps 2198 seen 9.0M  test(1MB) 2.229 bpc
-L4 d256 ctx256 params 3.29M  36k tok/s  steps 1216 seen 5.0M  test(1MB) 2.481 bpc
-L2 d256 ctx128 params 1.68M  63k tok/s  steps 2169 seen 8.9M  test(1MB) 2.148 bpc
-
-
-## context cost and needles (context_bench.py)
+# SynapseBrain-LM (semantic-memory version) raw outputs
+train: 90 MB in 602.8 s (0.15 MB/s)
+{"shrink": 0, "train_time": 602.8378148910001, "train_MBps": 0.14929388597872384, "memory_MB": 6713.247866, "test_bpc_strict_frozen": 1.6017730510148769, "t_strict_frozen": 52.17828293100001, "test_bpc_frozen_weights_working_memory": 1.452510342194594, "t_frozen_weights_working_memory": 60.1504116039996, "test_bpc_continual": 1.3828202129882834, "t_continual": 65.7380496400001}
+{"params": 1678336, "layers": 2, "dim": 256, "ctx": 128, "budget": 603.0, "train_time": 603.0842623710632, "steps": 8063, "tokens_seen": 33026048, "tok_per_s": 54761.91315315714, "test_bpc": 1.8768186899848176, "eval_bytes": 4999936, "eval_time": 49.16865158081055}
 ## Cost per token vs context length (batch 1, 4 cores)
-  transformer ctx   1024:   1.30 ms/token, KV cache     4.2 MB
-  transformer ctx   4096:   1.61 ms/token, KV cache    16.8 MB
-  transformer ctx  16384:   2.99 ms/token, KV cache    67.1 MB
-  transformer ctx  65536:   7.96 ms/token, KV cache   268.4 MB
-  SynapseBrain after    4M bytes of context:  4.03 us/byte, total memory  5762.9 MB (text itself: 4 MB)
-  SynapseBrain after   32M bytes of context:  4.09 us/byte, total memory  5790.9 MB (text itself: 32 MB)
+  transformer ctx   1024:   1.37 ms/token, KV cache     4.2 MB
+  transformer ctx   4096:   2.16 ms/token, KV cache    16.8 MB
+  transformer ctx  16384:   2.81 ms/token, KV cache    67.1 MB
+  transformer ctx  65536:  11.00 ms/token, KV cache   268.4 MB
+  SynapseBrain after    4M bytes of context:  6.24 us/byte, total memory  6617.2 MB (text itself: 4 MB)
+  SynapseBrain after   32M bytes of context:  6.31 us/byte, total memory  6645.2 MB (text itself: 32 MB)
 
 ## Needle in a haystack (bits per character of a 24-char random tail; random = 5.95)
-  SynapseBrain, distance       100 bytes: 0.11 bits/char
-  SynapseBrain, distance    10,000 bytes: 0.16 bits/char
+  SynapseBrain, distance       100 bytes: 0.07 bits/char
+  SynapseBrain, distance    10,000 bytes: 0.17 bits/char
   SynapseBrain, distance   100,000 bytes: 0.14 bits/char
-  SynapseBrain, distance 1,000,000 bytes: 0.21 bits/char
-  SynapseBrain, distance 3,000,000 bytes: 0.27 bits/char
-  transformer.pt      distance       100 bytes: 9.09 bits/char
-  transformer.pt      distance    10,000 bytes: 8.52 bits/char
-  transformer.pt      distance   100,000 bytes: 9.24 bits/char
-  transformer.pt      distance 1,000,000 bytes: 9.03 bits/char
-  transformer.pt      distance 3,000,000 bytes: 8.65 bits/char
+  SynapseBrain, distance 1,000,000 bytes: 0.22 bits/char
+  SynapseBrain, distance 3,000,000 bytes: 0.28 bits/char
+  transformer.pt      distance       100 bytes: 9.05 bits/char
+  transformer.pt      distance    10,000 bytes: 8.44 bits/char
+  transformer.pt      distance   100,000 bytes: 8.77 bits/char
+  transformer.pt      distance 1,000,000 bytes: 8.22 bits/char
+  transformer.pt      distance 3,000,000 bytes: 8.59 bits/char
   transformer_10x.pt  distance       100 bytes: 2.41 bits/char
   transformer_10x.pt  distance    10,000 bytes: 8.16 bits/char
   transformer_10x.pt  distance   100,000 bytes: 8.77 bits/char
   transformer_10x.pt  distance 1,000,000 bytes: 9.05 bits/char
   transformer_10x.pt  distance 3,000,000 bytes: 9.15 bits/char
+{"brain_before": [1.4855769554455729, 1.9011763869955431], "brain_code_learn_seconds": 54.481182509000064, "brain_after": [1.6329446130231846, 1.1017129800867744]}
+{"brain_before": [1.4855769554455729, 1.9011763869955431], "brain_code_learn_seconds": 54.481182509000064, "brain_after": [1.6329446130231846, 1.1017129800867744], "tx_before": [1.8776456081722068, 3.3677375875633087], "tx_after_54s": [3.009977111929194, 1.6833316465162558, 765], "tx_after_120s": [3.2266890869990896, 1.5803665959516917, 1757]}
+brain_lm.py@90MB T=0.8                  words  95.7%  bigrams  60.1%  trigrams  22.7%  topic  10.6%  loops   0.2%  
 
-## continual learning / forgetting (forget_bench.py)
-{"brain_before": [1.5205073202198394, 1.9782935876608614], "brain_code_learn_seconds": 37.141491301001224, "brain_after": [1.6649973508648754, 1.13579494359291]}
-{"brain_before": [1.5205073202198394, 1.9782935876608614], "brain_code_learn_seconds": 37.141491301001224, "brain_after": [1.6649973508648754, 1.13579494359291], "tx_before": [1.9082297588004118, 3.357629987443461], "tx_after_37s": [2.965835262272908, 1.7090829412575121, 604], "tx_after_120s": [3.207066421472495, 1.555327736281156, 2018]}
+  data | brain time continual frozen+WM | tx budget epochs   test
+   1MB |         9s     1.631     1.818 |      480s   19.3  2.347
+   3MB |        20s     1.565     1.679 |      600s    8.1  2.097
+  10MB |        62s     1.509     1.601 |      720s    2.8  2.002
+  30MB |       181s     1.467     1.545 |      900s    1.2  1.930
+  90MB |       552s     1.429     1.486 |     1200s    0.5  1.823

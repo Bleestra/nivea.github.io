@@ -33,7 +33,7 @@ def main(shrink=0, lr=0.002):
                memory_MB=sum(v.nbytes for v in st.values()) / 1e6)
     # evaluation modes must all start from the same trained brain; the synapse tables are
     # parked on disk instead of copied in RAM (they are several GB)
-    small = {k: st[k].copy() for k in ("MT", "MT2", "S", "LN")}
+    small = {k: st[k].copy() for k in ("MT", "MT2", "MT3", "MT4", "WC", "S", "LN")}
     park = os.path.join(HERE, "data", "_T_parked.npy")
     np.save(park, st["T"])
 
