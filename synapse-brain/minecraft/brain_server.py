@@ -37,7 +37,7 @@ p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, rea
 p.add_argument("--limbic", default="", help="directory: the whole growing brain with feelings (mind + limbic system; needs --self)")
 args = p.parse_args()
 
-N_ACT = 35 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+N_ACT = 40 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
 mind = None
 child = None
 if args.limbic:
@@ -90,6 +90,9 @@ if os.path.exists(args.load):
     agent.F[:, :nf] = z["F"][:, :nf]
     if agent.FQ is not None and "FQ" in z.files:
         agent.FQ[:, :na] = z["FQ"][:, :na]
+    if agent.FQ is not None and "FB" in z.files:
+        if z["FB"].shape == agent.FB.shape:
+            agent.FB[:] = z["FB"]
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
 if child is None and mind is not None and mind.load(args.mind):
     print(f"mind loaded: {len(mind.names)} concepts, {int(mind.nev.sum())} events remembered", flush=True)
@@ -105,7 +108,7 @@ if cortex is not None:
 
 
 def save():
-    extra = {"FQ": agent.FQ} if agent.FQ is not None else {}
+    extra = {"FQ": agent.FQ, "FB": agent.FB} if agent.FQ is not None else {}
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
     if child is not None:
         feel_bridge.save(child, args.limbic)
@@ -252,6 +255,10 @@ class Handler(socketserver.StreamRequestHandler):
                     print(f"[forced] action {a}", flush=True)
             total += reward
             reply = {"action": a}
+            if child is not None:
+                tgt = feel_bridge.attention(child, a, m)              # where a motor program is aimed
+                if tgt is not None:
+                    reply["target"] = tgt
             if say:
                 reply["say"] = say
                 print("says:", say, flush=True)

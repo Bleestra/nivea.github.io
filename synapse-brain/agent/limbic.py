@@ -235,6 +235,9 @@ class Limbic:
             hunger_before = min(20, o["hunger"] - 4)
             taste = self.taste.get(ev["ate"], 0.0) * (1.0 + max(0, 20 - hunger_before) / 10)
             r += taste
+        heal = max(0, o["hp"] - getattr(self, "prev_hp", o["hp"]))    # the pain goes away: relief
+        self.prev_hp = o["hp"]
+        r += heal / 8.0
         r -= 0.004 * max(0, 10 - o["hunger"])
         r -= 0.03 * o["nausea"]
         r -= 0.002 * max(0, o["fatigue"] - 250) / 50

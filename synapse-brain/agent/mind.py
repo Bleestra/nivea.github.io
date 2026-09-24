@@ -24,6 +24,9 @@ Nothing here is a rule about the world. There are only populations of neurons an
   self-knowledge   (anterior cingulate / insula)   competence neurons: how often I succeed when I
                    try each goal; and a curiosity about myself - goals I have tried rarely or fail at
                    are the most interesting. The value of an event (dopamine) is learned too.
+  action-outcome   (dorsomedial striatum, goal-directed system) which ACTION made an event happen and
+                   in which context: 'facing a tree + hit -> a log'. Counted from a few experiences;
+                   when the context is there and the action worked before, it is chosen directly.
   habits           the flat striatum (BrainAgent) keeps learning from reward all the time, acts
                    when there is no plan (exploring, discovering new events) and gently biases
                    the skills (habit=0.3).
@@ -74,6 +77,7 @@ class Mind:
         self.planning = True                       # the prefrontal cortex can be switched on later (development)
         self.last_outcome = None                   # True: the plan failed, False: it succeeded, None: nothing
         self.last_fq = None
+        self.ao = {}                               # (event, action) -> [successes, context counts, attempts]
 
     # ---------------------------------------------------------------- concept neurons
     def _neuron(self, name):
@@ -86,7 +90,7 @@ class Mind:
 
     def perceive(self, state):
         """state: {concept: value}. Returns the events (neurons whose value went up)."""
-        new = self.val.copy()
+        new = np.zeros_like(self.val)                  # what is not perceived now is not true now
         for k, v in state.items():
             i = self._neuron(k)
             if i is not None:
@@ -134,6 +138,37 @@ class Mind:
             cells, a, nxt, evs = self.memory[int(self.rng.integers(len(self.memory)))]
             g = self.goal if (self.goal is not None and self.rng.random() < 0.5) else int(self.rng.choice(known))
             self._q_update(cells, a, nxt, evs, g, self.alpha * 0.5)
+
+    # ---------------------------------------------------------------- action -> outcome (goal-directed)
+    def _ao_learn(self, ev, before, a):
+        n = len(self.names)
+        for e in ev:
+            rec = self.ao.get((int(e), a))
+            if rec is None:
+                rec = self.ao[(int(e), a)] = [0.0, np.zeros(len(self.C), np.float32), 0.0]
+            rec[0] += 1
+            rec[1][:n] += before[:n]
+
+    def _ao_need(self, rec):
+        return np.nonzero(rec[1] / rec[0] >= 0.9)[0]
+
+    def _ao_attempt(self, a, active):
+        for (e, aa), rec in self.ao.items():
+            if aa == a and rec[0] >= 2 and active[self._ao_need(rec)].all():
+                rec[2] += 1
+
+    def ao_plan(self, g, active):
+        """The action that made g happen before in the context I am in now (or None)."""
+        best, bp = None, 0.25
+        for (e, a), rec in self.ao.items():
+            if e != g or rec[0] < 2:
+                continue
+            if not active[self._ao_need(rec)].all():
+                continue
+            p = rec[0] / (rec[2] + 1.0)
+            if p > bp:
+                best, bp = a, p
+        return best
 
     # ---------------------------------------------------------------- what I was told
     def tell(self, claims, values, source="книга"):
@@ -220,8 +255,8 @@ class Mind:
             score = d[t] * comp[sub] * 0.9 ** depth * (0.8 + 0.4 * self.rng.random())
             if score > bs:
                 best, bs = (t, sub, chain), score
-        if best is None:
-            return None
+        if best is None or bs < getattr(self, "min_desire", 0.0):
+            return None                                # nothing worth the effort: habits and curiosity act
         self.target = best[0]
         self.thought = self.explain(best[0], best[2], best[1])
         return best[1]
@@ -267,6 +302,8 @@ class Mind:
                 self.nc[e, ctx] += 1
                 self.Rc[e, ctx] += max(1.0 / self.nc[e, ctx], 0.05) * (v - self.Rc[e, ctx])
         cells = self.flat.cells(obs)
+        if self._last is not None and len(ev):
+            self._ao_learn(ev, before, self._last[1])
         if self._last is not None:                       # remember the moment that just passed
             tr = (self._last[0], self._last[1], cells, frozenset(int(e) for e in ev))
             self.recent.append(tr)
@@ -305,15 +342,19 @@ class Mind:
         if self.goal is not None:
             q = self.G[self.gkeys(cells, self.goal)].sum(0) + self.habit * (fq - fq.max())
             if self.flat.emo:
-                q = q + 2.0 * self.flat.FQ[self.flat.cue(cells)].sum(0)   # fear still vetoes
+                q = q + self.flat.fear_veto(cells)                         # fear still vetoes (contingency)
             eps = 0.03 + 0.2 * (1 - self.comp[self.goal])
             a = int(self.rng.integers(self.nA)) if self.rng.random() < eps else int(np.argmax(q + self.rng.random(self.nA) * 1e-6))
+            direct = self.ao_plan(self.goal, active)     # I know what does it, and I can do it here
+            if direct is not None and self.rng.random() > 0.1:
+                a = int(direct)
         else:
             self.explore_left -= 1
             a = a_flat
         if self._fprev is not None:                      # habits learn from reward all the time
             c0, a0 = self._fprev
             self.flat.learn(c0, a0, r, obs, fcells, fq, a, done)
+        self._ao_attempt(a, active)
         self._fprev = None if done else (fcells, a)
         self._last = None if done else (cells, a)
         if done:
@@ -325,7 +366,7 @@ class Mind:
 
     # ---------------------------------------------------------------- memory
     def save(self, path):
-        extra = {"FQ": self.flat.FQ} if self.flat.FQ is not None else {}
+        extra = {"FQ": self.flat.FQ, "FB": self.flat.FB} if self.flat.FQ is not None else {}
         np.savez(path, G=self.G, C=self.C, base=self.base, nev=self.nev, R=self.R, Rc=self.Rc, nc=self.nc, succ_c=self.succ_c, tries_c=self.tries_c, succ=self.succ,
                  tries=self.tries, names=np.array(self.names, dtype=object), W=self.flat.W, F=self.flat.F,
                  steps=self.steps, **extra)
@@ -344,5 +385,8 @@ class Mind:
         self.flat.W[:, :na], self.flat.F[:] = z["W"][:, :na], z["F"]
         if self.flat.FQ is not None and "FQ" in z.files:
             self.flat.FQ[:, :na] = z["FQ"][:, :na]
+        if self.flat.FB is not None and "FB" in z.files:
+            if z["FB"].shape == self.flat.FB.shape:
+                self.flat.FB[:] = z["FB"]
         self.steps = int(z["steps"])
         return True

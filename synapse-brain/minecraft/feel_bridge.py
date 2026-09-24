@@ -98,6 +98,8 @@ class MCChild(Child):
         s["indoors"] = int(not self.m.get("sky", 1) and self.m.get("y", 64) >= 55)   # a roof over my head, not a cave
         s["deep"] = int(self.m.get("y", 64) < 16)                                      # far below the surface
         s["see:diamond"] = int(bool(self.m.get("diamond_seen")))
+        for name, _ in self.m.get("seen", []):                                        # what my eyes see now
+            s["see:" + name] = 1
         if (self.m.get("fev") or {}).get("trades"):
             s["saw:trades"] = 1
         tr = (self.m.get("fev") or {}).get("traded")
@@ -221,3 +223,46 @@ def talk(child, text):
 
 def feeling_name(k):
     return NAMES.get(k, k)
+
+
+MOTOR = {35: "approach", 36: "mine_target", 37: "craft_target", 38: "goto_place", 39: "explore"}
+
+
+def attention(child, a, m):
+    """What a motor program is aimed at - chosen by the brain: the thing the current plan needs,
+    else what I have never seen (novelty draws the eyes), else what I value most; home = the
+    place I am most attached to."""
+    kind = MOTOR.get(a)
+    if kind is None or kind == "explore":
+        return None
+    mind, L = child.mind, child.limbic
+    if kind == "goto_place":
+        if not L.attach_place:
+            return None
+        (x, z), _ = max(L.attach_place.items(), key=lambda kv: kv[1])
+        return [int(x), int(z)]
+    seen = [name for name, _ in m.get("seen", [])]
+    g = mind.goal
+    if kind == "craft_target":
+        if g is not None and mind.names[g].startswith("have:"):
+            return mind.names[g][5:]
+        n = len(mind.names)
+        want = [i for i in range(n) if mind.names[i].startswith("have:") and mind.val[i] <= 0 and mind.R[i] > 0]
+        return mind.names[max(want, key=lambda i: mind.R[i])][5:] if want else None
+    if g is not None:
+        nodes = [g] + list(mind.pre(g))
+        for (e, act), rec in mind.ao.items():
+            if e == g and rec[0] >= 2:
+                nodes += list(mind._ao_need(rec))
+        for i in nodes:
+            name = mind.names[i]
+            if name.startswith("see:") and name[4:] in seen:
+                return name[4:]
+        if mind.names[g].startswith("have:") and mind.names[g][5:] in seen:
+            return mind.names[g][5:]
+    novel = [x for x in seen if "see:" + x not in mind.idx or mind.nev[mind.idx["see:" + x]] <= 1]
+    if novel:
+        return novel[int(np.random.randint(len(novel)))]
+    if seen:
+        return max(seen, key=lambda x: mind.R[mind.idx["see:" + x]] if "see:" + x in mind.idx else 0.0)
+    return None

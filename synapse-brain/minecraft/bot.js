@@ -5,6 +5,7 @@
 //   npm install
 //   node bot.js --host localhost --port 25565 --brain 5555 [--viewer 3007] [--version 1.20.4]
 const mineflayer = require('mineflayer')
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder')
 const net = require('net')
 const readline = require('readline')
 const fs = require('fs')
@@ -31,7 +32,9 @@ const ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait',
   'craft_new', 'eat', 'back', 'strafe_left', 'strafe_right', 'jump', 'toggle_sprint', 'toggle_sneak',
   'look_up', 'look_down', 'attack', 'use_item', 'dig_down', 'equip_armor', 'equip_weapon',
   'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up',
-  'fish', 'interact', 'store', 'take', 'place_chest', 'trade', 'read']
+  'fish', 'interact', 'store', 'take', 'place_chest', 'trade', 'read',
+  // motor programs aimed by the brain's attention (reply.target): reach, dig, craft, walk to a remembered place
+  'approach', 'mine_target', 'craft_target', 'goto_place', 'explore']
 
 // ---------------------------------------------------------------- knowledge: recipes + advancements
 const K = path.join(__dirname, 'knowledge')
@@ -136,8 +139,51 @@ function bookText (it) {  // the pages of a written book (JSON text components)
     return pages.map(p => { try { const j = JSON.parse(p); return typeof j === 'string' ? j : (j.text || '') } catch (e) { return p } }).join(' ')
   } catch (e) { return '' }
 }
+// ---------------------------------------------------------------- what the eyes see (visible only)
+function visible (b) {  // a ray from the eyes reaches this block first (the eye cannot see through walls)
+  const p = bot.entity.position
+  if (b.position.distanceTo(p) < 2.5) return true
+  const eye = p.offset(0, bot.entity.height * 0.9, 0)
+  for (const [ox, oy, oz] of [[0.5, 0.5, 0.5], [0.5, 0.95, 0.5], [0.5, 0.05, 0.5]]) {
+    const c = b.position.offset(ox, oy, oz)
+    const dir = c.minus(eye).normalize()
+    const hit = bot.world.raycast(eye, dir, c.distanceTo(eye) + 0.5)
+    if (hit && hit.position.equals(b.position)) return true
+  }
+  return false
+}
+let seenCache = { t: -99, list: [] }
+function seenThings () {  // nearest visible block of each kind + visible creatures: [name, distance]
+  if (step - seenCache.t < 5) return seenCache.list
+  const p = bot.entity.position
+  const found = new Map()
+  const blocks = bot.findBlocks({ matching: b => b && b.name !== 'air' && b.name !== 'cave_air' && b.name !== 'void_air', maxDistance: 12, count: 600 })
+  blocks.sort((a, b) => a.distanceTo(p) - b.distanceTo(p))
+  for (const q of blocks) {
+    const b = bot.blockAt(q); if (!b || found.has(b.name)) continue
+    if (!visible(b)) continue
+    found.set(b.name, Math.floor(q.distanceTo(p)))
+  }
+  for (const e of Object.values(bot.entities)) {
+    if (e === bot.entity || !e.name) continue
+    const d = e.position.distanceTo(p)
+    if (d < 16 && (!found.has(e.name) || found.get(e.name) > d)) found.set(e.name, Math.floor(d))
+  }
+  seenCache = { t: step, list: [...found.entries()] }
+  return seenCache.list
+}
+function nearestSeenBlock (name) {
+  const p = bot.entity.position
+  const bs = bot.findBlocks({ matching: b => b && b.name === name, maxDistance: 16, count: 40 }).sort((a, b) => a.distanceTo(p) - b.distanceTo(p))
+  for (const q of bs) { const b = bot.blockAt(q); if (b && visible(b)) return b }
+  return null
+}
+async function goNear (pos, range = 1) {
+  try { await bot.pathfinder.goto(new goals.GoalNear(pos.x, pos.y, pos.z, range)) } catch (e) { dbg('path', e.message) } finally { bot.pathfinder.setGoal(null) }
+}
+
 function oreSeen () {  // a diamond ore my eyes can actually see (not through walls)
-  const b = bot.findBlock({ matching: x => x.name === 'diamond_ore' || x.name === 'deepslate_diamond_ore', maxDistance: 8, count: 1, useExtraInfo: x => bot.canSeeBlock(x) })
+  const b = bot.findBlock({ matching: x => x.name === 'diamond_ore' || x.name === 'deepslate_diamond_ore', maxDistance: 8, count: 1, useExtraInfo: x => visible(x) })
   return b ? relDir(b.position) : 0
 }
 const itemName = it => it ? `${it.count}x${it.name}` : ''
@@ -339,6 +385,7 @@ async function digAt (dx, dy, dz) {
   if (b && b.boundingBox === 'block' && bot.canDigBlock(b)) { try { await bot.dig(b) } catch (e) {} }
 }
 
+let target = null
 async function act (a) {
   const name = ACTIONS[a]
   const [fx, fz] = DIRS[heading]
@@ -391,6 +438,23 @@ async function act (a) {
       break
     }
     case 'place_chest': await placeFront(items().find(i => i.name === 'chest')); break
+    case 'approach': {  // walk to the thing my attention picked (a visible block or creature)
+      const t = String(target || '')
+      const e = bot.nearestEntity(x => x.name === t && x !== bot.entity && x.position.distanceTo(bot.entity.position) < 16)
+      const b = e ? null : nearestSeenBlock(t)
+      if (e) await goNear(e.position, 2); else if (b) await goNear(b.position, 1)
+      break
+    }
+    case 'mine_target': {  // reach the attended block and dig it out with the right tool
+      const b = nearestSeenBlock(String(target || ''))
+      if (!b) break
+      if (b.position.distanceTo(bot.entity.position) > 4) await goNear(b.position, 2)
+      try { const kind = b.material && b.material.includes('pickaxe') ? /_pickaxe$/ : b.material && b.material.includes('axe') ? /_axe$/ : b.material && b.material.includes('shovel') ? /_shovel$/ : null; if (kind) await equipBest(kind, tier); if (bot.canDigBlock(b)) await bot.dig(b) } catch (e) { dbg('mine', e.message) }
+      break
+    }
+    case 'craft_target': await craftFrom(() => craftable([String(target || '')]), true); break  // make the item the mind wants
+    case 'goto_place': if (Array.isArray(target)) { try { await bot.pathfinder.goto(new goals.GoalXZ(target[0], target[1])) } catch (e) { dbg('goto', e.message) } finally { bot.pathfinder.setGoal(null) } } break
+    case 'explore': { const a = Math.random() * 2 * Math.PI; const p = bot.entity.position; try { await bot.pathfinder.goto(new goals.GoalXZ(Math.floor(p.x + 24 * Math.cos(a)), Math.floor(p.z + 24 * Math.sin(a)))) } catch (e) { dbg('explore', e.message) } finally { bot.pathfinder.setGoal(null) } break }
     case 'read': { const b = items().find(i => i.name === 'written_book' || i.name === 'writable_book'); if (b) feelEv.read = bookText(b); break }
     case 'trade': {  // try the first offer I can pay for
       const t = await villagerNear()
@@ -459,12 +523,20 @@ async function selftest () {  // --selftest: prove every action works (needs op 
   await check('take', async () => {}, () => items().some(i => i.name === 'cobblestone'))
   await check('interact', async () => { bot.chat('/summon cat ^ ^ ^2'); await give('cod 5'); await bot.waitForTicks(20) }, () => true)
   await check('fish', () => give('fishing_rod 1'), () => true)
+  let p0 = null
+  await check('approach', async () => { bot.chat('/setblock ~6 ~ ~ oak_log'); await bot.waitForTicks(10); target = 'oak_log'; dbg('seen log', !!nearestSeenBlock('oak_log'), bot.findBlocks({ matching: x => x.name === 'oak_log', maxDistance: 16, count: 5 }).map(String)) }, () => { const b = nearestSeenBlock('oak_log'); dbg('after', b && b.position.distanceTo(bot.entity.position)); return b && b.position.distanceTo(bot.entity.position) < 3.5 })
+  await check('mine_target', async () => { target = 'oak_log' }, () => items().some(i => i.name === 'oak_log'))
+  await check('craft_target', async () => { await give('oak_planks 4'); await give('stick 2'); target = 'wooden_shovel' }, () => items().some(i => i.name === 'wooden_shovel'))
+  await check('goto_place', async () => { p0 = bot.entity.position.clone(); target = [Math.floor(p0.x) + 7, Math.floor(p0.z)] }, () => bot.entity.position.distanceTo(p0) > 4)
+  await check('explore', async () => { p0 = bot.entity.position.clone() }, () => bot.entity.position.distanceTo(p0) > 5)
   console.log('SELFTEST ' + JSON.stringify(res))
   process.exit(0)
 }
 
 bot.once('spawn', async () => {
   mcData = require('minecraft-data')(bot.version)
+  bot.loadPlugin(pathfinder)
+  const mv = new Movements(bot); mv.canDig = true; mv.allowParkour = false; bot.pathfinder.setMovements(mv)
   if (SELFTEST) { await bot.waitForTicks(40); return selftest() }
   if (VIEWER) require('prismarine-viewer').mineflayer(bot, { port: VIEWER, firstPerson: true, viewDistance: 4 })
   console.log(`spawned; ${ACTIONS.length} actions, ${Object.keys(RECIPES).length} recipes, ${Object.keys(ADV).length} advancements known`)
@@ -519,7 +591,7 @@ bot.once('spawn', async () => {
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
       sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
       near: nearList(), fev: takeFeelEv(), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
-      xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '', diamond_seen: oreSeen(),
+      xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '', diamond_seen: oreSeen(), seen: seenThings(),
       carer_holds: (() => { const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 8); return p && p.heldItem ? p.heldItem.name : null })(),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)
     })
@@ -531,7 +603,9 @@ bot.once('spawn', async () => {
       console.log(`step ${step} pos ${pos.x.toFixed(0)},${pos.y.toFixed(0)},${pos.z.toFixed(0)} hp ${bot.health} food ${bot.food} ` +
         `items ${items().length} adv ${advancements.size} action ${ACTIONS[reply.action]}`)
     }
+    target = reply.target
     try { await Promise.race([act(reply.action), new Promise(res => setTimeout(res, 8000))]) } catch (e) {}  // no action may hang the body
+    if (bot.pathfinder) bot.pathfinder.setGoal(null)
     await new Promise(res => setTimeout(res, STEP_MS))
   }
 })

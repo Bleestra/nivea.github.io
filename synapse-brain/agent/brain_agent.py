@@ -47,7 +47,8 @@ class BrainAgent:
         self.steps = 0
         self.emo, self.use_fear, self.use_mood = emotions, fear, mood
         self.since_win = 0
-        self.FQ = np.zeros((MASK + 1, n_actions), np.float32) if emotions else None  # amygdala
+        self.FQ = np.zeros((MASK + 1, n_actions), np.float32) if emotions else None  # amygdala: harm after each action
+        self.FB = np.zeros((MASK + 1, n_actions), np.float32) if emotions else None  # ... out of how many times
         self.mood_fast, self.mood_slow, self.bored = 0.0, 0.0, 0.0
 
     def cells(self, obs):
@@ -78,6 +79,16 @@ class BrainAgent:
         and the block row just ahead - not to the whole situation (that would be anxiety)."""
         return cells[[7, 25]]
 
+    def fear_veto(self, cells):
+        """Fear forbids an action only if harm follows IT more than it follows this situation anyway
+        (contingency, Rescorla): stepping into lava - yes; hitting back at a zombie that hurts me
+        whatever I do - no. Never a bonus, only a veto."""
+        cue = self.cue(cells)
+        h, n = self.FQ[cue].sum(0), self.FB[cue].sum(0)
+        after_action = h / (n + 1.0)                 # expected harm after each action here
+        anyway = h.sum() / (n.sum() + 1.0)           # expected harm here whatever I do
+        return -2.0 * np.maximum(0.0, after_action - anyway)
+
     def q(self, cells):
         return self.W[cells].sum(0)
 
@@ -86,7 +97,7 @@ class BrainAgent:
         qv = self.q(cells)
         if self.emo:
             if self.use_fear:
-                qv = qv + 2.0 * self.FQ[self.cue(cells)].sum(0)  # fear vetoes dangerous actions
+                qv = qv + self.fear_veto(cells)
             if self.use_mood:
                 eps = min(0.5, eps + 0.25 * self.bored)      # boredom -> try something new
         if self.rng.random() < eps:
@@ -117,11 +128,12 @@ class BrainAgent:
             cur = 0.2 * self.bored if self.use_mood else cur
             # amygdala: learn harm fast (one shot), forget it slowly
             cue = self.cue(cells)
-            harm = self.FQ[cue, a].sum()
-            if r < -0.5:          # real harm: one-shot fear conditioning
-                self.FQ[cue, a] += 0.8 * (r - harm) / len(cue)
-            else:                 # nothing bad happened: fear slowly extinguishes
-                self.FQ[cue, a] += 0.02 * (0.0 - harm) / len(cue)
+            self.FB[cue, a] += 1.0                   # I did this here ...
+            if r < -0.5:                             # ... and it hurt (one bad experience already counts)
+                self.FQ[cue, a] += -r
+            if self.steps % 5000 == 4999:            # old fears slowly fade (extinction)
+                self.FQ *= 0.9
+                self.FB *= 0.9
         r_total = r + cur * surprise
         # dopamine: reward prediction error, delivered along eligibility traces
         q_sa = self.W[cells, a].sum()

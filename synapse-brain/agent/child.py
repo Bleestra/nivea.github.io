@@ -22,8 +22,8 @@ SOUNDS = ["hiss", "boom", "groan", "purr"]
 
 class Child:
     def __init__(self, n_actions, seed=0, taste=None, items=("log", "cobble", "apple", "fish", "rotten_flesh"),
-                 eat_action=5, wait_action=10, kinds=KINDS):
-        self.mind = Mind(n_actions, seed=seed, n_front=12)
+                 eat_action=5, wait_action=10, kinds=KINDS, n_front=12):
+        self.mind = Mind(n_actions, seed=seed, n_front=n_front)
         self.mind.planning = False
         self.limbic = Limbic(seed, taste)
         self.items = list(items)
