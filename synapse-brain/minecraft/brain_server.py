@@ -34,11 +34,23 @@ p.add_argument("--blind", action="store_true", help="with --see: drop the direct
 p.add_argument("--self", default="", help="path of self.json: intrinsic motivation + autobiographical memory")
 p.add_argument("--voice", default="", help="trained language brain (train_voice.py) to answer in chat")
 p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, reasoning, self-knowledge (needs --self)")
+p.add_argument("--limbic", default="", help="directory: the whole growing brain with feelings (mind + limbic system; needs --self)")
 args = p.parse_args()
 
-N_ACT = 28 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+N_ACT = 33 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
 mind = None
-if args.mind:
+child = None
+if args.limbic:
+    import feel_bridge  # noqa: E402
+    from mind_bridge import ru_thought, state_from, talk  # noqa: E402
+
+    child = feel_bridge.MCChild(N_ACT)
+    if feel_bridge.load(child, args.limbic):
+        print(f"grown brain loaded: age {child.age}, {len(child.mind.names)} concepts, "
+              f"stage «{__import__('limbic').STAGE_NAMES[child.limbic.stage()]}»", flush=True)
+    mind = child.mind
+    agent = mind.flat
+elif args.mind:
     from mind import Mind  # noqa: E402
     from mind_bridge import ru_thought, state_from, talk  # noqa: E402
 
@@ -73,11 +85,13 @@ if args.see:
 if os.path.exists(args.load):
     z = np.load(args.load)
     na = min(z["W"].shape[1], N_ACT)  # a brain grown with fewer actions keeps what it knows
-    agent.W[:, :na], agent.F[:], agent.steps = z["W"][:, :na], z["F"], int(z["steps"])
+    agent.W[:, :na], agent.steps = z["W"][:, :na], int(z["steps"])
+    nf = min(z["F"].shape[1], agent.F.shape[1])
+    agent.F[:, :nf] = z["F"][:, :nf]
     if agent.FQ is not None and "FQ" in z.files:
         agent.FQ[:, :na] = z["FQ"][:, :na]
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
-if mind is not None and mind.load(args.mind):
+if child is None and mind is not None and mind.load(args.mind):
     print(f"mind loaded: {len(mind.names)} concepts, {int(mind.nev.sum())} events remembered", flush=True)
 teacher = None
 if cortex is not None:
@@ -93,7 +107,9 @@ if cortex is not None:
 def save():
     extra = {"FQ": agent.FQ} if agent.FQ is not None else {}
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
-    if mind is not None:
+    if child is not None:
+        feel_bridge.save(child, args.limbic)
+    elif mind is not None:
         mind.save(args.mind)
     if teacher is not None:
         teacher.save(os.path.splitext(args.load)[0] + "_eyes.npz")
@@ -136,6 +152,8 @@ class Handler(socketserver.StreamRequestHandler):
         rec = []
         prev = None  # (cells, action)
         last_target, last_said = None, 0.0
+        body = feel_bridge.Body() if child is not None else None
+        a_prev, front_prev, inv_prev, last_felt = None, 0, {}, 0.0
         total, t0 = 0.0, time.time()
         for line in self.rfile:
             m = json.loads(line)
@@ -145,6 +163,7 @@ class Handler(socketserver.StreamRequestHandler):
                 eyes = Eyes(args.eyes)
                 print("eyes open", flush=True)
             code = None
+            frame = None
             if eyes:
                 frame = eyes.look()
                 if frame is not None and cortex is not None:
@@ -169,6 +188,8 @@ class Handler(socketserver.StreamRequestHandler):
                 inner = me.drives(m) + list(m.get("around", [])) + [m.get("sky", 0), m.get("stuck", 0)]
                 obs = obs + ([int(x or 0) for x in inner],)  # a sense not ready yet (at spawn) reads 0
             for user, text in m.get("heard", []):  # someone spoke to us
+                if child is not None and not say:
+                    say = feel_bridge.talk(child, text)  # feelings, loves, fears
                 if mind is not None and not say:
                     say = talk(mind, text)  # questions about itself and about how to do things
                 if voice and not say:
@@ -176,7 +197,19 @@ class Handler(socketserver.StreamRequestHandler):
                 if me:
                     me.note(f"{user} сказал: «{text}»" + (f"; я ответил: «{say}»" if say else ""), None)
             done = bool(m.get("done"))
-            if mind is not None:
+            if child is not None:
+                o = body.to_o(m, a_prev, frame if eyes else None)
+                child.m = m
+                a = child.step(o, a_prev, front_prev, inv_prev, extra_reward=0.3 * reward)
+                a_prev, front_prev, inv_prev = a, int(o["view"][7]), dict(o["inv"])
+                L = child.limbic
+                if max(L.e.values()) > 0.6 and time.time() - last_felt > 90:
+                    last_felt = time.time()
+                    felt = L.say()
+                    if me:
+                        me.note("чувствую: " + felt, None)
+                    say = say or felt
+            elif mind is not None:
                 a = mind.step(obs, state_from(m), reward, done, explore=me.exploration() if me else 0.1)
                 if mind.target is not None and mind.target != last_target and time.time() - last_said > 60:
                     last_target, last_said = mind.target, time.time()

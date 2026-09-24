@@ -34,11 +34,11 @@ def _h(*xs):
 
 class BrainAgent:
     def __init__(self, n_actions, seed=0, gamma=0.97, lam=0.7, alpha=0.25, curiosity=0.0,
-                 trace_len=30, init=0.02, emotions=False, fear=True, mood=True):
+                 trace_len=30, init=0.02, emotions=False, fear=True, mood=True, n_front=8):
         self.nA, self.g, self.lam = n_actions, gamma, lam
         self.rng = np.random.default_rng(seed)
         self.W = np.full((MASK + 1, n_actions), init, np.float32)   # striatal synapses
-        self.F = np.zeros((MASK + 1, 8), np.float32)                 # cerebellar forward model
+        self.F = np.zeros((MASK + 1, n_front), np.float32)           # cerebellar forward model
         self.alpha, self.cur, self.K = alpha, curiosity, trace_len
         trip = np.random.default_rng(123).choice(25, (12, 3))
         self.trip = trip
@@ -103,7 +103,7 @@ class BrainAgent:
         p = np.exp(pred - pred.max())
         p /= p.sum()
         surprise = -np.log(p[front] + 1e-6)
-        target = np.zeros(8, np.float32)
+        target = np.zeros(self.F.shape[1], np.float32)
         target[front] = 1
         self.F[key] += 0.1 * (target - p) / 26
         cur = self.cur / (1 + self.steps / 20000)

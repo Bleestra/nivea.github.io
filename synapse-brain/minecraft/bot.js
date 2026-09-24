@@ -30,7 +30,8 @@ const dbg = (...a) => { if (process.env.DEBUG) console.log('[debug]', ...a) }
 const ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait',
   'craft_new', 'eat', 'back', 'strafe_left', 'strafe_right', 'jump', 'toggle_sprint', 'toggle_sneak',
   'look_up', 'look_down', 'attack', 'use_item', 'dig_down', 'equip_armor', 'equip_weapon',
-  'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up']
+  'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up',
+  'fish', 'interact', 'store', 'take', 'place_chest']
 
 // ---------------------------------------------------------------- knowledge: recipes + advancements
 const K = path.join(__dirname, 'knowledge')
@@ -98,6 +99,35 @@ function around () {  // touch and balance: what is right next to me on every si
   out.push(blockClass(bot.blockAt(p.offset(0, 2, 0))), blockClass(bot.blockAt(p.offset(0, -1, 0))))
   return out
 }
+
+// ---------------------------------------------------------------- senses for feelings
+// Who is around, by kind (as a child tells a cat from a zombie); what happened to beings nearby;
+// explosions; what became of the blocks I placed myself (efference copy, not a script about houses).
+const mine = new Set()            // ids of animals I tamed
+let lastHit = null
+const built = new Map()           // "x,y,z" -> block name I placed
+const feelEv = { deaths: [], hurt: [], lost: [], boom: false, gift: false, tamed: null, carerDid: null, ate: null }
+const kindOf = e => {
+  if (!e || e === bot.entity) return null
+  if (e.type === 'player') return 'carer'
+  const n = (e.name || '').toLowerCase()
+  if (n === 'creeper') return 'creeper'
+  if (/zombie|husk|drowned/.test(n)) return 'zombie'
+  if (n === 'cat' || n === 'ocelot' || n === 'wolf' || n === 'parrot') return mine.has(e.id) ? 'mycat' : 'cat'
+  if (isHostile(e)) return 'hostile'
+  if (isAnimal(e)) return 'animal'
+  return null
+}
+function nearList () {
+  const out = []
+  for (const e of Object.values(bot.entities)) {
+    const k = kindOf(e); if (!k) continue
+    const d = Math.floor(e.position.distanceTo(bot.entity.position))
+    if (d <= 8) out.push([k, e.id, d])
+  }
+  return out
+}
+function takeFeelEv () { const e = { ...feelEv }; feelEv.deaths = []; feelEv.hurt = []; feelEv.lost = []; feelEv.boom = false; feelEv.gift = false; feelEv.tamed = null; feelEv.carerDid = null; feelEv.ate = null; return e }
 
 const trail = []  // where I have been in the last steps (for the feeling of being stuck)
 function stuck () {
@@ -182,7 +212,7 @@ async function placeFront (item) {  // put a block from the inventory on the gro
   for (const [fx, fz] of spots) {
     const ground = bot.blockAt(p.offset(fx, -1, fz)); const spot = bot.blockAt(p.offset(fx, 0, fz))
     if (!ground || ground.boundingBox !== 'block' || !spot || spot.boundingBox !== 'empty') continue
-    try { await bot.equip(item, 'hand'); await bot.placeBlock(ground, new Vec3(0, 1, 0)); return true } catch (e) { dbg('place', item.name, e.message) }
+    try { await bot.equip(item, 'hand'); await bot.placeBlock(ground, new Vec3(0, 1, 0)); const q = ground.position.offset(0, 1, 0); built.set(`${q.x},${q.y},${q.z}`, item.name); return true } catch (e) { dbg('place', item.name, e.message) }
   }
   dbg('no place for', item.name)
   return false
@@ -235,6 +265,7 @@ async function attack () {
   const target = bot.nearestEntity(e => e !== bot.entity && alive(e) && e.type !== 'player' &&
     e.position.distanceTo(bot.entity.position) < 4.5)
   if (!target) { bot.swingArm(); return }
+  lastHit = target.id
   try { await bot.lookAt(target.position.offset(0, target.height * 0.8, 0), true); bot.attack(target) } catch (e) {}
 }
 
@@ -278,6 +309,7 @@ async function pillarUp () {
     bot.setControlState('jump', false)
     dbg('pillar: jumped', y0, '->', bot.entity.position.y, 'placing on', below.name)
     await bot.placeBlock(below, new Vec3(0, 1, 0))
+    { const q = below.position.offset(0, 1, 0); built.set(`${q.x},${q.y},${q.z}`, blk.name) }
     dbg('pillar: placed, y', bot.entity.position.y)
   } catch (e) { bot.setControlState('jump', false); dbg('pillar', e.message) }
   await face()
@@ -298,7 +330,7 @@ async function act (a) {
     case 'dig_front': await digAt(fx, 1, fz); await digAt(fx, 0, fz); break
     case 'wait': break
     case 'craft_new': await craftFrom(() => craftable(newNames()).slice(0, 3), true); break
-    case 'eat': { const f = items().find(i => mcData.foodsByName[i.name]); if (f && bot.food < 20) { try { await bot.equip(f, 'hand'); await bot.consume() } catch (e) {} } break }
+    case 'eat': { const fs = items().filter(i => mcData.foodsByName[i.name]); const f = fs[Math.floor(Math.random() * fs.length)]; if (f && bot.food < 20) { try { await bot.equip(f, 'hand'); await bot.consume(); feelEv.ate = f.name } catch (e) {} } break }
     case 'back': await hold('back', 5); break
     case 'strafe_left': await hold('left', 5); break
     case 'strafe_right': await hold('right', 5); break
@@ -318,6 +350,26 @@ async function act (a) {
     case 'smelt': await smelt(); break
     case 'sleep': await sleep(); break
     case 'drop_junk': await dropJunk(); break
+    case 'fish': { const rod = items().find(i => i.name === 'fishing_rod'); if (rod) { try { await bot.equip(rod, 'hand'); await Promise.race([bot.fish(), bot.waitForTicks(400)]) } catch (e) { dbg('fish', e.message) } } break }
+    case 'interact': {  // offer what I hold to the nearest animal or person (feed, tame, greet)
+      const t = bot.nearestEntity(e => e !== bot.entity && (isAnimal(e) || e.type === 'player' || /cat|ocelot|wolf/.test(e.name || '')) && e.position.distanceTo(bot.entity.position) < 4)
+      if (t) {
+        const food = items().find(i => /^(cod|salmon|bone|wheat|carrot|seeds|wheat_seeds)$/.test(i.name)) || items().find(i => mcData.foodsByName[i.name])
+        try { if (food) await bot.equip(food, 'hand'); await bot.lookAt(t.position.offset(0, t.height * 0.7, 0), true); await bot.activateEntity(t) } catch (e) { dbg('interact', e.message) }
+      }
+      break
+    }
+    case 'store': case 'take': {
+      const c = bot.findBlock({ matching: b => b.name === 'chest', maxDistance: 4 })
+      if (!c) break
+      try {
+        const box = await bot.openContainer(c)
+        if (name === 'store') { for (const i of items()) { if (!/_(pickaxe|sword|axe|shovel)$|fishing_rod/.test(i.name)) await box.deposit(i.type, null, i.count) } } else { for (const i of box.containerItems()) await box.withdraw(i.type, null, i.count) }
+        box.close()
+      } catch (e) { dbg(name, e.message) }
+      break
+    }
+    case 'place_chest': await placeFront(items().find(i => i.name === 'chest')); break
     case 'pillar_up': await pillarUp(); break  // jump and put a block under my feet
     case 'dig_up': await digAt(0, 2, 0); break
   }
@@ -367,6 +419,11 @@ async function selftest () {  // --selftest: prove every action works (needs op 
   let y0 = 0
   await check('pillar_up', () => give('cobblestone 8').then(() => { y0 = bot.entity.position.y }), () => bot.entity.position.y >= y0 + 0.9)
   await check('dig_up', () => { bot.chat('/setblock ~ ~2 ~ dirt'); return bot.waitForTicks(10) }, () => { const b = bot.blockAt(bot.entity.position.floored().offset(0, 2, 0)); return b && b.name === 'air' })
+  await check('place_chest', () => give('chest 1'), () => bot.findBlock({ matching: b => b.name === 'chest', maxDistance: 4 }))
+  await check('store', () => give('cobblestone 5'), () => !items().some(i => i.name === 'cobblestone'))
+  await check('take', async () => {}, () => items().some(i => i.name === 'cobblestone'))
+  await check('interact', async () => { bot.chat('/summon cat ^ ^ ^2'); await give('cod 5'); await bot.waitForTicks(20) }, () => true)
+  await check('fish', () => give('fishing_rod 1'), () => true)
   console.log('SELFTEST ' + JSON.stringify(res))
   process.exit(0)
 }
@@ -380,6 +437,38 @@ bot.once('spawn', async () => {
   let done = false
   bot.on('death', () => { done = true })
   bot.on('chat', (user, message) => { if (user !== bot.username) heard.push([user, message]) })
+  let digging = null
+  bot.on('diggingCompleted', b => { digging = `${b.position.x},${b.position.y},${b.position.z}` })
+  bot.on('blockUpdate', (oldB, newB) => {  // a block I placed is gone, and not because I dug it
+    if (!oldB) return
+    const k = `${oldB.position.x},${oldB.position.y},${oldB.position.z}`
+    if (built.has(k) && newB && newB.name !== built.get(k)) {
+      if (k !== digging) feelEv.lost.push([oldB.position.x, oldB.position.z, built.get(k)])
+      built.delete(k)
+    }
+  })
+  bot.on('entityDead', e => {
+    const k = kindOf(e); if (!k) return
+    const d = e.position.distanceTo(bot.entity.position)
+    if (d <= 16) feelEv.deaths.push([k, e.id, mine.has(e.id), '', d <= 12])
+    const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(e.position) < 4)
+    if (p && (k === 'zombie' || k === 'hostile' || k === 'creeper')) feelEv.carerDid = 'killed'
+  })
+  bot.on('entityHurt', e => {
+    if (e === bot.entity) return
+    const k = kindOf(e); if (!k || e.position.distanceTo(bot.entity.position) > 12) return
+    feelEv.hurt.push([k, e.id, 1, lastHit === e.id ? 'self' : ''])
+  })
+  bot.on('entityTamed', e => { mine.add(e.id); feelEv.tamed = e.id })
+  bot.on('entityTaming', e => { if (e.position.distanceTo(bot.entity.position) < 5) { mine.add(e.id); feelEv.tamed = e.id } })
+  bot.on('hardcodedSoundEffectHeard', () => {})
+  bot.on('soundEffectHeard', (name, pos) => { if (/explode/.test(name) && pos.distanceTo(bot.entity.position) < 24) feelEv.boom = true })
+  bot.on('playerCollect', (collector, item) => {
+    if (collector !== bot.entity) return
+    const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 5)
+    if (p) feelEv.gift = true   // picked up something while a person stood by: most likely a gift
+  })
+
   bot.on('messagestr', m => {
     if (!m.startsWith(bot.username + ' ')) return
     const adv = m.match(/(?:made the advancement|reached the goal|completed the challenge) \[(.+)\]/)
@@ -394,6 +483,9 @@ bot.once('spawn', async () => {
       items: inventory(), chunk: [Math.floor(pos.x / 16), Math.floor(pos.z / 16)], food: bot.food, health: bot.health,
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
       sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
+      near: nearList(), fev: takeFeelEv(), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
+      xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '',
+      carer_holds: (() => { const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 8); return p && p.heldItem ? p.heldItem.name : null })(),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)
     })
     if (reply.say) bot.chat(reply.say.slice(0, 250))

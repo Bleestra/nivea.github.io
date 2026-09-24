@@ -1,0 +1,17 @@
+## Child grown for 60 days (seed 0), then staged situations with controls
+stage: внутренние нормы, deaths 30, blame: cat 0.00, carer 0.00, creeper 1.74, zombie 3.00, mycat 0.00
+1. creeper blows up home      : грусть 0.59/1.00, горе 0.02/0.02, злость 0.39/1.00, ужас 0.00/0.00, страх 0.03/0.27, сочувствие 0.00/0.00, решимость 0.22/0.50  | placed 0, look_up 104, use 3, eat 3, wait 12 | sad+angry at once 56% of moments
+1. creeper blows up unfamiliar: грусть 0.36/1.00, горе 0.01/0.02, злость 0.34/1.00, ужас 0.00/0.00, страх 0.27/1.00, сочувствие 0.00/0.00, решимость 0.08/0.30  | placed 0, look_up 94, wait 34, use 4, eat 2 | sad+angry at once 22% of moments
+2. my cat   killed by a blast: грусть 0.57/1.00, горе 0.73/1.00, злость 0.37/1.00, ужас 0.16/1.00, страх 0.19/1.00, сочувствие 0.00/1.00, решимость 0.16/0.43  | look_up 18, placed 0, eat 5, wait 20, use 8
+2. wild cat killed by a blast: грусть 0.04/0.06, горе 0.02/0.03, злость 0.33/1.00, ужас 0.00/0.00, страх 0.21/1.00, сочувствие 0.00/0.00, решимость 0.02/0.21  | wait 41, placed 0, use 18, eat 14, look_up 45
+3. rotten flesh, tasted      : disgust peak 1.00; later, with only rotten flesh, first ate it at hunger 3 (20 = full, 0 = starving)
+3. rotten flesh, never tasted: disgust peak 0.00; later, with only rotten flesh, first ate it at hunger 11 (20 = full, 0 = starving)
+4. the caregiver comes holding gem    : envy 0.19/0.30, trust 0.86, love 0.98
+4. the caregiver comes holding nothing: envy 0.00/0.00, trust 0.86, love 0.98
+5. my cat   goes off to play with the caregiver: jealousy 0.75/1.00
+5. wild cat goes off to play with the caregiver: jealousy 0.00/0.00
+6. a quiet empty world for 2000 moments: boredom 0.04/0.69, interest 0.01
+7. lost home and cat, then 6 days: sadness 0.45, grief 0.37, depression 0.35/0.51, despair 0.37, loneliness 0.00, nostalgia 1.00
+8. the caregiver scolds: shame 1.00, embarrassment 0.70, pride 0.00, guilt 0.00, joy 0.37, distress 0.37
+8. the caregiver praises: shame 0.00, embarrassment 0.00, pride 0.00, guilt 0.00, joy 0.57, distress 0.51
+who killed the cats he lived with: nobody

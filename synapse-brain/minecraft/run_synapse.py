@@ -22,6 +22,7 @@ p.add_argument("--name", default="SynapseBrain")
 p.add_argument("--voice", action="store_true", help="answer in chat (trains the voice on first use)")
 p.add_argument("--eyes", action="store_true", help="see the game through a first-person 3D view")
 p.add_argument("--blind", action="store_true", help="with --eyes: act from vision only (the senses only teach)")
+p.add_argument("--no-feelings", action="store_true", help="the mind without the limbic system (previous version)")
 p.add_argument("--brain-port", default="5555")
 a = p.parse_args()
 
@@ -39,7 +40,8 @@ if not os.path.exists(os.path.join(HERE, "node_modules")):
     subprocess.run("npm install", shell=True, cwd=HERE, check=True)
 
 mind = [py, os.path.join(HERE, "brain_server.py"), "--port", a.brain_port, "--load", brain,
-        "--self", os.path.join(life, "self.json"), "--mind", os.path.join(life, "mind.npz")]
+        "--self", os.path.join(life, "self.json")]
+mind += ["--mind", os.path.join(life, "mind.npz")] if a.no_feelings else ["--limbic", os.path.join(life, "growing")]
 body = ["node", os.path.join(HERE, "bot.js"), "--host", a.host, "--port", a.port, "--version", a.version,
         "--name", a.name, "--brain", a.brain_port]
 if a.voice:

@@ -53,18 +53,27 @@ class Mind:
         self.base = np.zeros(E, np.float32)        # how often each concept is active at all
         self.nev = np.zeros(E, np.int64)           # how many times each event happened
         self.R = np.zeros(E, np.float32)           # learned value of each event (dopamine)
+        self.Rc = np.zeros((E, 4), np.float32)     # ... in each context (e.g. day / dusk / night / danger)
+        self.nc = np.zeros((E, 4), np.float32)
+        self.succ_c = np.zeros((E, 4), np.float32)  # competence in each context too: sunsets happen only at dusk
+        self.tries_c = np.zeros((E, 4), np.float32)
+        self.ctx = 0
         self.succ = np.zeros(E, np.float32)       # competence: successes / attempts per goal
         self.tries = np.zeros(E, np.float32)
         self.val = np.zeros(E, np.float32)         # current concept values
         self.recent = deque(maxlen=trace)          # hippocampus: the last moments (cells, a, next, events)
         self.memory = deque(maxlen=20000)          # and a longer store for replay
         self.goal, self.target, self.goal_t, self.explore_left = None, None, 0, 0
+        self.goal_ctx = 0
         self.explore_steps = explore_steps
         self.habit = habit                         # how much habits (flat striatum) bias a skill
         self._last = self._fprev = None            # the previous moment (for learning)
         self.thought = ""
         self.steps = 0
         self.newborn = True
+        self.planning = True                       # the prefrontal cortex can be switched on later (development)
+        self.last_outcome = None                   # True: the plan failed, False: it succeeded, None: nothing
+        self.last_fq = None
 
     # ---------------------------------------------------------------- concept neurons
     def _neuron(self, name):
@@ -137,7 +146,9 @@ class Mind:
         (goals I have rarely tried are interesting: what can I do?)."""
         n = len(self.names)
         seen = self.nev[:n] > 0
-        d = np.maximum(self.R[:n], 0) + 0.15 / np.sqrt(1 + self.tries[:n])
+        known = self.nc[:n, self.ctx] >= 2                # in this context I know how good it is
+        val = np.where(known, self.Rc[:n, self.ctx], 0.3 * self.R[:n])   # unsure how good it is here
+        d = np.maximum(val, 0) + 0.15 / np.sqrt(1 + self.tries[:n])
         d[~seen | active[:n]] = -1
         return d
 
@@ -170,6 +181,9 @@ class Mind:
         if len(d) == 0 or d.max() <= 0:
             return None
         comp = self.comp
+        n = len(self.names)
+        tc = self.tries_c[:n, self.ctx]
+        comp = np.where(tc >= 2, (self.succ_c[:n, self.ctx] + 1) / (tc + 2), comp[:n])
         best, bs = None, 0.0
         for t in np.argsort(-d)[:8]:
             if d[t] <= 0:
@@ -210,7 +224,8 @@ class Mind:
         return out
 
     # ---------------------------------------------------------------- one moment of life
-    def step(self, obs, state, r, done=False, explore=0.1):
+    def step(self, obs, state, r, done=False, explore=0.1, value=None, ctx=0):
+        self.ctx = ctx
         ev, before = self.perceive(state)
         n = len(self.names)
         active = self.val > 0
@@ -222,7 +237,10 @@ class Mind:
                 self.nev[e] += 1
                 lr = max(1.0 / self.nev[e], 0.05)
                 self.C[:n, e] += lr * (before[:n] - self.C[:n, e])
-                self.R[e] += lr * (r - self.R[e])
+                v = r if value is None else value         # how good it was for me, all things considered
+                self.R[e] += lr * (v - self.R[e])
+                self.nc[e, ctx] += 1
+                self.Rc[e, ctx] += max(1.0 / self.nc[e, ctx], 0.05) * (v - self.Rc[e, ctx])
         cells = self.flat.cells(obs)
         if self._last is not None:                       # remember the moment that just passed
             tr = (self._last[0], self._last[1], cells, frozenset(int(e) for e in ev))
@@ -232,8 +250,10 @@ class Mind:
             self._hindsight(e)                           # every time: how did I do that?
         # the current plan: success, failure or keep going
         reached = self.goal is not None and self.goal in ev
+        self.last_outcome = False if reached else (True if self.goal is not None and self.steps - self.goal_t > self.budget else None)
         if reached:
             self.succ[self.goal] += 1
+            self.succ_c[self.goal, self.goal_ctx] += 1
         elif self.goal is not None and (self.steps - self.goal_t > self.budget or done):
             self.explore_left = self.explore_steps       # it did not work: look around a bit
         self._replay()
@@ -241,16 +261,22 @@ class Mind:
             self.goal = None
         if done:
             self.explore_left = 0
-        if self.goal is None and self.explore_left <= 0 and not done:
+        if self.goal is None and self.explore_left <= 0 and not done and self.planning:
             self.goal = self.deliberate(active)
             self.goal_t = self.steps
             if self.goal is not None:
                 self.tries[self.goal] += 1
+                self.goal_ctx = self.ctx
+                self.tries_c[self.goal, self.ctx] += 1
+                if self.tries_c[self.goal, self.ctx] > 30:
+                    self.tries_c[self.goal, self.ctx] *= 0.97
+                    self.succ_c[self.goal, self.ctx] *= 0.97
                 if self.tries[self.goal] > 30:           # old experience fades: people change
                     self.tries[self.goal] *= 0.97
                     self.succ[self.goal] *= 0.97
         # act: a skill if there is a plan, else habits and exploration
         a_flat, fcells, fq = self.flat.act(obs, explore if self.goal is None else 0.0)
+        self.last_fq, self.last_cells = fq, fcells
         if self.goal is not None:
             q = self.G[self.gkeys(cells, self.goal)].sum(0) + self.habit * (fq - fq.max())
             if self.flat.emo:
@@ -275,7 +301,7 @@ class Mind:
     # ---------------------------------------------------------------- memory
     def save(self, path):
         extra = {"FQ": self.flat.FQ} if self.flat.FQ is not None else {}
-        np.savez(path, G=self.G, C=self.C, base=self.base, nev=self.nev, R=self.R, succ=self.succ,
+        np.savez(path, G=self.G, C=self.C, base=self.base, nev=self.nev, R=self.R, Rc=self.Rc, nc=self.nc, succ_c=self.succ_c, tries_c=self.tries_c, succ=self.succ,
                  tries=self.tries, names=np.array(self.names, dtype=object), W=self.flat.W, F=self.flat.F,
                  steps=self.steps, **extra)
 
@@ -285,8 +311,9 @@ class Mind:
         z = np.load(path, allow_pickle=True)
         na = min(z["G"].shape[1], self.nA)
         self.G[:, :na] = z["G"][:, :na]
-        for k in ("C", "base", "nev", "R", "succ", "tries"):
-            getattr(self, k)[...] = z[k]
+        for k in ("C", "base", "nev", "R", "succ", "tries", "Rc", "nc", "succ_c", "tries_c"):
+            if k in z.files:
+                getattr(self, k)[...] = z[k]
         self.names = list(z["names"])
         self.idx = {k: i for i, k in enumerate(self.names)}
         self.flat.W[:, :na], self.flat.F[:] = z["W"][:, :na], z["F"]
