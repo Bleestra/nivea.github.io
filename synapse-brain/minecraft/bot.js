@@ -17,6 +17,8 @@ const bot = mineflayer.createBot({
   username: arg('name', 'SynapseBrain'), auth: arg('auth', 'offline'), version: arg('version', undefined)
 })
 const brain = net.connect(+arg('brain', 5555), '127.0.0.1')
+const VIEWER = +arg('viewer', 0)
+const WANDER = +arg('wander', 0)  // e.g. --wander 150: teleport somewhere new every 150 steps (needs op)  // e.g. --viewer 3007: first-person 3D view for the brain's eyes
 const replies = readline.createInterface({ input: brain })
 const STEP_MS = +arg('step', 250)
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]  // N E S W as (dx, dz)
@@ -111,6 +113,7 @@ replies.on('line', (line) => { if (waiting) { const w = waiting; waiting = null;
 const ask = (msg) => new Promise(res => { waiting = res; brain.write(JSON.stringify(msg) + '\n') })
 
 bot.once('spawn', async () => {
+  if (VIEWER) require('prismarine-viewer').mineflayer(bot, { port: VIEWER, firstPerson: true, viewDistance: 4 })
   console.log('spawned, brain connected - learning starts')
   lastHealth = bot.health
   let done = false
@@ -120,6 +123,7 @@ bot.once('spawn', async () => {
     const a = await ask({ obs: observe(), inv: logs, goal: goal(), reward: done ? r - 1 : r, done })
     done = false
     step++
+    if (WANDER && step % WANDER === 0) bot.chat('/spreadplayers ~ ~ 0 300 false @s')
     if (step % 100 === 0) {
       const p = bot.entity.position
       const obs = observe()

@@ -59,9 +59,13 @@ class BrainAgent:
         c.append(_h(5, *v))                                     # whole view
         c += [_h(6, k, v[a], v[b], v[d]) for k, (a, b, d) in enumerate(self.trip)]
         c.append(_h(7, inv, v[7]))
+        if len(obs) > 3 and obs[3] is not None:                 # eyes: active visual-cortex neurons
+            seen = [_h(11, int(u)) for u in obs[3]]
+            c = seen + [_h(12, inv)] if getattr(self, "blind", False) else c + seen  # blind: vision only
         if len(obs) > 2:                                        # far vision (direction to a goal)
             c.append(_h(9, obs[2]))
-            c.append(_h(10, obs[2], v[7]))
+            if not (len(obs) > 3 and obs[3] is not None and getattr(self, "blind", False)):
+                c.append(_h(10, obs[2], v[7]))
         c.append(_h(8))                                         # bias cell
         return np.array(c, np.int64)
 

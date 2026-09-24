@@ -1,5 +1,9 @@
 {
   "name": "synapsebrain-minecraft",
   "private": true,
-  "dependencies": { "mineflayer": "^4.23.0" }
+  "dependencies": {
+    "canvas": "^3.2.3",
+    "mineflayer": "^4.23.0",
+    "prismarine-viewer": "^1.33.0"
+  }
 }
