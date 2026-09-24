@@ -1,0 +1,70 @@
+CPU threads: 4  |  cortex: 20000 units x 10 synapses, 1000 active (5%)
+
+## mnist: test accuracy, mean ± std over 3 seeds
+Ordinary (shuffled) training:
+  SynapseBrain hippocampus            82.8 ± 0.2 %
+  SynapseBrain cerebellum             96.5 ± 0.1 %
+  SynapseBrain brain (BG)             95.9 ± 0.0 %
+  Backprop MLP 1 epochs               93.3 ± 0.1 %    1.71 s
+  Backprop MLP 2 epochs               94.8 ± 0.1 %    3.35 s
+  Backprop MLP 3 epochs               95.6 ± 0.1 %    5.04 s
+  Backprop MLP 5 epochs               96.5 ± 0.1 %    8.41 s
+  Backprop MLP 10 epochs              97.4 ± 0.0 %   17.08 s
+Class-incremental (0/1 -> 2/3 -> ... -> 8/9, each task seen once):
+  SynapseBrain hippocampus            82.8 ± 0.2 %
+  SynapseBrain cerebellum, no sleep   20.7 ± 0.3 %
+  SynapseBrain cerebellum + sleep     83.3 ± 0.4 %
+  SynapseBrain brain (BG)             86.3 ± 0.3 %
+  Backprop MLP 1 epoch per task       23.3 ± 0.1 %
+Wall-clock, seconds (60k training images, 4 CPU cores):
+  SynapseBrain retina+cortex                 1.75
+  SynapseBrain hippocampus                   0.09
+  SynapseBrain cerebellum                    1.40
+  SynapseBrain test inference                0.34
+  SynapseBrain class-incremental learning    5.15
+  SynapseBrain TOTAL training                3.24
+  Backprop MLP needs 4 epochs = 6.75 s to reach SynapseBrain's 95.9% -> SynapseBrain is 2.1x faster to the same accuracy
+
+## fashion: test accuracy, mean ± std over 3 seeds
+Ordinary (shuffled) training:
+  SynapseBrain hippocampus            66.0 ± 0.1 %
+  SynapseBrain cerebellum             80.7 ± 0.1 %
+  SynapseBrain brain (BG)             81.1 ± 0.2 %
+  Backprop MLP 1 epochs               83.4 ± 0.1 %    1.64 s
+  Backprop MLP 2 epochs               84.8 ± 0.2 %    3.36 s
+  Backprop MLP 3 epochs               85.5 ± 0.2 %    5.07 s
+  Backprop MLP 5 epochs               87.0 ± 0.1 %    8.51 s
+  Backprop MLP 10 epochs              88.0 ± 0.0 %   17.22 s
+Class-incremental (0/1 -> 2/3 -> ... -> 8/9, each task seen once):
+  SynapseBrain hippocampus            66.0 ± 0.1 %
+  SynapseBrain cerebellum, no sleep   20.1 ± 0.3 %
+  SynapseBrain cerebellum + sleep     64.6 ± 0.5 %
+  SynapseBrain brain (BG)             66.9 ± 0.3 %
+  Backprop MLP 1 epoch per task       27.5 ± 0.3 %
+Wall-clock, seconds (60k training images, 4 CPU cores):
+  SynapseBrain retina+cortex                 2.45
+  SynapseBrain hippocampus                   0.08
+  SynapseBrain cerebellum                    1.47
+  SynapseBrain test inference                0.41
+  SynapseBrain class-incremental learning    5.15
+  SynapseBrain TOTAL training                4.01
+  Backprop MLP needs 1 epochs = 1.64 s to reach SynapseBrain's 81.1% -> SynapseBrain is 0.4x faster to the same accuracy
+
+## Speed: one cortex, three implementations (10k MNIST images)
+  spikes per image: 411 of 3136 channels (13.1%), synapses: 200,000
+  naive gather (numpy, like the fly demo) :  12.31 s
+  dense GPU-style matmul (BLAS) + top-k   :  11.07 s (matmul 2.31 + select 8.76)
+  event-driven synapses (this project)    :   0.23 s
+  -> 53x faster than gather, 48x faster than dense, 10x faster than the matmul alone
+  work per image: dense 63M MACs vs event-driven ~66k adds
+  exactness check: 1000/1000 images give an exact top-k of the dense result
+
+## Thalamic delta coding on video streams (300 scenes x 30 frames)
+  still camera, 1% sensor noise:
+    full recompute  2179.0 ms,   65.8k ops/frame
+    delta coding     313.4 ms,   17.7k ops/frame  -> 3.7x fewer ops (7.0x wall-clock)
+    identical decisions: 100.0% of frames, max rel. score diff 0.0e+00, frame accuracy 86.7%
+  moving object:
+    full recompute  1933.3 ms,   59.8k ops/frame
+    delta coding     873.3 ms,   48.2k ops/frame  -> 1.2x fewer ops (2.2x wall-clock)
+    identical decisions: 100.0% of frames, max rel. score diff 0.0e+00, frame accuracy 64.9%

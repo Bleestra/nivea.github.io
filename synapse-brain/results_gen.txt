@@ -1,0 +1,9 @@
+vocab 67,958 words, 89,999,969 training windows (9s)
+
+model                        real words   copied  repeats   bytes/s
+SynapseBrain T=0.8                96.8%     2.6%     0.0%      9624
+SynapseBrain T=1.0                96.3%     2.5%     0.0%     71996
+transformer_10x T=0.8             92.5%     5.0%     2.7%       228
+transformer_10x T=1.0             87.2%     1.2%     0.2%       235
+transformer T=0.8                 85.5%     0.0%     0.0%       582
+transformer T=1.0                 76.8%     0.5%     0.0%       588
