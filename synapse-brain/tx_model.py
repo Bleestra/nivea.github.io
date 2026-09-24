@@ -5,8 +5,9 @@ import torch.nn.functional as F
 
 
 class Block(nn.Module):
-    def __init__(s, d, h):
+    def __init__(s, d, h, dropout=0.0):
         super().__init__()
+        s.drop = nn.Dropout(dropout)
         s.ln1, s.ln2 = nn.LayerNorm(d), nn.LayerNorm(d)
         s.qkv, s.proj = nn.Linear(d, 3 * d), nn.Linear(d, d)
         s.fc1, s.fc2 = nn.Linear(d, 4 * d), nn.Linear(4 * d, d)
@@ -16,15 +17,15 @@ class Block(nn.Module):
         B, T, C = x.shape
         q, k, v = s.qkv(s.ln1(x)).view(B, T, 3, s.h, C // s.h).permute(2, 0, 3, 1, 4)
         y = F.scaled_dot_product_attention(q, k, v, is_causal=True)
-        x = x + s.proj(y.transpose(1, 2).reshape(B, T, C))
-        return x + s.fc2(F.gelu(s.fc1(s.ln2(x))))
+        x = x + s.drop(s.proj(y.transpose(1, 2).reshape(B, T, C)))
+        return x + s.drop(s.fc2(F.gelu(s.fc1(s.ln2(x)))))
 
 
 class GPT(nn.Module):
-    def __init__(s, L, d, h, ctx):
+    def __init__(s, L, d, h, ctx, dropout=0.0):
         super().__init__()
         s.emb, s.pos = nn.Embedding(256, d), nn.Parameter(torch.zeros(1, ctx, d))
-        s.blocks = nn.ModuleList([Block(d, h) for _ in range(L)])
+        s.blocks = nn.ModuleList([Block(d, h, dropout) for _ in range(L)])
         s.ln = nn.LayerNorm(d)
         nn.init.normal_(s.pos, std=0.02)
         # GPT-2 initialisation: N(0, 0.02), residual projections scaled by 1/sqrt(2L)
@@ -87,3 +88,19 @@ def train_for(model, data, seconds, lr, batch, ctx, seed=0):
         opt.step()
         steps += 1
     return steps
+
+
+def generate(model, prompt, n, temp=0.8, seed=0, ctx=None):
+    """Sample n bytes after `prompt` (bytes). Recomputes the last `ctx` bytes each step."""
+    import numpy as np
+
+    ctx = ctx or model.pos.shape[1]
+    g = torch.Generator().manual_seed(seed)
+    seq = list(prompt)
+    model.eval()
+    with torch.no_grad(), torch.autocast("cpu", dtype=torch.bfloat16):
+        for _ in range(n):
+            x = torch.tensor(seq[-ctx:], dtype=torch.long).view(1, -1)
+            logits = model(x)[0, -1].float() / temp
+            seq.append(int(torch.multinomial(torch.softmax(logits, -1), 1, generator=g)))
+    return bytes(np.array(seq[len(prompt):], np.uint8))
