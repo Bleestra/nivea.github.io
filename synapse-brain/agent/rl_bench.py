@@ -23,19 +23,23 @@ def eps_at(t):
 
 
 def run(kind, steps, seed):
-    env = MiniCraft(seed=seed)
+    world = os.environ.get("WORLD", "normal")
+    p = {"normal": (0.62, 0.14, 0.12, 0.06, 0.06), "harsh": (0.72, 0.03, 0.08, 0.12, 0.05)}[world]
+    env = MiniCraft(seed=seed, p=p)
     obs = env.reset()
     rng = np.random.default_rng(seed)
-    if kind == "brain":
-        ag = BrainAgent(5, seed=seed)
+    if kind.startswith("brain"):
+        emo = kind.split("+")[1:]
+        ag = BrainAgent(5, seed=seed, emotions=bool(emo), fear="fear" in emo or "emotions" in emo,
+                        mood="mood" in emo or "emotions" in emo)
     elif kind.startswith("dqn"):
         kw = dict(x.split("=") for x in kind.split(":")[1:])
         ag = DQN(5, seed=seed, **{k: float(v) if "." in v or "e" in v else int(v) for k, v in kw.items()})
     ep_r, ep_rewards, t0 = 0.0, [], time.perf_counter()
-    if kind == "brain":
+    if kind.startswith("brain"):
         a, cells, qv = ag.act(obs, eps_at(0))
     for t in range(steps):
-        if kind == "brain":
+        if kind.startswith("brain"):
             obs2, r, done = env.step(a)
             a2, cells2, qv2 = ag.act(obs2, eps_at(t))
             ag.learn(cells, a, r, obs2, cells2, qv2, a2, done)
@@ -52,7 +56,7 @@ def run(kind, steps, seed):
             ep_rewards.append(ep_r)
             ep_r = 0.0
             obs = env.reset()
-            if kind == "brain":
+            if kind.startswith("brain"):
                 a, cells, qv = ag.act(obs, eps_at(t))
     return np.array(ep_rewards), (time.perf_counter() - t0) / steps
 

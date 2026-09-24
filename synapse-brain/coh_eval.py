@@ -108,7 +108,8 @@ def main():
         if os.path.exists(snap) and os.environ.get("COH_REUSE"):
             z = np.load(snap)
             for k in st:
-                st[k][...] = z[k]
+                if k in z.files:  # snapshots made before a new memory was added lack that key
+                    st[k][...] = z[k]
         else:
             t = time.perf_counter()
             bm.process(buf, st, 0, n, n, n)
@@ -118,12 +119,14 @@ def main():
         saved = {k: v.copy() for k, v in st.items() if k != "T"}
         np.save(snap + ".T.npy", st["T"])
         for spec in sys.argv[4:] or ["0.8"]:
-            temp, recall = (float(v) for v in (spec.split(":") + ["1.0"])[:2])
+            parts = spec.split(":")
+            temp, recall = float(parts[0]), float(parts[1]) if len(parts) > 1 else 1.0
+            interest = int(parts[2]) if len(parts) > 2 else 0
             out, pos = [], n
             for k, p in enumerate(prompts):
-                out.append(bm.generate(st, buf, pos, N_GEN, temp=temp, seed=k, prompt=p, recall=recall))
+                out.append(bm.generate(st, buf, pos, N_GEN, temp=temp, seed=k, prompt=p, recall=recall, interest=interest))
                 pos += N_PROMPT + N_GEN + 100
-            runs[f"{os.path.basename(sys.argv[2])}@{sys.argv[3]}MB T={temp} recall={recall}"] = out
+            runs[f"{os.path.basename(sys.argv[2])}@{sys.argv[3]}MB T={temp} interest={interest}"] = out
             st["T"][:] = np.load(snap + ".T.npy", mmap_mode="r")  # every setting starts from the same brain
             for k, v in saved.items():
                 st[k][...] = v

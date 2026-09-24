@@ -26,17 +26,21 @@ p.add_argument("--port", type=int, default=5555)
 p.add_argument("--load", default="brain_mc.npz")
 p.add_argument("--eps", type=float, default=0.1, help="exploration at the start (decays to 0.02)")
 p.add_argument("--curiosity", type=float, default=0.05, help="intrinsic reward for surprise (sparse rewards)")
+p.add_argument("--no-fear", action="store_true", help="switch the amygdala off")
 args = p.parse_args()
 
-agent = BrainAgent(5, curiosity=args.curiosity)
+agent = BrainAgent(5, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
 if os.path.exists(args.load):
     z = np.load(args.load)
     agent.W[:], agent.F[:], agent.steps = z["W"], z["F"], int(z["steps"])
+    if agent.FQ is not None and "FQ" in z.files:
+        agent.FQ[:] = z["FQ"]
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
 
 
 def save():
-    np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps)
+    extra = {"FQ": agent.FQ} if agent.FQ is not None else {}
+    np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
 
 
 class Handler(socketserver.StreamRequestHandler):

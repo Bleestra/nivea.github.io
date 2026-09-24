@@ -15,14 +15,14 @@ DIRS = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # N E S W
 
 
 class MiniCraft:
-    def __init__(self, size=16, seed=0, episode=300):
-        self.n, self.episode = size, episode
+    def __init__(self, size=16, seed=0, episode=300, p=(0.62, 0.14, 0.12, 0.06, 0.06)):
+        self.n, self.episode, self.p = size, episode, p
         self.rng = np.random.default_rng(seed)
         self.reset()
 
     def reset(self):
         r = self.rng
-        g = r.choice(5, (self.n, self.n), p=[0.62, 0.14, 0.12, 0.06, 0.06])
+        g = r.choice(5, (self.n, self.n), p=list(self.p))
         self.g = g
         self.pos = self._free()
         self.dir = int(r.integers(4))

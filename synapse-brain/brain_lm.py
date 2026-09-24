@@ -23,6 +23,9 @@ Every byte is predicted bit by bit (8 binary decisions, like a population of bin
   semantic memory: Hebbian word associations (words seen together wire together) plus a ring of
                    recently used words; at a word start the associates of the current topic are
                    pre-activated (priming), which keeps generated text on topic.
+  interest       : emotional tagging (noradrenaline + prefrontal goal memory): content words of
+                   the conversation are tagged as important and stay primed, with their associates,
+                   for as long as we talk - the brain keeps to the goal of the conversation.
   working memory : a short-range episodic index (3 bytes, last 2 kB) - the brain's version of
                    an induction head.
   basal ganglia  : a second, tiny mixer arbitrates between the microzone outputs.
@@ -93,6 +96,7 @@ def make_state(shrink=0, n_bytes=100_000_000):
         "MT3": _huge(1 << 20, np.int64),                       # lexical priming: word start -> last use
         "MP3": np.full(16 * 2 * 8, 32768, np.uint16),
         "WC": np.zeros((N_CACHE, 3), np.int64),                # primed words: (start, length, id)
+        "GL": np.zeros((32, 3), np.int64),                     # goal words tagged by interest
         "AW": _huge((1 << ASSOC_BITS) * 8 * 4, np.int64).reshape(1 << ASSOC_BITS, 8, 4),
         "MP6": np.full(16 * 9 * 8, 32768, np.uint16),
         "MP4": np.full(16 * 9 * 8, 32768, np.uint16),
@@ -168,7 +172,7 @@ def _squash(x, SQ):
 @njit(cache=True, fastmath=True)
 def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, final_mix, MT2, MP2, MT3, MP3, WC, MP4, MT4, MP5, AW, MP6, W1, W2, W3, MT, MP, A1, A2, buf, S,
         lr, limit, HM, W4, A3, use_w4, use_a3, hm_j, lr_decay, stp, A4, W5, CM, use_a4, use_w5, wm_cells,
-        gen, temp, seed, recall):
+        gen, temp, seed, recall, GL, goal, interest):
     """Process data[start:end]. Synapses learn while pos < learn_end; log-loss (bits) is
     summed for pos >= loss_start. Returns (bits, n_bytes_scored)."""
     STR = np.empty(4096, np.float32)
@@ -199,7 +203,9 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
     wci = S[14]      # next slot in the primed-word ring
     mptr4 = S[15]
     mlen4 = S[16]
-    cands = np.zeros(N_CACHE, np.int64)
+    gi = S[17]       # goal memory (prefrontal): words of the conversation tagged as important
+    ng = S[18]
+    cands = np.zeros(N_CACHE + 32 * 16, np.int64)
     acands = np.zeros(64, np.int64)
     base = np.zeros(N_CTX, np.int64)
     hx = np.zeros(N_CTX, np.int64)
@@ -299,11 +305,26 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
                     if same:
                         cands[nc] = buf[ws_ + wlen]
                         nc += 1
+            if goal == 2:  # interest: goal words stay primed, weighted by how interested we are
+                for q in range(ng):
+                    ws_, wl_ = GL[q, 0], GL[q, 1]
+                    if wl_ > wlen:
+                        same = True
+                        for r in range(wlen):
+                            if buf[ws_ + r] != buf[pos - wlen + r]:
+                                same = False
+                                break
+                        if same:
+                            for _ in range(interest):
+                                if nc < cands.shape[0]:
+                                    cands[nc] = buf[ws_ + wlen]
+                                    nc += 1
         # semantic memory: letters of words associated with the last 8 content words
         na = 0
         if wlen > 0 or prev == 32 or prev == 91 or prev == 40:
-            for back in range(1, 9):
-                row = AW[WC[(wci - back) % N_CACHE, 2] & ((1 << ASSOC_BITS) - 1)]
+            for back in range(1, 9 + (min(ng, 8) if goal == 2 else 0)):
+                wid = WC[(wci - back) % N_CACHE, 2] if back < 9 else GL[back - 9, 2]
+                row = AW[wid & ((1 << ASSOC_BITS) - 1)]
                 for q in range(8):
                     if row[q, 3] >= 2 and row[q, 2] > wlen and na < 64:
                         ws_ = row[q, 1]
@@ -632,6 +653,12 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
             pw = wh
             if wlen >= 5:
                 topic = ((topic & 0xFFFFFF) * 16777619 + (wh & 0xFFFFFF)) & 0xFFFFFFFFFFFF
+            if goal == 1 and wlen >= 5:  # reading the conversation: tag its content words
+                GL[gi, 0] = pos - wlen
+                GL[gi, 1] = wlen
+                GL[gi, 2] = wh
+                gi = (gi + 1) % 32
+                ng = min(ng + 1, 32)
             if wlen >= 4:
                 if learn:  # Hebb: words that appear together wire together
                     for back in range(1, 17):
@@ -702,27 +729,31 @@ def run(data, start, end, learn_end, loss_start, T, TO, TM, WO, WM, LN, WF, fina
     S[14] = wci
     S[15] = mptr4
     S[16] = mlen4
+    S[17] = gi
+    S[18] = ng
     return bits, scored
 
 
 def process(data, st, start, end, learn_end, loss_start, lr=0.002, limit=255, use_w4=True, use_a3=True,
             hm_j=True, lr_decay=5.0, stp=False, use_a4=True, use_w5=True, wm_cells=True, final_mix=True,
-            gen=False, temp=1.0, seed=0, recall=1.0):
+            gen=False, temp=1.0, seed=0, recall=1.0, goal=0, interest=2):
     return run(data, start, end, learn_end, loss_start, st["T"], st["TO"], st["TM"], st["WO"], st["WM"],
                st["LN"], st["WF"], final_mix, st["MT2"], st["MP2"], st["MT3"], st["MP3"], st["WC"], st["MP4"], st["MT4"], st["MP5"], st["AW"], st["MP6"], st["W1"], st["W2"], st["W3"],
                st["MT"], st["MP"], st["A1"], st["A2"], st["buf"], st["S"], lr, limit, st["HM"],
                st["W4"], st["A3"], use_w4, use_a3, hm_j, lr_decay, stp, st["A4"], st["W5"], st["CM"],
-               use_a4, use_w5, wm_cells, gen, temp, seed, recall)
+               use_a4, use_w5, wm_cells, gen, temp, seed, recall, st["GL"], goal, interest)
 
 
-def generate(st, data, pos, n, temp=0.8, seed=0, prompt=None, recall=1.0):
+def generate(st, data, pos, n, temp=0.7, seed=0, prompt=None, recall=1.0, interest=8):
     """Write `prompt` at data[pos:], let the brain read it (weights frozen, working memory on),
     then let it speak n bytes. `data` must be a writable uint8 array with room for the text.
     Returns the generated bytes."""
     if prompt is not None:
         data[pos : pos + len(prompt)] = np.frombuffer(prompt, np.uint8)
-        process(data, st, pos, pos + len(prompt), 0, 1 << 62, stp=True)
+        st["S"][17] = st["S"][18] = 0  # a new conversation: forget the old goal
+        process(data, st, pos, pos + len(prompt), 0, 1 << 62, stp=True, goal=1 if interest else 0)
         pos += len(prompt)
     # while speaking, recall from the global episodic index can be damped (recall < 1)
-    process(data, st, pos, pos + n, 0, 1 << 62, stp=True, gen=True, temp=temp, seed=seed, recall=recall)
+    process(data, st, pos, pos + n, 0, 1 << 62, stp=True, gen=True, temp=temp, seed=seed, recall=recall,
+            goal=2 if interest else 0, interest=min(max(int(interest), 1), 16))
     return bytes(data[pos : pos + n])

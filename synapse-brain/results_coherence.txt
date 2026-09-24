@@ -29,3 +29,9 @@ transformer_10x.pt T=0.6                words  95.6%  bigrams  73.5%  trigrams  
 transformer_10x.pt T=0.7                words  94.8%  bigrams  66.4%  trigrams  30.9%  topic   8.9%  loops   4.6%  
 brain_lm.py@90MB T=0.6 recall=1.0       words  96.2%  bigrams  71.0%  trigrams  32.8%  topic   7.7%  loops   7.9%  
 brain_lm.py@90MB T=0.65 recall=1.0      words  96.7%  bigrams  73.1%  trigrams  32.6%  topic   5.1%  loops   6.1%  
+brain_lm.py@90MB T=0.7 interest=0       words  96.1%  bigrams  71.4%  trigrams  30.5%  topic   8.6%  loops   2.5%  
+brain_lm.py@90MB T=0.7 interest=1       words  96.2%  bigrams  69.4%  trigrams  29.1%  topic   7.4%  loops   2.4%  
+brain_lm.py@90MB T=0.7 interest=2       words  97.8%  bigrams  69.6%  trigrams  27.9%  topic  10.0%  loops   4.7%  
+brain_lm.py@90MB T=0.7 interest=4       words  95.5%  bigrams  70.0%  trigrams  30.7%  topic  10.6%  loops   2.7%  
+brain_lm.py@90MB T=0.7 interest=8       words  95.7%  bigrams  69.7%  trigrams  30.9%  topic  12.8%  loops   3.9%  
+brain_lm.py@90MB T=0.7 interest=16      words  95.7%  bigrams  68.4%  trigrams  27.1%  topic  15.1%  loops   0.5%  

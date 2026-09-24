@@ -11,6 +11,13 @@ SynapseBrain-Agent: acting and learning in real time with the same brain service
                    reward also reaches the actions that led to it (three-factor rule).
   cerebellum     : forward model - predicts what will be in front after an action; its surprise
                    is an intrinsic reward (curiosity), which drives exploration.
+  limbic system  : emotions as neuromodulators (emotions=True):
+                   amygdala  - FEAR: a separate, fast (one-shot) memory of harm per state/action,
+                               subtracted from the striatal values; it fades slowly (extinction);
+                   serotonin - MOOD: fast vs slow running average of reward; when the fast one
+                               falls below the slow one the agent is FRUSTRATED/BORED;
+                   noradrenaline - INTEREST: boredom raises exploration and switches curiosity on,
+                               contentment switches it off and the agent sticks to its goal.
 Every update touches only active synapses: a step costs microseconds, learning is online.
 """
 import numpy as np
@@ -27,7 +34,7 @@ def _h(*xs):
 
 class BrainAgent:
     def __init__(self, n_actions, seed=0, gamma=0.97, lam=0.7, alpha=0.25, curiosity=0.0,
-                 trace_len=30, init=0.02):
+                 trace_len=30, init=0.02, emotions=False, fear=True, mood=True):
         self.nA, self.g, self.lam = n_actions, gamma, lam
         self.rng = np.random.default_rng(seed)
         self.W = np.full((MASK + 1, n_actions), init, np.float32)   # striatal synapses
@@ -38,6 +45,10 @@ class BrainAgent:
         self.hist = []  # recent (cells, action) for eligibility traces
         self.prev = None
         self.steps = 0
+        self.emo, self.use_fear, self.use_mood = emotions, fear, mood
+        self.since_win = 0
+        self.FQ = np.zeros((MASK + 1, n_actions), np.float32) if emotions else None  # amygdala
+        self.mood_fast, self.mood_slow, self.bored = 0.0, 0.0, 0.0
 
     def cells(self, obs):
         v, inv = obs
@@ -51,12 +62,23 @@ class BrainAgent:
         c.append(_h(8))                                         # bias cell
         return np.array(c, np.int64)
 
+    @staticmethod
+    def cue(cells):
+        """The amygdala listens to specific cues only: what is right in front (cell 7 of the view)
+        and the block row just ahead - not to the whole situation (that would be anxiety)."""
+        return cells[[7, 25]]
+
     def q(self, cells):
         return self.W[cells].sum(0)
 
     def act(self, obs, eps):
         cells = self.cells(obs)
         qv = self.q(cells)
+        if self.emo:
+            if self.use_fear:
+                qv = qv + 2.0 * self.FQ[self.cue(cells)].sum(0)  # fear vetoes dangerous actions
+            if self.use_mood:
+                eps = min(0.5, eps + 0.25 * self.bored)      # boredom -> try something new
         if self.rng.random() < eps:
             a = int(self.rng.integers(self.nA))
         else:
@@ -74,7 +96,23 @@ class BrainAgent:
         target = np.zeros(8, np.float32)
         target[front] = 1
         self.F[key] += 0.1 * (target - p) / 26
-        r_total = r + self.cur * surprise / (1 + self.steps / 20000)
+        cur = self.cur / (1 + self.steps / 20000)
+        if self.emo:
+            # mood: is life getting worse than usual? then we are bored/frustrated and curious
+            self.mood_fast += 0.02 * (r - self.mood_fast)
+            self.mood_slow += 0.002 * (r - self.mood_slow)
+            self.since_win = 0 if r > 0 else self.since_win + 1
+            drop = (self.mood_slow - self.mood_fast) / (abs(self.mood_slow) + 0.05)
+            self.bored = float(np.clip(max(drop, (self.since_win - 150) / 300.0), 0, 1))
+            cur = 0.2 * self.bored if self.use_mood else cur
+            # amygdala: learn harm fast (one shot), forget it slowly
+            cue = self.cue(cells)
+            harm = self.FQ[cue, a].sum()
+            if r < -0.5:          # real harm: one-shot fear conditioning
+                self.FQ[cue, a] += 0.8 * (r - harm) / len(cue)
+            else:                 # nothing bad happened: fear slowly extinguishes
+                self.FQ[cue, a] += 0.02 * (0.0 - harm) / len(cue)
+        r_total = r + cur * surprise
         # dopamine: reward prediction error, delivered along eligibility traces
         q_sa = self.W[cells, a].sum()
         target_q = r_total + (0.0 if done else self.g * next_q[next_a])
