@@ -10,7 +10,9 @@ import re
 from personality import RU_NAMES
 
 RU_EXTRA = {"sky": "видеть небо", "free": "свободно двигаться", "stuck": "застрять", "day": "день",
-            "fed": "быть сытым", "healthy": "быть здоровым", "underground": "быть под землёй"}
+            "fed": "быть сытым", "healthy": "быть здоровым", "underground": "быть под землёй",
+            "deep": "спуститься глубоко", "indoors": "быть под крышей", "saw:trades": "увидеть товары жителя",
+            "traded": "поторговать"}
 
 
 def state_from(m):
@@ -90,5 +92,8 @@ def talk(mind, text):
         for line in lines[:5]:
             left, right = line.split(" ← ")
             out.append(f"{ru(left)} ← " + " + ".join(ru(x) for x in right.split(" + ")))
-        return "По моему опыту: " + "; ".join(out)
+        told = getattr(mind, "told", {})
+        src = f"Я прочитал в {'книге' if told.get(mind.names[e]) == 'книга' else told.get(mind.names[e])}, и по моему опыту: " \
+            if mind.names[e] in told else "По моему опыту: "
+        return src + "; ".join(out)
     return None

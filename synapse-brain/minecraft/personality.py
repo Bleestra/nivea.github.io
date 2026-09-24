@@ -21,6 +21,9 @@ RU_NAMES = {"oak_log": "дубовое бревно", "birch_log": "берёзо
             "cobblestone": "булыжник", "dirt": "землю", "stone_pickaxe": "каменную кирку",
             "wooden_axe": "деревянный топор", "wooden_shovel": "деревянную лопату", "coal": "уголь",
             "torch": "факелы", "sand": "песок", "gravel": "гравий", "flint": "кремень",
+            "diamond": "алмаз", "diamond_pickaxe": "алмазную кирку", "iron_pickaxe": "железную кирку",
+            "iron_ingot": "железный слиток", "raw_iron": "железную руду", "emerald": "изумруд",
+            "written_book": "книгу", "oak_door": "дубовую дверь",
             "wheat_seeds": "семена пшеницы", "apple": "яблоко", "furnace": "печь"}
 
 

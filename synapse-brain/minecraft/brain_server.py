@@ -37,7 +37,7 @@ p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, rea
 p.add_argument("--limbic", default="", help="directory: the whole growing brain with feelings (mind + limbic system; needs --self)")
 args = p.parse_args()
 
-N_ACT = 33 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+N_ACT = 35 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
 mind = None
 child = None
 if args.limbic:
@@ -202,6 +202,20 @@ class Handler(socketserver.StreamRequestHandler):
                 child.m = m
                 a = child.step(o, a_prev, front_prev, inv_prev, extra_reward=0.3 * reward)
                 a_prev, front_prev, inv_prev = a, int(o["view"][7]), dict(o["inv"])
+                fev = m.get("fev") or {}
+                if fev.get("read"):                                   # reading: text -> beliefs in the mind
+                    from reading import read as parse_text, MC_NAMES  # noqa: E402
+                    claims, values = parse_text(fev["read"], MC_NAMES)
+                    child.mind.tell(claims, values)
+                    print(f"[read] {fev['read'][:80]}... -> {claims} {values}", flush=True)
+                    if me:
+                        me.note(f"прочитал книгу: «{fev['read'][:120]}»; поверил: " + "; ".join(
+                            f"{t} ← {' + '.join(p)}" for t, p in claims), None)
+                if fev.get("trades") or fev.get("traded") or any(k in ("villager", "golem") for k, _, _ in o["near"]):
+                    vs = [x for x in o["near"] if x[0] in ("villager", "golem")]
+                    print(f"[village] step {agent.steps} action {a} near {vs[:3]} trades {fev.get('trades', [])[:3]} "
+                          f"traded {fev.get('traded')} hurt {[h for h in o['ev']['hurt'] if h[0] in ('villager', 'golem', 'self')]} "
+                          f"indoors {child.concepts(o).get('indoors')} feel {child.limbic.say()[:60]}", flush=True)
                 L = child.limbic
                 if max(L.e.values()) > 0.6 and time.time() - last_felt > 90:
                     last_felt = time.time()
@@ -223,6 +237,19 @@ class Handler(socketserver.StreamRequestHandler):
                 if prev is not None:
                     agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, done)
                 prev = None if done else (cells, a)
+            force = os.environ.get("FORCE_FILE")                    # the experimenter's hand (for staged experiments)
+            if force and os.path.exists(force):
+                parts = open(force).read().split()
+                if parts:
+                    a = int(parts[0])
+                    left = int(parts[1]) - 1 if len(parts) > 1 else 0
+                    if left > 0:
+                        open(force, "w").write(f"{a} {left}")
+                    else:
+                        os.remove(force)
+                    if child is not None:
+                        a_prev = a                                   # the brain feels it as its own movement
+                    print(f"[forced] action {a}", flush=True)
             total += reward
             reply = {"action": a}
             if say:

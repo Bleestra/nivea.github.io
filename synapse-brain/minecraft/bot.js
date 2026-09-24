@@ -31,7 +31,7 @@ const ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait',
   'craft_new', 'eat', 'back', 'strafe_left', 'strafe_right', 'jump', 'toggle_sprint', 'toggle_sneak',
   'look_up', 'look_down', 'attack', 'use_item', 'dig_down', 'equip_armor', 'equip_weapon',
   'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up',
-  'fish', 'interact', 'store', 'take', 'place_chest']
+  'fish', 'interact', 'store', 'take', 'place_chest', 'trade', 'read']
 
 // ---------------------------------------------------------------- knowledge: recipes + advancements
 const K = path.join(__dirname, 'knowledge')
@@ -106,12 +106,14 @@ function around () {  // touch and balance: what is right next to me on every si
 const mine = new Set()            // ids of animals I tamed
 let lastHit = null
 const built = new Map()           // "x,y,z" -> block name I placed
-const feelEv = { deaths: [], hurt: [], lost: [], boom: false, gift: false, tamed: null, carerDid: null, ate: null }
+const feelEv = { deaths: [], hurt: [], lost: [], boom: false, gift: false, tamed: null, carerDid: null, ate: null, trades: [], traded: null, read: null }
 const kindOf = e => {
   if (!e || e === bot.entity) return null
   if (e.type === 'player') return 'carer'
   const n = (e.name || '').toLowerCase()
   if (n === 'creeper') return 'creeper'
+  if (n === 'villager' || n === 'wandering_trader') return 'villager'
+  if (n === 'iron_golem') return 'golem'
   if (/zombie|husk|drowned/.test(n)) return 'zombie'
   if (n === 'cat' || n === 'ocelot' || n === 'wolf' || n === 'parrot') return mine.has(e.id) ? 'mycat' : 'cat'
   if (isHostile(e)) return 'hostile'
@@ -127,7 +129,24 @@ function nearList () {
   }
   return out
 }
-function takeFeelEv () { const e = { ...feelEv }; feelEv.deaths = []; feelEv.hurt = []; feelEv.lost = []; feelEv.boom = false; feelEv.gift = false; feelEv.tamed = null; feelEv.carerDid = null; feelEv.ate = null; return e }
+function takeFeelEv () { const e = { ...feelEv }; feelEv.deaths = []; feelEv.hurt = []; feelEv.lost = []; feelEv.boom = false; feelEv.gift = false; feelEv.tamed = null; feelEv.carerDid = null; feelEv.ate = null; feelEv.trades = []; feelEv.traded = null; feelEv.read = null; return e }
+function bookText (it) {  // the pages of a written book (JSON text components)
+  try {
+    const pages = it.nbt.value.pages.value.value
+    return pages.map(p => { try { const j = JSON.parse(p); return typeof j === 'string' ? j : (j.text || '') } catch (e) { return p } }).join(' ')
+  } catch (e) { return '' }
+}
+function oreSeen () {  // a diamond ore my eyes can actually see (not through walls)
+  const b = bot.findBlock({ matching: x => x.name === 'diamond_ore' || x.name === 'deepslate_diamond_ore', maxDistance: 8, count: 1, useExtraInfo: x => bot.canSeeBlock(x) })
+  return b ? relDir(b.position) : 0
+}
+const itemName = it => it ? `${it.count}x${it.name}` : ''
+async function villagerNear () { return bot.nearestEntity(e => (e.name === 'villager' || e.name === 'wandering_trader') && e.position.distanceTo(bot.entity.position) < 4) }
+async function seeTrades (t) {  // right-click a villager: its trading window opens, the eyes read the offers
+  const v = await bot.openVillager(t)
+  feelEv.trades = (v.trades || []).map(x => [itemName(x.inputItem1) + (x.inputItem2 && x.inputItem2.name ? '+' + itemName(x.inputItem2) : ''), itemName(x.outputItem), !!x.tradeDisabled])
+  return v
+}
 
 const trail = []  // where I have been in the last steps (for the feeling of being stuck)
 function stuck () {
@@ -351,9 +370,11 @@ async function act (a) {
     case 'sleep': await sleep(); break
     case 'drop_junk': await dropJunk(); break
     case 'fish': { const rod = items().find(i => i.name === 'fishing_rod'); if (rod) { try { await bot.equip(rod, 'hand'); await Promise.race([bot.fish(), bot.waitForTicks(400)]) } catch (e) { dbg('fish', e.message) } } break }
-    case 'interact': {  // offer what I hold to the nearest animal or person (feed, tame, greet)
-      const t = bot.nearestEntity(e => e !== bot.entity && (isAnimal(e) || e.type === 'player' || /cat|ocelot|wolf/.test(e.name || '')) && e.position.distanceTo(bot.entity.position) < 4)
-      if (t) {
+    case 'interact': {  // right-click the nearest being: feed, tame, greet - or open a villager's trades
+      const t = bot.nearestEntity(e => e !== bot.entity && (isAnimal(e) || e.type === 'player' || /cat|ocelot|wolf|villager|trader/.test(e.name || '')) && e.position.distanceTo(bot.entity.position) < 4)
+      if (t && /villager|trader/.test(t.name || '')) {
+        try { await bot.lookAt(t.position.offset(0, 1.5, 0), true); const v = await seeTrades(t); await bot.waitForTicks(10); v.close() } catch (e) { dbg('villager', e.message) }
+      } else if (t) {
         const food = items().find(i => /^(cod|salmon|bone|wheat|carrot|seeds|wheat_seeds)$/.test(i.name)) || items().find(i => mcData.foodsByName[i.name])
         try { if (food) await bot.equip(food, 'hand'); await bot.lookAt(t.position.offset(0, t.height * 0.7, 0), true); await bot.activateEntity(t) } catch (e) { dbg('interact', e.message) }
       }
@@ -370,6 +391,20 @@ async function act (a) {
       break
     }
     case 'place_chest': await placeFront(items().find(i => i.name === 'chest')); break
+    case 'read': { const b = items().find(i => i.name === 'written_book' || i.name === 'writable_book'); if (b) feelEv.read = bookText(b); break }
+    case 'trade': {  // try the first offer I can pay for
+      const t = await villagerNear()
+      if (!t) break
+      try {
+        const v = await seeTrades(t)
+        const have = n => items().filter(i => i.name === n).reduce((s, i) => s + i.count, 0)
+        const k = (v.trades || []).findIndex(x => !x.tradeDisabled && have(x.inputItem1.name) >= x.inputItem1.count &&
+          (!x.inputItem2 || have(x.inputItem2.name) >= x.inputItem2.count))
+        if (k >= 0) { await bot.trade(v, k, 1); feelEv.traded = v.trades[k].outputItem.name }
+        v.close()
+      } catch (e) { dbg('trade', e.message) }
+      break
+    }
     case 'pillar_up': await pillarUp(); break  // jump and put a block under my feet
     case 'dig_up': await digAt(0, 2, 0); break
   }
@@ -484,7 +519,7 @@ bot.once('spawn', async () => {
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
       sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
       near: nearList(), fev: takeFeelEv(), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
-      xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '',
+      xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '', diamond_seen: oreSeen(),
       carer_holds: (() => { const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 8); return p && p.heldItem ? p.heldItem.name : null })(),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)
     })
@@ -496,7 +531,7 @@ bot.once('spawn', async () => {
       console.log(`step ${step} pos ${pos.x.toFixed(0)},${pos.y.toFixed(0)},${pos.z.toFixed(0)} hp ${bot.health} food ${bot.food} ` +
         `items ${items().length} adv ${advancements.size} action ${ACTIONS[reply.action]}`)
     }
-    try { await act(reply.action) } catch (e) {}
+    try { await Promise.race([act(reply.action), new Promise(res => setTimeout(res, 8000))]) } catch (e) {}  // no action may hang the body
     await new Promise(res => setTimeout(res, STEP_MS))
   }
 })

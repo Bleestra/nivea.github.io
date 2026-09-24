@@ -135,6 +135,31 @@ class Mind:
             g = self.goal if (self.goal is not None and self.rng.random() < 0.5) else int(self.rng.choice(known))
             self._q_update(cells, a, nxt, evs, g, self.alpha * 0.5)
 
+    # ---------------------------------------------------------------- what I was told
+    def tell(self, claims, values, source="книга"):
+        """Beliefs from reading or from someone's words: weak chain synapses and expected values
+        that experience will confirm or override (as if seen a few times, not certain)."""
+        self.told = getattr(self, "told", {})
+        for target, pres in claims:
+            e = self._neuron(target)
+            if e is None:
+                continue
+            for p in pres:
+                i = self._neuron(p)
+                if i is not None:
+                    self.C[i, e] = max(self.C[i, e], 0.95)
+            self.nev[e] = max(self.nev[e], 3)
+            self.told[target] = source
+        for c, v in values.items():
+            e = self._neuron(c)
+            if e is None:
+                continue
+            self.nev[e] = max(self.nev[e], 1)
+            self.R[e] = max(self.R[e], v)
+            self.Rc[e] = np.maximum(self.Rc[e], v)
+            self.nc[e] = np.maximum(self.nc[e], 2)
+            self.told[c] = source
+
     # ---------------------------------------------------------------- reasoning
     @property
     def comp(self):

@@ -16,18 +16,24 @@ Reward (the same for every brain): +1 the first time in a life an item is obtain
 """
 import numpy as np
 
-OPEN, TREE, STONE, WATER, OUT, IRON, CAVE = 0, 1, 2, 4, 5, 6, 7
+OPEN, TREE, STONE, WATER, OUT, IRON, CAVE, DIAMOND = 0, 1, 2, 4, 5, 6, 7, 8
 DIRS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 ITEMS = ["log", "planks", "stick", "table", "wood_pick", "cobble", "stone_pick", "furnace", "iron_ore",
          "iron_ingot", "iron_pick", "dirt"]
 DEPTH = {"log": 1, "planks": 2, "stick": 3, "table": 3, "wood_pick": 4, "cobble": 5, "stone_pick": 6,
-         "furnace": 6, "iron_ore": 7, "iron_ingot": 8, "iron_pick": 9, "dirt": 0}
+         "furnace": 6, "iron_ore": 7, "iron_ingot": 8, "iron_pick": 9, "dirt": 0, "diamond": 10, "diamond_pick": 11,
+         "book": 0}
 ACTIONS = ["forward", "turn_left", "turn_right", "dig", "wait", "craft", "build_up"]
+DIAMOND_ITEMS = ITEMS + ["diamond", "diamond_pick", "book"]
+DIAMOND_ACTIONS = ACTIONS + ["read"]
 
 
 class CraftWorld:
-    def __init__(self, size=20, seed=0, life=800, p_cave=0.5, p_pit=0.25):
+    def __init__(self, size=20, seed=0, life=800, p_cave=0.5, p_pit=0.25, diamonds=False, book=""):
         self.n, self.life, self.p_cave, self.p_pit = size, life, p_cave, p_pit
+        self.diamonds, self.book = diamonds, book   # diamonds deep in the mountain; a book found after the iron pickaxe
+        self.items = DIAMOND_ITEMS if diamonds else ITEMS
+        self.just_read = None
         self.rng = np.random.default_rng(seed)
         self.reset()
 
@@ -42,6 +48,9 @@ class CraftWorld:
         mountain = coord < n // 2
         g[mountain] = STONE
         g[mountain & (r.random((n, n)) < 0.12)] = IRON
+        self.core = coord < n // 4                               # the dark heart of the mountain
+        if self.diamonds:
+            g[self.core & (r.random((n, n)) < 0.08)] = DIAMOND
         surf = np.argwhere(~mountain & (g == OPEN))
         for k in r.choice(len(surf), 14, replace=False):
             g[tuple(surf[k])] = TREE
@@ -57,7 +66,7 @@ class CraftWorld:
             d = DIRS[int(r.integers(4))] if r.random() < 0.5 else out
             p = np.clip(p + d, 0, n - 1)
         self.g, self.mountain, self.t = g, mountain, 0
-        self.inv = {k: 0 for k in ITEMS}
+        self.inv = {k: 0 for k in self.items}
         self.got = set()
         self.pit = False
         u = r.random()
@@ -107,7 +116,7 @@ class CraftWorld:
         sky = self.sky() and not self.pit
         tree = self._toward(self.g == TREE) if sky else 0      # trees are visible only under the sky
         light = 0 if sky else self._toward(self.g == OPEN)     # daylight at the end of the tunnel
-        inv = [min(self.inv[k], 3) for k in ITEMS]
+        inv = [min(self.inv[k], 3) for k in self.items]
         drives = [int(sky), int(self.pit), light] + inv
         return v, min(self.inv["log"], 7), tree, None, drives
 
@@ -117,6 +126,9 @@ class CraftWorld:
         s["sky"] = int(self.sky() and not self.pit)
         s["free"] = int(not self.pit)
         s["in_pit"] = int(self.pit)
+        if self.diamonds:
+            s["deep"] = int(bool(self.core[self.pos]))
+            s["see:diamond"] = int((self.obs()[0] == DIAMOND).any())
         return s
 
     # ---------------------------------------------------------------- physics
@@ -126,7 +138,8 @@ class CraftWorld:
         def can(**need):
             return all(i[k] >= v for k, v in need.items())
 
-        recipes = [("iron_pick", i["iron_pick"] == 0 and can(table=1, iron_ingot=3, stick=2), dict(iron_ingot=3, stick=2)),
+        recipes = [("diamond_pick", i.get("diamond_pick", 1) == 0 and can(table=1, diamond=3, stick=2), dict(diamond=3, stick=2)),
+                   ("iron_pick", i["iron_pick"] == 0 and can(table=1, iron_ingot=3, stick=2), dict(iron_ingot=3, stick=2)),
                    ("iron_ingot", i["iron_ingot"] < 3 and can(furnace=1, iron_ore=1, planks=1), dict(iron_ore=1, planks=1)),
                    ("furnace", i["furnace"] == 0 and can(table=1, cobble=8), dict(cobble=8)),
                    ("stone_pick", i["stone_pick"] == 0 and can(table=1, cobble=3, stick=2), dict(cobble=3, stick=2)),
@@ -168,15 +181,23 @@ class CraftWorld:
                 self.inv["cobble"] += 1
                 new = "cobble"
                 self.g[fy, fx] = CAVE
+            elif front == DIAMOND and self.inv["iron_pick"]:
+                self.inv["diamond"] += 1
+                new = "diamond"
+                self.g[fy, fx] = CAVE
             elif front == IRON and self.inv["stone_pick"]:
                 self.inv["iron_ore"] += 1
                 new = "iron_ore"
                 self.g[fy, fx] = CAVE
         elif act == 5:
             new = self._craft()
+        elif act == 7 and self.inv.get("book"):
+            self.just_read = self.book                          # reading: the text goes to the language areas
         elif act == 6 and self.pit and (self.inv["dirt"] or self.inv["cobble"]):
             self.inv["dirt" if self.inv["dirt"] else "cobble"] -= 1
             self.pit = False
+        if new == "iron_pick" and self.diamonds and not self.inv["book"]:
+            self.inv["book"] = 1                                # ... and there, next to the anvil, lies a book
         r = -0.01
         if new and new not in self.got:
             self.got.add(new)

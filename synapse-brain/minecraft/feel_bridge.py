@@ -31,7 +31,7 @@ MC_TASTE = {  # innate palatability (sweet/fat/umami good; bitter/rotten/poison 
     "tropical_fish": 0.3, "potato": 0.1, "rotten_flesh": -0.6, "spider_eye": -0.8, "poisonous_potato": -0.7,
     "pufferfish": -0.9, "chorus_fruit": 0.1,
 }
-KINDS = ["zombie", "creeper", "cat", "mycat", "carer", "hostile", "animal"]
+KINDS = ["zombie", "creeper", "cat", "mycat", "carer", "hostile", "animal", "villager", "golem"]
 WARM = r"молод|умни|хорош|люблю|спасиб|класс|отлич|good|nice|love|thank|great|well done"
 ALARM = r"осторожн|беги|опасн|сзади|крипер|careful|run|watch out|behind"
 SCOLD = r"нельзя|плохо|не надо|стоп|прекрати|фу\b|bad|stop|don't|dont"
@@ -95,6 +95,14 @@ class MCChild(Child):
             s["sky:%d" % int(np.bincount(o["sky"], minlength=8).argmax())] = 1
         for k in (3, 5, 7):
             s["walls>=%d" % k] = int(o["walls"] >= k)
+        s["indoors"] = int(not self.m.get("sky", 1) and self.m.get("y", 64) >= 55)   # a roof over my head, not a cave
+        s["deep"] = int(self.m.get("y", 64) < 16)                                      # far below the surface
+        s["see:diamond"] = int(bool(self.m.get("diamond_seen")))
+        if (self.m.get("fev") or {}).get("trades"):
+            s["saw:trades"] = 1
+        tr = (self.m.get("fev") or {}).get("traded")
+        if tr:
+            s["traded"] = s.get("traded", 0) + 1
         return s
 
 
@@ -128,6 +136,8 @@ class Body:
         self.nausea = max(0, self.nausea - 1)
         fish = sum(v for k, v in items.items() if k in ("cod", "salmon", "tropical_fish", "cooked_cod", "cooked_salmon"))
         got = [k for k, v in items.items() if v > self.prev_items.get(k, 0)]
+        if fev.get("trades"):
+            got.append("trades")                                   # something never seen before: a trading window
         self.prev_items = dict(items)
         tone = 0
         for _, text in m.get("heard", []):

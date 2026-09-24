@@ -80,8 +80,8 @@ class Child:
         n = len(m.names)
         tried = m.tries[:n] >= 1
         competence = float(m.comp[:n][tried].mean()) if tried.any() else 0.3
-        r, self.feat = L.feel(o, act_prev, front_before, cells, v_now, delta, inv_before, competence, m.last_outcome)
-        r += extra_reward
+        r, self.feat = L.feel(o, act_prev, front_before, cells, v_now, delta, inv_before, competence, m.last_outcome,
+                              extra=extra_reward)
         obs = self.senses(o)                          # with the fresh feelings
         stage = L.stage()
         m.planning = stage >= 1                       # the prefrontal cortex matures

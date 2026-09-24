@@ -218,7 +218,7 @@ class Limbic:
         return lost, lost_items
 
     # ---------------------------------------------------------------- one moment of feeling
-    def feel(self, o, act, front_before, cells, value_now, delta, inv_before, competence, goal_failed):
+    def feel(self, o, act, front_before, cells, value_now, delta, inv_before, competence, goal_failed, extra=0.0):
         """o: the body's report after `act`. Returns (primary reward for learning, features for the striatum)."""
         self.age += 1
         self._inv_before = inv_before
@@ -229,7 +229,7 @@ class Limbic:
             self.kind_of[bid] = kind
         # ---- the body (genome)
         pain = sum(dmg for who, _, dmg, _ in ev["hurt"] if who == "self")
-        r = -pain / 4.0
+        r = -pain / 4.0 + extra                                          # + pleasure the body reports (e.g. something new)
         taste = 0.0
         if ev["ate"]:
             hunger_before = min(20, o["hunger"] - 4)
