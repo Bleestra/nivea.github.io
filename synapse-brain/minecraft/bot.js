@@ -18,7 +18,7 @@ const bot = mineflayer.createBot({
 })
 const brain = net.connect(+arg('brain', 5555), '127.0.0.1')
 const VIEWER = +arg('viewer', 0)
-const WANDER = +arg('wander', 0)  // e.g. --wander 150: teleport somewhere new every 150 steps (needs op)  // e.g. --viewer 3007: first-person 3D view for the brain's eyes
+const WANDER = +arg('wander', 0)  // e.g. --wander 150: teleport somewhere new every 150 steps (needs op)
 const replies = readline.createInterface({ input: brain })
 const STEP_MS = +arg('step', 250)
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]]  // N E S W as (dx, dz)
@@ -74,6 +74,53 @@ function goal () {  // far vision: direction + distance bucket of the nearest lo
   return dir * 4 + (dist <= 1 ? 0 : dist <= 3 ? 1 : dist <= 8 ? 2 : 3)
 }
 
+let mcData = null
+let deathMsg = ''
+const everHeld = new Set()
+let canCraftNew = false
+
+function inventory () {
+  const inv = {}
+  for (const i of bot.inventory.items()) { inv[i.name] = (inv[i.name] || 0) + i.count; everHeld.add(i.name) }
+  return inv
+}
+
+function craftableNew () {  // recipes (by hand or at a nearby table) that give something never held
+  const table = bot.findBlock({ matching: mcData.blocksByName.crafting_table.id, maxDistance: 4 })
+  const out = []
+  for (const it of mcData.itemsArray) {
+    if (everHeld.has(it.name)) continue
+    const rs = bot.recipesFor(it.id, null, 1, table)
+    if (rs.length) out.push([rs[0], table])
+    if (out.length >= 3) break
+  }
+  return out
+}
+
+async function placeTable () {  // put a crafting table on the ground in front
+  const t = bot.inventory.items().find(i => i.name === 'crafting_table')
+  if (!t) return false
+  const p = bot.entity.position.floored(), [fx, fz] = DIRS[heading]
+  const ground = bot.blockAt(p.offset(fx, -1, fz)), spot = bot.blockAt(p.offset(fx, 0, fz))
+  if (!ground || ground.boundingBox !== 'block' || !spot || spot.boundingBox !== 'empty') return false
+  try { await bot.equip(t, 'hand'); await bot.placeBlock(ground, new (require('vec3'))(0, 1, 0)); return true } catch (e) { return false }
+}
+
+async function craftNew () {
+  let opts = craftableNew()
+  if (!opts.length && !bot.findBlock({ matching: mcData.blocksByName.crafting_table.id, maxDistance: 4 })) {
+    if (await placeTable()) opts = craftableNew()
+  }
+  for (const [r, table] of opts) { try { await bot.craft(r, 1, table); return true } catch (e) {} }
+  return false
+}
+
+async function eat () {
+  const food = bot.inventory.items().find(i => mcData.foodsByName[i.name])
+  if (!food || bot.food >= 20) return false
+  try { await bot.equip(food, 'hand'); await bot.consume(); return true } catch (e) { return false }
+}
+
 const count = (pred) => bot.inventory.items().filter(i => pred(i.name)).reduce((s, i) => s + i.count, 0)
 
 function reward () {
@@ -100,6 +147,8 @@ async function act (a) {
   }
   if (a === 1) { heading = (heading + 3) % 4; await face() }
   if (a === 2) { heading = (heading + 1) % 4; await face() }
+  if (a === 5) await craftNew()
+  if (a === 6) await eat()
   if (a === 3) {
     const p = bot.entity.position.floored(), [fx, fz] = DIRS[heading]
     for (const dy of [1, 0]) {
@@ -109,18 +158,26 @@ async function act (a) {
   }
 }
 
-replies.on('line', (line) => { if (waiting) { const w = waiting; waiting = null; w(JSON.parse(line).action) } })
+replies.on('line', (line) => { if (waiting) { const w = waiting; waiting = null; w(JSON.parse(line)) } })
 const ask = (msg) => new Promise(res => { waiting = res; brain.write(JSON.stringify(msg) + '\n') })
 
 bot.once('spawn', async () => {
+  mcData = require('minecraft-data')(bot.version)
   if (VIEWER) require('prismarine-viewer').mineflayer(bot, { port: VIEWER, firstPerson: true, viewDistance: 4 })
   console.log('spawned, brain connected - learning starts')
   lastHealth = bot.health
   let done = false
   bot.on('death', () => { done = true })
+  bot.on('messagestr', (m) => { if (m.startsWith(bot.username + ' ')) deathMsg = m.slice(bot.username.length + 1) })
   for (;;) {
     const { r, logs } = reward()
-    const a = await ask({ obs: observe(), inv: logs, goal: goal(), reward: done ? r - 1 : r, done })
+    if (step % 20 === 0) canCraftNew = craftableNew().length > 0
+    const pos = bot.entity.position
+    const reply = await ask({ obs: observe(), inv: logs, goal: goal(), reward: done ? r - 1 : r, done,
+      items: inventory(), chunk: [Math.floor(pos.x / 16), Math.floor(pos.z / 16)],
+      food: bot.food, health: bot.health, can_craft_new: canCraftNew, died: done ? deathMsg : '' })
+    const a = reply.action
+    if (reply.say) bot.chat(reply.say)
     done = false
     step++
     if (WANDER && step % WANDER === 0) bot.chat('/spreadplayers ~ ~ 0 300 false @s')

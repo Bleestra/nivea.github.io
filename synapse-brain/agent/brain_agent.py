@@ -62,6 +62,9 @@ class BrainAgent:
         if len(obs) > 3 and obs[3] is not None:                 # eyes: active visual-cortex neurons
             seen = [_h(11, int(u)) for u in obs[3]]
             c = seen + [_h(12, inv)] if getattr(self, "blind", False) else c + seen  # blind: vision only
+        if len(obs) > 4 and obs[4] is not None:                 # inner state: hunger, can craft new, knowledge
+            c += [_h(13, i, x) for i, x in enumerate(obs[4])]
+            c.append(_h(14, obs[4][1], v[7]))
         if len(obs) > 2:                                        # far vision (direction to a goal)
             c.append(_h(9, obs[2]))
             if not (len(obs) > 3 and obs[3] is not None and getattr(self, "blind", False)):

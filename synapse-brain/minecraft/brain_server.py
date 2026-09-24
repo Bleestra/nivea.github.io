@@ -31,9 +31,18 @@ p.add_argument("--eyes", default="", help="URL of the bot's first-person viewer,
 p.add_argument("--record", default="", help="directory to save (frame, senses) pairs for training vision")
 p.add_argument("--see", action="store_true", help="feed the visual cortex code to the striatum")
 p.add_argument("--blind", action="store_true", help="with --see: drop the direct block senses, act from vision")
+p.add_argument("--self", default="", help="path of self.json: intrinsic motivation + autobiographical memory")
 args = p.parse_args()
 
-agent = BrainAgent(5, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
+N_ACT = 7 if args.self else 5  # + craft something new, eat
+agent = BrainAgent(N_ACT, curiosity=args.curiosity, emotions=not args.no_fear, fear=not args.no_fear, mood=False)
+me = None
+if args.self:
+    from personality import Self
+
+    me = Self(args.self)
+    print(f"I am {me.me['name']}, {me.me['age_steps']} steps old, I know {len(me.me['known_items'])} things",
+          flush=True)
 agent.blind = args.blind
 cortex = None
 if args.see:
@@ -47,15 +56,18 @@ if args.see:
         print("visual cortex loaded (developed)", flush=True)
 if os.path.exists(args.load):
     z = np.load(args.load)
-    agent.W[:], agent.F[:], agent.steps = z["W"], z["F"], int(z["steps"])
+    na = min(z["W"].shape[1], N_ACT)  # a brain grown with fewer actions keeps what it knows
+    agent.W[:, :na], agent.F[:], agent.steps = z["W"][:, :na], z["F"], int(z["steps"])
     if agent.FQ is not None and "FQ" in z.files:
-        agent.FQ[:] = z["FQ"]
+        agent.FQ[:, :na] = z["FQ"][:, :na]
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
 
 
 def save():
     extra = {"FQ": agent.FQ} if agent.FQ is not None else {}
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
+    if me:
+        me.save()
 
 
 class Eyes:
@@ -111,13 +123,21 @@ class Handler(socketserver.StreamRequestHandler):
                     if len(rec) >= 500:
                         save_rec(rec)
                         rec = []
-            eps = max(0.02, args.eps * (1 - agent.steps / 20000))
+            say, reward = None, float(m["reward"])
+            if me:  # the reward comes from inside: novelty, places, hunger, pain
+                reward, say = me.feel(m)
+                obs = obs + ((None,) if len(obs) == 3 else ()) + (me.drives(m),)
+            eps = me.exploration() if me else max(0.02, args.eps * (1 - agent.steps / 20000))
             a, cells, qv = agent.act(obs, eps)
             if prev is not None:
-                agent.learn(prev[0], prev[1], float(m["reward"]), obs, cells, qv, a, bool(m.get("done")))
+                agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, bool(m.get("done")))
             prev = None if m.get("done") else (cells, a)
-            total += float(m["reward"])
-            self.wfile.write((json.dumps({"action": a}) + "\n").encode())
+            total += reward
+            reply = {"action": a}
+            if say:
+                reply["say"] = say
+                print("says:", say, flush=True)
+            self.wfile.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
             if agent.steps % 200 == 0:
                 print(f"step {agent.steps}: reward so far {total:.1f} "
                       f"({agent.steps / max(time.time() - t0, 1e-9):.1f} steps/s)", flush=True)
@@ -130,6 +150,16 @@ class Handler(socketserver.StreamRequestHandler):
 
 
 socketserver.ThreadingTCPServer.allow_reuse_address = True
+
+
+def _on_term(*_):  # being stopped is not a reason to forget
+    save()
+    sys.exit(0)
+
+
+import signal  # noqa: E402
+
+signal.signal(signal.SIGTERM, _on_term)
 
 if __name__ == "__main__":
     with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler) as srv:
