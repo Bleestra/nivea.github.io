@@ -38,7 +38,7 @@ class Grown:
                 me.note(f"{user} сказал: «{text}»" + (f"; я ответил: «{say}»" if say else ""), None)
         o = self.body.to_o(m, self.a_prev, frame)
         child.m = m
-        a = child.step(o, self.a_prev, self.front_prev, self.inv_prev, extra_reward=0.3 * reward)
+        a = child.step(o, self.a_prev, self.front_prev, self.inv_prev, extra_reward=reward)
         if force is not None:
             a = force                                         # the experimenter's hand, felt as its own movement
         self.a_prev, self.front_prev, self.inv_prev = a, int(o["view"][7]), dict(o["inv"])

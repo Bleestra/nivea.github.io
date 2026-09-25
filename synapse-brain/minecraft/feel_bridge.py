@@ -120,7 +120,7 @@ class MCChild(Child):
         s["in:" + str(self.m.get("dim", "overworld")).replace("minecraft:", "")] = 1  # which world I am in
         for k in self.m.get("craftable", []):                                          # the recipe book shows it
             s["can_craft:" + k] = 1
-        for name, d in self.m.get("seen", []):                                        # what my eyes see now
+        for name, d, *_ in self.m.get("seen", []):                                    # what my eyes see now
             s["see:" + name] = 1
             if d <= 4:
                 s["reach:" + name] = 1                                                 # ... and can touch
@@ -137,6 +137,7 @@ class Body:
 
     def __init__(self):
         self.hp, self.fish, self.fatigue, self.t, self.nausea, self.prev_items = 20, 0, 0, 0, 0, {}
+        self.was_asleep = False
 
     def to_o(self, m, act, frame=None):
         self.t += 1
@@ -153,7 +154,7 @@ class Body:
             cause = min(((k, d) for k, _, d in near if k in ("zombie", "creeper", "hostile")), key=lambda x: x[1], default=("world", 0))[0]
             hurt.append(("self", 0, int(round(self.hp - hp)), cause))
         self.hp = hp
-        if act == 24 and night:
+        if m.get("sleeping"):
             self.fatigue = 0
         self.fatigue += 1
         ate = fev.get("ate")
@@ -193,9 +194,10 @@ class Body:
              "ev": {"deaths": [tuple(x) for x in fev.get("deaths", [])], "hurt": hurt, "destroyed": [], "ate": ate,
                     "caught": fish > self.fish, "tamed": fev.get("tamed"), "tone": tone, "gift": bool(fev.get("gift")),
                     "carer_did": fev.get("carerDid"), "explosion": (0, 0) if fev.get("boom") else None, "sounds": sounds,
-                    "died": bool(m.get("died")), "slept": act == 24 and night, "placed": None, "got": got,
+                    "died": bool(m.get("died")), "slept": bool(m.get("sleeping")) and not self.was_asleep, "placed": None, "got": got,
                     "cat_with_carer": False}}
         self.fish = fish
+        self.was_asleep = bool(m.get("sleeping"))
         return o
 
 
@@ -265,7 +267,9 @@ def attention(child, a, m):
             return None
         (x, z), _ = max(L.attach_place.items(), key=lambda kv: kv[1])
         return [int(x), int(z)]
-    seen = [name for name, _ in m.get("seen", [])]
+    seen = [x[0] for x in m.get("seen", [])]
+    if kind == "mine_target":                              # one digs blocks, not creatures
+        seen = [x[0] for x in m.get("seen", []) if len(x) < 3 or x[2] == "block"]
     g = mind.goal
     if kind == "craft_target":
         craftable = m.get("craftable", [])

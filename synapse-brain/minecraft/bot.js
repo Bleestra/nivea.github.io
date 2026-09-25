@@ -165,13 +165,14 @@ function seenThings () {  // nearest visible block of each kind + visible creatu
     if (!visible(b)) continue
     found.set(b.name, Math.floor(q.distanceTo(p)))
   }
+  const blockNames = new Set(found.keys())
   for (const e of Object.values(bot.entities)) {
     if (e === bot.entity || !e.name) continue
     const d = e.position.distanceTo(p)
     if (d < 16 && (!found.has(e.name) || found.get(e.name) > d)) found.set(e.name, Math.floor(d))
   }
   for (const [n, d] of found) if (d <= 4) found.set(n, d)  // (distance kept: the brain knows what is within reach)
-  seenCache = { t: step, list: [...found.entries()] }
+  seenCache = { t: step, list: [...found.entries()].map(([n, d]) => [n, d, blockNames.has(n) ? 'block' : 'mob']) }
   return seenCache.list
 }
 function nearestSeenBlock (name) {
@@ -637,7 +638,7 @@ bot.once('spawn', async () => {
       items: inventory(), chunk: [Math.floor(pos.x / 16), Math.floor(pos.z / 16)], food: bot.food, health: bot.health,
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
       sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
-      near: nearList(), fev: takeFeelEv(), dim: String(bot.game.dimension || 'overworld').replace('minecraft:', ''), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
+      near: nearList(), fev: takeFeelEv(), sleeping: !!bot.isSleeping, dim: String(bot.game.dimension || 'overworld').replace('minecraft:', ''), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
       xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '', diamond_seen: oreSeen(), seen: seenThings(),
       carer_holds: (() => { const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 8); return p && p.heldItem ? p.heldItem.name : null })(),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)

@@ -25,6 +25,8 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RULES = json.load(open(os.path.join(HERE, "..", "minecraft", "knowledge", "sim_rules.json")))
+_WOODS = ("spruce_", "birch_", "jungle_", "acacia_", "dark_oak_", "mangrove_", "cherry_", "bamboo_", "crimson_", "warped_")
+RULES["recipes"] = {k: v for k, v in RULES["recipes"].items() if not k.startswith(_WOODS)}   # this world grows only oaks
 ADV = json.load(open(os.path.join(HERE, "..", "minecraft", "knowledge", "advancements.json")))
 ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait', 'craft_new', 'eat', 'back', 'strafe_left',
            'strafe_right', 'jump', 'toggle_sprint', 'toggle_sneak', 'look_up', 'look_down', 'attack', 'use_item',
@@ -305,6 +307,7 @@ class MineSim:
     # ---------------------------------------------------------------- one moment
     def step(self, a, target=None):
         self.fev, self.adv_new = self._fev(), []
+        self.sleeping = False
         name = ACTIONS[a]
         sc = self.scene()
         r = self.rng
@@ -468,6 +471,7 @@ class MineSim:
                     self._crystal(sc)
         elif name == "sleep" and self.night() and any(k.endswith("_bed") for k in self.inv) and dim == "overworld":
             self.t += DAY - self.t % DAY
+            self.sleeping = True
             sc["mobs"] = [m for m in sc["mobs"] if m["name"] not in ("zombie", "skeleton", "spider", "creeper")]
         elif name == "fish" and "fishing_rod" in self.inv and "water" in sc["things"] and r.random() < .2:
             self.give("cod")
@@ -545,9 +549,9 @@ class MineSim:
         self.ever = getattr(self, "ever", set()) | set(self.inv)
         seen = []
         for k in sc["things"]:
-            seen.append([k, 2 if k in sc["reach"] else 8])
+            seen.append([k, 2 if k in sc["reach"] else 8, "block"])
         for m in sc["mobs"]:
-            seen.append([m["name"], 2 if m["near"] else 8])
+            seen.append([m["name"], 2 if m["near"] else 8, "mob"])
         near = [[KIND.get(m["name"], "hostile" if m["name"] in HOSTILE else "animal"), m["id"] % 100000, 2 if m["near"] else 6]
                 for m in sc["mobs"]]
         cls = {"oak_log": 1, "lava": 3, "water": 4}
@@ -569,6 +573,6 @@ class MineSim:
                "sky": int(dim == "overworld" and depth == 0), "around": [0, 0, 0, 0, 0, 0], "stuck": 0, "y": y,
                "near": near, "fev": self.fev, "time": tod, "heading": 0, "pitch": 0, "xz": [x * 16, z * 16],
                "held": self.held or "", "diamond_seen": 5 if any("diamond_ore" in k for k in sc["things"]) else 0,
-               "seen": seen, "dim": dim,
+               "seen": seen, "dim": dim, "sleeping": getattr(self, "sleeping", False),
                "craftable": [k for k in RULES["recipes"] if self.recipe_ok(k)][:40]}   # what the recipe book shows
         return msg

@@ -118,6 +118,8 @@ class Limbic:
         self.stats = {}
         self.sad_avg = 0.0
         self.since_event = 0                           # moments since anything at all happened
+        self.look_rate = 0.0
+        self.company_avg = self.dear_avg = 0.0
         self.rate_now = self.rate_life = 0.5
         self.lost_dear = []                            # [how dear, when, where] of what I lost
         self.aversion = {}                             # (action, context) -> one-shot learned 'never again' (insula)
@@ -233,7 +235,9 @@ class Limbic:
         taste = 0.0
         if ev["ate"]:
             hunger_before = min(20, o["hunger"] - 4)
-            taste = self.taste.get(ev["ate"], 0.0) * (1.0 + max(0, 20 - hunger_before) / 10)
+            want = max(0, 20 - hunger_before) / 10 - 0.2                  # alliesthesia: pleasant when hungry,
+            base_t = self.taste.get(ev["ate"], 0.0)                          # not when full
+            taste = base_t * want if base_t > 0 else base_t * (1.0 + max(0, 20 - hunger_before) / 10)
             r += taste
         heal = max(0, o["hp"] - getattr(self, "prev_hp", o["hp"]))    # the pain goes away: relief
         self.prev_hp = o["hp"]
@@ -253,6 +257,8 @@ class Limbic:
             self.since_social += 1
         # ---- curiosity and the sky
         sky_lp, colours = self._sky(o["sky"])
+        self.look_rate += 0.01 * (float(len(o["sky"]) == 8) - self.look_rate)
+        sky_lp *= max(0.0, 1.0 - 3.0 * self.look_rate)                   # habituation: always looking, no longer moving
         world_lp = self._progress(("world", int(o["view"][7])), float(self.fm_surprise))
         interest = sky_lp * 3 + world_lp * 0.5
         self.look_streak = self.look_streak + 1 if len(o["sky"]) == 8 else 0
@@ -324,10 +330,14 @@ class Limbic:
         self.attach_place[here] = min(2.0, self.attach_place.get(here, 0.0) + 0.003 * (max(0.0, r) + (0.5 if safe_night else 0)))
         # affiliation (genome): infants are drawn to anything that moves by itself; what hurts
         # gets blamed and stops being attractive
-        r += sum(0.03 * max(0.0, 1 - self.blame.get(k, 0.0)) for k, _, dd in o["near"] if dd <= 2 and k != "self")
+        company = sum(max(0.0, 1 - self.blame.get(k, 0.0)) for k, _, dd in o["near"] if dd <= 2 and k != "self")
+        r += 0.03 * max(0.0, company - self.company_avg)                 # meeting someone, not the constant presence
+        self.company_avg += 0.02 * (company - self.company_avg)
         dear_near = sum(self.attach_being.get(bid, 0.0) for bid, (k, dist) in near.items() if dist <= 2) \
             + 0.5 * self.attach_place.get(here, 0.0)
-        r += 0.02 * min(dear_near, 3.0)                                  # being with the ones I love
+        dn = min(dear_near, 3.0)
+        r += 0.3 * max(0.0, dn - self.dear_avg)                         # coming back to the ones I love (reunion);
+        self.dear_avg += 0.02 * (dn - self.dear_avg)                    # the constant comfort of home fades (adaptation)
         # ---- anger's satisfaction: hurting the one I blame
         anger_prev = self.lingering["anger"]
         for who, bid, dmg, cause in ev["hurt"]:
