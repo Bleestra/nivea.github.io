@@ -36,7 +36,7 @@ def brain(data, test, size):
     tt = time.perf_counter() - t
     park = os.path.join(HERE, "data", "_T_scaling.npy")
     np.save(park, st["T"])
-    small = {k: st[k].copy() for k in ("MT", "MT2", "S", "LN")}
+    small = {k: st[k].copy() for k in ("MT", "MT2", "MT3", "MT4", "WC", "S", "LN")}
     b, n = process(X, st, size, len(X), 0, size, stp=True)
     wm = b / n
     st["T"][:] = np.load(park, mmap_mode="r")
@@ -98,7 +98,11 @@ def main():
         size = mb * 1_000_000
         r = dict(MB=mb, brain=brain(data, test, size))
         print(json.dumps(r), flush=True)
-        r["transformer"] = transformer(data, val, test, size, TX_BUDGET[mb])
+        prev = os.path.join(HERE, "results_scaling.jsonl")  # BRAIN_ONLY=1 reuses earlier transformer runs
+        if os.environ.get("BRAIN_ONLY") and os.path.exists(prev):
+            r["transformer"] = next(json.loads(l)["transformer"] for l in open(prev) if json.loads(l)["MB"] == mb)
+        else:
+            r["transformer"] = transformer(data, val, test, size, TX_BUDGET[mb])
         print(json.dumps(r), flush=True)
         with open(out, "a") as f:
             f.write(json.dumps(r) + "\n")

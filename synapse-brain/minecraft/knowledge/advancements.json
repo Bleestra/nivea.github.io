@@ -1,0 +1,1131 @@
+{
+ "story/lava_bucket": {
+  "title": "Hot Stuff",
+  "description": "Fill a Bucket with lava",
+  "parent": "story/smelt_iron",
+  "criteria": [
+   "lava_bucket"
+  ]
+ },
+ "story/mine_diamond": {
+  "title": "Diamonds!",
+  "description": "Acquire diamonds",
+  "parent": "story/iron_tools",
+  "criteria": [
+   "diamond"
+  ]
+ },
+ "story/smelt_iron": {
+  "title": "Acquire Hardware",
+  "description": "Smelt an Iron Ingot",
+  "parent": "story/upgrade_tools",
+  "criteria": [
+   "iron"
+  ]
+ },
+ "story/deflect_arrow": {
+  "title": "Not Today, Thank You",
+  "description": "Deflect a projectile with a Shield",
+  "parent": "story/obtain_armor",
+  "criteria": [
+   "deflected_projectile"
+  ]
+ },
+ "story/shiny_gear": {
+  "title": "Cover Me with Diamonds",
+  "description": "Diamond armor saves lives",
+  "parent": "story/mine_diamond",
+  "criteria": [
+   "diamond_boots",
+   "diamond_chestplate",
+   "diamond_helmet",
+   "diamond_leggings"
+  ]
+ },
+ "story/root": {
+  "title": "Minecraft",
+  "description": "The heart and story of the game",
+  "parent": null,
+  "criteria": [
+   "crafting_table"
+  ]
+ },
+ "story/form_obsidian": {
+  "title": "Ice Bucket Challenge",
+  "description": "Obtain a block of Obsidian",
+  "parent": "story/lava_bucket",
+  "criteria": [
+   "obsidian"
+  ]
+ },
+ "story/enter_the_nether": {
+  "title": "We Need to Go Deeper",
+  "description": "Build, light and enter a Nether Portal",
+  "parent": "story/form_obsidian",
+  "criteria": [
+   "entered_nether"
+  ]
+ },
+ "story/follow_ender_eye": {
+  "title": "Eye Spy",
+  "description": "Follow an Eye of Ender",
+  "parent": "story/enter_the_nether",
+  "criteria": [
+   "in_stronghold"
+  ]
+ },
+ "story/obtain_armor": {
+  "title": "Suit Up",
+  "description": "Protect yourself with a piece of iron armor",
+  "parent": "story/smelt_iron",
+  "criteria": [
+   "iron_boots",
+   "iron_chestplate",
+   "iron_helmet",
+   "iron_leggings"
+  ]
+ },
+ "story/mine_stone": {
+  "title": "Stone Age",
+  "description": "Mine Stone with your new Pickaxe",
+  "parent": "story/root",
+  "criteria": [
+   "get_stone"
+  ]
+ },
+ "story/enchant_item": {
+  "title": "Enchanter",
+  "description": "Enchant an item at an Enchanting Table",
+  "parent": "story/mine_diamond",
+  "criteria": [
+   "enchanted_item"
+  ]
+ },
+ "story/iron_tools": {
+  "title": "Isn't It Iron Pick",
+  "description": "Upgrade your Pickaxe",
+  "parent": "story/smelt_iron",
+  "criteria": [
+   "iron_pickaxe"
+  ]
+ },
+ "story/cure_zombie_villager": {
+  "title": "Zombie Doctor",
+  "description": "Weaken and then cure a Zombie Villager",
+  "parent": "story/enter_the_nether",
+  "criteria": [
+   "cured_zombie"
+  ]
+ },
+ "story/upgrade_tools": {
+  "title": "Getting an Upgrade",
+  "description": "Construct a better Pickaxe",
+  "parent": "story/mine_stone",
+  "criteria": [
+   "stone_pickaxe"
+  ]
+ },
+ "story/enter_the_end": {
+  "title": "The End?",
+  "description": "Enter the End Portal",
+  "parent": "story/follow_ender_eye",
+  "criteria": [
+   "entered_end"
+  ]
+ },
+ "nether/obtain_blaze_rod": {
+  "title": "Into Fire",
+  "description": "Relieve a Blaze of its rod",
+  "parent": "nether/find_fortress",
+  "criteria": [
+   "blaze_rod"
+  ]
+ },
+ "nether/fast_travel": {
+  "title": "Subspace Bubble",
+  "description": "Use the Nether to travel 7 km in the Overworld",
+  "parent": "nether/root",
+  "criteria": [
+   "travelled"
+  ]
+ },
+ "nether/loot_bastion": {
+  "title": "War Pigs",
+  "description": "Loot a Chest in a Bastion Remnant",
+  "parent": "nether/find_bastion",
+  "criteria": [
+   "loot_bastion_bridge",
+   "loot_bastion_hoglin_stable",
+   "loot_bastion_other",
+   "loot_bastion_treasure"
+  ]
+ },
+ "nether/ride_strider": {
+  "title": "This Boat Has Legs",
+  "description": "Ride a Strider with a Warped Fungus on a Stick",
+  "parent": "nether/root",
+  "criteria": [
+   "used_warped_fungus_on_a_stick"
+  ]
+ },
+ "nether/obtain_ancient_debris": {
+  "title": "Hidden in the Depths",
+  "description": "Obtain Ancient Debris",
+  "parent": "nether/root",
+  "criteria": [
+   "ancient_debris"
+  ]
+ },
+ "nether/root": {
+  "title": "Nether",
+  "description": "Bring summer clothes",
+  "parent": null,
+  "criteria": [
+   "entered_nether"
+  ]
+ },
+ "nether/distract_piglin": {
+  "title": "Oh Shiny",
+  "description": "Distract Piglins with gold",
+  "parent": "nether/root",
+  "criteria": [
+   "distract_piglin",
+   "distract_piglin_directly"
+  ]
+ },
+ "nether/use_lodestone": {
+  "title": "Country Lode, Take Me Home",
+  "description": "Use a Compass on a Lodestone",
+  "parent": "nether/obtain_ancient_debris",
+  "criteria": [
+   "use_lodestone"
+  ]
+ },
+ "nether/obtain_crying_obsidian": {
+  "title": "Who is Cutting Onions?",
+  "description": "Obtain Crying Obsidian",
+  "parent": "nether/root",
+  "criteria": [
+   "crying_obsidian"
+  ]
+ },
+ "nether/create_full_beacon": {
+  "title": "Beaconator",
+  "description": "Bring a Beacon to full power",
+  "parent": "nether/create_beacon",
+  "criteria": [
+   "beacon"
+  ]
+ },
+ "nether/uneasy_alliance": {
+  "title": "Uneasy Alliance",
+  "description": "Rescue a Ghast from the Nether, bring it safely home to the Overworld... and then kill it",
+  "parent": "nether/return_to_sender",
+  "criteria": [
+   "killed_ghast"
+  ]
+ },
+ "nether/all_potions": {
+  "title": "A Furious Cocktail",
+  "description": "Have every potion effect applied at the same time",
+  "parent": "nether/brew_potion",
+  "criteria": [
+   "all_effects"
+  ]
+ },
+ "nether/charge_respawn_anchor": {
+  "title": "Not Quite \"Nine\" Lives",
+  "description": "Charge a Respawn Anchor to the maximum",
+  "parent": "nether/obtain_crying_obsidian",
+  "criteria": [
+   "charge_respawn_anchor"
+  ]
+ },
+ "nether/find_fortress": {
+  "title": "A Terrible Fortress",
+  "description": "Break your way into a Nether Fortress",
+  "parent": "nether/root",
+  "criteria": [
+   "fortress"
+  ]
+ },
+ "nether/ride_strider_in_overworld_lava": {
+  "title": "Feels Like Home",
+  "description": "Take a Strider for a loooong ride on a lava lake in the Overworld",
+  "parent": "nether/ride_strider",
+  "criteria": [
+   "ride_entity_distance"
+  ]
+ },
+ "nether/get_wither_skull": {
+  "title": "Spooky Scary Skeleton",
+  "description": "Obtain a Wither Skeleton's skull",
+  "parent": "nether/find_fortress",
+  "criteria": [
+   "wither_skull"
+  ]
+ },
+ "nether/return_to_sender": {
+  "title": "Return to Sender",
+  "description": "Destroy a Ghast with a fireball",
+  "parent": "nether/root",
+  "criteria": [
+   "killed_ghast"
+  ]
+ },
+ "nether/find_bastion": {
+  "title": "Those Were the Days",
+  "description": "Enter a Bastion Remnant",
+  "parent": "nether/root",
+  "criteria": [
+   "bastion"
+  ]
+ },
+ "nether/netherite_armor": {
+  "title": "Cover Me in Debris",
+  "description": "Get a full suit of Netherite armor",
+  "parent": "nether/obtain_ancient_debris",
+  "criteria": [
+   "netherite_armor"
+  ]
+ },
+ "nether/create_beacon": {
+  "title": "Bring Home the Beacon",
+  "description": "Construct and place a Beacon",
+  "parent": "nether/summon_wither",
+  "criteria": [
+   "beacon"
+  ]
+ },
+ "nether/all_effects": {
+  "title": "How Did We Get Here?",
+  "description": "Have every effect applied at the same time",
+  "parent": "nether/all_potions",
+  "criteria": [
+   "all_effects"
+  ]
+ },
+ "nether/summon_wither": {
+  "title": "Withering Heights",
+  "description": "Summon the Wither",
+  "parent": "nether/get_wither_skull",
+  "criteria": [
+   "summoned"
+  ]
+ },
+ "nether/explore_nether": {
+  "title": "Hot Tourist Destinations",
+  "description": "Explore all Nether biomes",
+  "parent": "nether/ride_strider",
+  "criteria": [
+   "minecraft:basalt_deltas",
+   "minecraft:crimson_forest",
+   "minecraft:nether_wastes",
+   "minecraft:soul_sand_valley",
+   "minecraft:warped_forest"
+  ]
+ },
+ "nether/brew_potion": {
+  "title": "Local Brewery",
+  "description": "Brew a Potion",
+  "parent": "nether/obtain_blaze_rod",
+  "criteria": [
+   "potion"
+  ]
+ },
+ "adventure/trade_at_world_height": {
+  "title": "Star Trader",
+  "description": "Trade with a Villager at the build height limit",
+  "parent": "adventure/trade",
+  "criteria": [
+   "trade_at_world_height"
+  ]
+ },
+ "adventure/sniper_duel": {
+  "title": "Sniper Duel",
+  "description": "Kill a Skeleton from at least 50 meters away",
+  "parent": "adventure/shoot_arrow",
+  "criteria": [
+   "killed_skeleton"
+  ]
+ },
+ "adventure/read_power_of_chiseled_bookshelf": {
+  "title": "The Power of Books",
+  "description": "Read the power signal of a Chiseled Bookshelf using a Comparator",
+  "parent": "adventure/root",
+  "criteria": [
+   "chiseled_bookshelf",
+   "comparator"
+  ]
+ },
+ "adventure/spyglass_at_dragon": {
+  "title": "Is It a Plane?",
+  "description": "Look at the Ender Dragon through a Spyglass",
+  "parent": "adventure/spyglass_at_ghast",
+  "criteria": [
+   "spyglass_at_dragon"
+  ]
+ },
+ "adventure/avoid_vibration": {
+  "title": "Sneak 100",
+  "description": "Sneak near a Sculk Sensor or Warden to prevent it from detecting you",
+  "parent": "adventure/root",
+  "criteria": [
+   "avoid_vibration"
+  ]
+ },
+ "adventure/summon_iron_golem": {
+  "title": "Hired Help",
+  "description": "Summon an Iron Golem to help defend a village",
+  "parent": "adventure/trade",
+  "criteria": [
+   "summoned_golem"
+  ]
+ },
+ "adventure/spyglass_at_parrot": {
+  "title": "Is It a Bird?",
+  "description": "Look at a Parrot through a Spyglass",
+  "parent": "adventure/root",
+  "criteria": [
+   "spyglass_at_parrot"
+  ]
+ },
+ "adventure/whos_the_pillager_now": {
+  "title": "Who's the Pillager Now?",
+  "description": "Give a Pillager a taste of their own medicine",
+  "parent": "adventure/ol_betsy",
+  "criteria": [
+   "kill_pillager"
+  ]
+ },
+ "adventure/root": {
+  "title": "Adventure",
+  "description": "Adventure, exploration and combat",
+  "parent": null,
+  "criteria": [
+   "killed_by_something",
+   "killed_something"
+  ]
+ },
+ "adventure/sleep_in_bed": {
+  "title": "Sweet Dreams",
+  "description": "Sleep in a Bed to change your respawn point",
+  "parent": "adventure/root",
+  "criteria": [
+   "slept_in_bed"
+  ]
+ },
+ "adventure/ol_betsy": {
+  "title": "Ol' Betsy",
+  "description": "Shoot a Crossbow",
+  "parent": "adventure/root",
+  "criteria": [
+   "shot_crossbow"
+  ]
+ },
+ "adventure/kill_a_mob": {
+  "title": "Monster Hunter",
+  "description": "Kill any hostile monster",
+  "parent": "adventure/root",
+  "criteria": [
+   "minecraft:blaze",
+   "minecraft:cave_spider",
+   "minecraft:creeper",
+   "minecraft:drowned",
+   "minecraft:elder_guardian",
+   "minecraft:ender_dragon",
+   "minecraft:enderman",
+   "minecraft:endermite",
+   "minecraft:evoker",
+   "minecraft:ghast",
+   "minecraft:guardian",
+   "minecraft:hoglin",
+   "minecraft:husk",
+   "minecraft:magma_cube",
+   "minecraft:phantom",
+   "minecraft:piglin",
+   "minecraft:piglin_brute",
+   "minecraft:pillager",
+   "minecraft:ravager",
+   "minecraft:shulker",
+   "minecraft:silverfish",
+   "minecraft:skeleton",
+   "minecraft:slime",
+   "minecraft:spider",
+   "minecraft:stray",
+   "minecraft:vex",
+   "minecraft:vindicator",
+   "minecraft:witch",
+   "minecraft:wither",
+   "minecraft:wither_skeleton",
+   "minecraft:zoglin",
+   "minecraft:zombie",
+   "minecraft:zombie_villager",
+   "minecraft:zombified_piglin"
+  ]
+ },
+ "adventure/fall_from_world_height": {
+  "title": "Caves & Cliffs",
+  "description": "Free fall from the top of the world (build limit) to the bottom of the world and survive",
+  "parent": "adventure/root",
+  "criteria": [
+   "fall_from_world_height"
+  ]
+ },
+ "adventure/lightning_rod_with_villager_no_fire": {
+  "title": "Surge Protector",
+  "description": "Protect a Villager from an undesired shock without starting a fire",
+  "parent": "adventure/root",
+  "criteria": [
+   "lightning_rod_with_villager_no_fire"
+  ]
+ },
+ "adventure/arbalistic": {
+  "title": "Arbalistic",
+  "description": "Kill five unique mobs with one crossbow shot",
+  "parent": "adventure/ol_betsy",
+  "criteria": [
+   "arbalistic"
+  ]
+ },
+ "adventure/voluntary_exile": {
+  "title": "Voluntary Exile",
+  "description": "Kill a raid captain.\nMaybe consider staying away from villages for the time being...",
+  "parent": "adventure/root",
+  "criteria": [
+   "voluntary_exile"
+  ]
+ },
+ "adventure/kill_all_mobs": {
+  "title": "Monsters Hunted",
+  "description": "Kill one of every hostile monster",
+  "parent": "adventure/kill_a_mob",
+  "criteria": [
+   "minecraft:blaze",
+   "minecraft:cave_spider",
+   "minecraft:creeper",
+   "minecraft:drowned",
+   "minecraft:elder_guardian",
+   "minecraft:ender_dragon",
+   "minecraft:enderman",
+   "minecraft:endermite",
+   "minecraft:evoker",
+   "minecraft:ghast",
+   "minecraft:guardian",
+   "minecraft:hoglin",
+   "minecraft:husk",
+   "minecraft:magma_cube",
+   "minecraft:phantom",
+   "minecraft:piglin",
+   "minecraft:piglin_brute",
+   "minecraft:pillager",
+   "minecraft:ravager",
+   "minecraft:shulker",
+   "minecraft:silverfish",
+   "minecraft:skeleton",
+   "minecraft:slime",
+   "minecraft:spider",
+   "minecraft:stray",
+   "minecraft:vex",
+   "minecraft:vindicator",
+   "minecraft:witch",
+   "minecraft:wither",
+   "minecraft:wither_skeleton",
+   "minecraft:zoglin",
+   "minecraft:zombie",
+   "minecraft:zombie_villager",
+   "minecraft:zombified_piglin"
+  ]
+ },
+ "adventure/totem_of_undying": {
+  "title": "Postmortal",
+  "description": "Use a Totem of Undying to cheat death",
+  "parent": "adventure/kill_a_mob",
+  "criteria": [
+   "used_totem"
+  ]
+ },
+ "adventure/spyglass_at_ghast": {
+  "title": "Is It a Balloon?",
+  "description": "Look at a Ghast through a Spyglass",
+  "parent": "adventure/spyglass_at_parrot",
+  "criteria": [
+   "spyglass_at_ghast"
+  ]
+ },
+ "adventure/very_very_frightening": {
+  "title": "Very Very Frightening",
+  "description": "Strike a Villager with lightning",
+  "parent": "adventure/throw_trident",
+  "criteria": [
+   "struck_villager"
+  ]
+ },
+ "adventure/walk_on_powder_snow_with_leather_boots": {
+  "title": "Light as a Rabbit",
+  "description": "Walk on Powder Snow... without sinking in it",
+  "parent": "adventure/sleep_in_bed",
+  "criteria": [
+   "walk_on_powder_snow_with_leather_boots"
+  ]
+ },
+ "adventure/craft_decorated_pot_using_only_sherds": {
+  "title": "Careful Restoration",
+  "description": "Make a Decorated Pot out of 4 Pottery Sherds",
+  "parent": "adventure/salvage_sherd",
+  "criteria": [
+   "pot_crafted_using_only_sherds"
+  ]
+ },
+ "adventure/trade": {
+  "title": "What a Deal!",
+  "description": "Successfully trade with a Villager",
+  "parent": "adventure/root",
+  "criteria": [
+   "traded"
+  ]
+ },
+ "adventure/kill_mob_near_sculk_catalyst": {
+  "title": "It Spreads",
+  "description": "Kill a mob near a Sculk Catalyst",
+  "parent": "adventure/kill_a_mob",
+  "criteria": [
+   "kill_mob_near_sculk_catalyst"
+  ]
+ },
+ "adventure/shoot_arrow": {
+  "title": "Take Aim",
+  "description": "Shoot something with an Arrow",
+  "parent": "adventure/kill_a_mob",
+  "criteria": [
+   "shot_arrow"
+  ]
+ },
+ "adventure/hero_of_the_village": {
+  "title": "Hero of the Village",
+  "description": "Successfully defend a village from a raid",
+  "parent": "adventure/voluntary_exile",
+  "criteria": [
+   "hero_of_the_village"
+  ]
+ },
+ "adventure/trim_with_all_exclusive_armor_patterns": {
+  "title": "Smithing with Style",
+  "description": "Apply these smithing templates at least once: Spire, Snout, Rib, Ward, Silence, Vex, Tide, Wayfinder",
+  "parent": "adventure/trim_with_any_armor_pattern",
+  "criteria": [
+   "armor_trimmed_minecraft:rib_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:silence_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:snout_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:spire_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:tide_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:vex_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:ward_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:wayfinder_armor_trim_smithing_template_smithing_trim"
+  ]
+ },
+ "adventure/two_birds_one_arrow": {
+  "title": "Two Birds, One Arrow",
+  "description": "Kill two Phantoms with a piercing Arrow",
+  "parent": "adventure/ol_betsy",
+  "criteria": [
+   "two_birds"
+  ]
+ },
+ "adventure/salvage_sherd": {
+  "title": "Respecting the Remnants",
+  "description": "Brush a Suspicious block to obtain a Pottery Sherd",
+  "parent": "adventure/root",
+  "criteria": [
+   "desert_pyramid",
+   "desert_well",
+   "has_sherd",
+   "ocean_ruin_cold",
+   "ocean_ruin_warm",
+   "trail_ruins_common",
+   "trail_ruins_rare"
+  ]
+ },
+ "adventure/adventuring_time": {
+  "title": "Adventuring Time",
+  "description": "Discover every biome",
+  "parent": "adventure/sleep_in_bed",
+  "criteria": [
+   "minecraft:badlands",
+   "minecraft:bamboo_jungle",
+   "minecraft:beach",
+   "minecraft:birch_forest",
+   "minecraft:cherry_grove",
+   "minecraft:cold_ocean",
+   "minecraft:dark_forest",
+   "minecraft:deep_cold_ocean",
+   "minecraft:deep_dark",
+   "minecraft:deep_frozen_ocean",
+   "minecraft:deep_lukewarm_ocean",
+   "minecraft:deep_ocean",
+   "minecraft:desert",
+   "minecraft:dripstone_caves",
+   "minecraft:eroded_badlands",
+   "minecraft:flower_forest",
+   "minecraft:forest",
+   "minecraft:frozen_ocean",
+   "minecraft:frozen_peaks",
+   "minecraft:frozen_river",
+   "minecraft:grove",
+   "minecraft:ice_spikes",
+   "minecraft:jagged_peaks",
+   "minecraft:jungle",
+   "minecraft:lukewarm_ocean",
+   "minecraft:lush_caves",
+   "minecraft:mangrove_swamp",
+   "minecraft:meadow",
+   "minecraft:mushroom_fields",
+   "minecraft:ocean",
+   "minecraft:old_growth_birch_forest",
+   "minecraft:old_growth_pine_taiga",
+   "minecraft:old_growth_spruce_taiga",
+   "minecraft:plains",
+   "minecraft:river",
+   "minecraft:savanna",
+   "minecraft:savanna_plateau",
+   "minecraft:snowy_beach",
+   "minecraft:snowy_plains",
+   "minecraft:snowy_slopes",
+   "minecraft:snowy_taiga",
+   "minecraft:sparse_jungle",
+   "minecraft:stony_peaks",
+   "minecraft:stony_shore",
+   "minecraft:sunflower_plains",
+   "minecraft:swamp",
+   "minecraft:taiga",
+   "minecraft:warm_ocean",
+   "minecraft:windswept_forest",
+   "minecraft:windswept_gravelly_hills",
+   "minecraft:windswept_hills",
+   "minecraft:windswept_savanna",
+   "minecraft:wooded_badlands"
+  ]
+ },
+ "adventure/trim_with_any_armor_pattern": {
+  "title": "Crafting a New Look",
+  "description": "Craft a trimmed armor at a Smithing Table",
+  "parent": "adventure/root",
+  "criteria": [
+   "armor_trimmed_minecraft:coast_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:dune_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:eye_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:host_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:raiser_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:rib_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:sentry_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:shaper_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:silence_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:snout_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:spire_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:tide_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:vex_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:ward_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:wayfinder_armor_trim_smithing_template_smithing_trim",
+   "armor_trimmed_minecraft:wild_armor_trim_smithing_template_smithing_trim"
+  ]
+ },
+ "adventure/throw_trident": {
+  "title": "A Throwaway Joke",
+  "description": "Throw a Trident at something.\nNote: Throwing away your only weapon is not a good idea.",
+  "parent": "adventure/kill_a_mob",
+  "criteria": [
+   "shot_trident"
+  ]
+ },
+ "adventure/play_jukebox_in_meadows": {
+  "title": "Sound of Music",
+  "description": "Make the Meadows come alive with the sound of music from a Jukebox",
+  "parent": "adventure/sleep_in_bed",
+  "criteria": [
+   "play_jukebox_in_meadows"
+  ]
+ },
+ "adventure/honey_block_slide": {
+  "title": "Sticky Situation",
+  "description": "Jump into a Honey Block to break your fall",
+  "parent": "adventure/root",
+  "criteria": [
+   "honey_block_slide"
+  ]
+ },
+ "adventure/bullseye": {
+  "title": "Bullseye",
+  "description": "Hit the bullseye of a Target block from at least 30 meters away",
+  "parent": "adventure/shoot_arrow",
+  "criteria": [
+   "bullseye"
+  ]
+ },
+ "end/levitate": {
+  "title": "Great View From Up Here",
+  "description": "Levitate up 50 blocks from the attacks of a Shulker",
+  "parent": "end/find_end_city",
+  "criteria": [
+   "levitated"
+  ]
+ },
+ "end/dragon_breath": {
+  "title": "You Need a Mint",
+  "description": "Collect Dragon's Breath in a Glass Bottle",
+  "parent": "end/kill_dragon",
+  "criteria": [
+   "dragon_breath"
+  ]
+ },
+ "end/root": {
+  "title": "The End",
+  "description": "Or the beginning?",
+  "parent": null,
+  "criteria": [
+   "entered_end"
+  ]
+ },
+ "end/kill_dragon": {
+  "title": "Free the End",
+  "description": "Good luck",
+  "parent": "end/root",
+  "criteria": [
+   "killed_dragon"
+  ]
+ },
+ "end/enter_end_gateway": {
+  "title": "Remote Getaway",
+  "description": "Escape the island",
+  "parent": "end/kill_dragon",
+  "criteria": [
+   "entered_end_gateway"
+  ]
+ },
+ "end/respawn_dragon": {
+  "title": "The End... Again...",
+  "description": "Respawn the Ender Dragon",
+  "parent": "end/kill_dragon",
+  "criteria": [
+   "summoned_dragon"
+  ]
+ },
+ "end/elytra": {
+  "title": "Sky's the Limit",
+  "description": "Find Elytra",
+  "parent": "end/find_end_city",
+  "criteria": [
+   "elytra"
+  ]
+ },
+ "end/find_end_city": {
+  "title": "The City at the End of the Game",
+  "description": "Go on in, what could happen?",
+  "parent": "end/enter_end_gateway",
+  "criteria": [
+   "in_city"
+  ]
+ },
+ "end/dragon_egg": {
+  "title": "The Next Generation",
+  "description": "Hold the Dragon Egg",
+  "parent": "end/kill_dragon",
+  "criteria": [
+   "dragon_egg"
+  ]
+ },
+ "husbandry/silk_touch_nest": {
+  "title": "Total Beelocation",
+  "description": "Move a Bee Nest, with 3 Bees inside, using Silk Touch",
+  "parent": "husbandry/root",
+  "criteria": [
+   "silk_touch_nest"
+  ]
+ },
+ "husbandry/tame_an_animal": {
+  "title": "Best Friends Forever",
+  "description": "Tame an animal",
+  "parent": "husbandry/root",
+  "criteria": [
+   "tamed_animal"
+  ]
+ },
+ "husbandry/make_a_sign_glow": {
+  "title": "Glow and Behold!",
+  "description": "Make the text of any kind of sign glow",
+  "parent": "husbandry/root",
+  "criteria": [
+   "make_a_sign_glow"
+  ]
+ },
+ "husbandry/plant_seed": {
+  "title": "A Seedy Place",
+  "description": "Plant a seed and watch it grow",
+  "parent": "husbandry/root",
+  "criteria": [
+   "beetroots",
+   "melon_stem",
+   "nether_wart",
+   "pitcher_pod",
+   "pumpkin_stem",
+   "torchflower",
+   "wheat"
+  ]
+ },
+ "husbandry/leash_all_frog_variants": {
+  "title": "When the Squad Hops into Town",
+  "description": "Get each Frog variant on a Lead",
+  "parent": "husbandry/tadpole_in_a_bucket",
+  "criteria": [
+   "minecraft:cold",
+   "minecraft:temperate",
+   "minecraft:warm"
+  ]
+ },
+ "husbandry/balanced_diet": {
+  "title": "A Balanced Diet",
+  "description": "Eat everything that is edible, even if it's not good for you",
+  "parent": "husbandry/plant_seed",
+  "criteria": [
+   "apple",
+   "baked_potato",
+   "beef",
+   "beetroot",
+   "beetroot_soup",
+   "bread",
+   "carrot",
+   "chicken",
+   "chorus_fruit",
+   "cod",
+   "cooked_beef",
+   "cooked_chicken",
+   "cooked_cod",
+   "cooked_mutton",
+   "cooked_porkchop",
+   "cooked_rabbit",
+   "cooked_salmon",
+   "cookie",
+   "dried_kelp",
+   "enchanted_golden_apple",
+   "glow_berries",
+   "golden_apple",
+   "golden_carrot",
+   "honey_bottle",
+   "melon_slice",
+   "mushroom_stew",
+   "mutton",
+   "poisonous_potato",
+   "porkchop",
+   "potato",
+   "pufferfish",
+   "pumpkin_pie",
+   "rabbit",
+   "rabbit_stew",
+   "rotten_flesh",
+   "salmon",
+   "spider_eye",
+   "suspicious_stew",
+   "sweet_berries",
+   "tropical_fish"
+  ]
+ },
+ "husbandry/kill_axolotl_target": {
+  "title": "The Healing Power of Friendship!",
+  "description": "Team up with an Axolotl and win a fight",
+  "parent": "husbandry/axolotl_in_a_bucket",
+  "criteria": [
+   "kill_axolotl_target"
+  ]
+ },
+ "husbandry/root": {
+  "title": "Husbandry",
+  "description": "The world is full of friends and food",
+  "parent": null,
+  "criteria": [
+   "consumed_item"
+  ]
+ },
+ "husbandry/froglights": {
+  "title": "With Our Powers Combined!",
+  "description": "Have all Froglights in your inventory",
+  "parent": "husbandry/leash_all_frog_variants",
+  "criteria": [
+   "froglights"
+  ]
+ },
+ "husbandry/allay_deliver_item_to_player": {
+  "title": "You've Got a Friend in Me",
+  "description": "Have an Allay deliver items to you",
+  "parent": "husbandry/root",
+  "criteria": [
+   "allay_deliver_item_to_player"
+  ]
+ },
+ "husbandry/ride_a_boat_with_a_goat": {
+  "title": "Whatever Floats Your Goat!",
+  "description": "Get in a Boat and float with a Goat",
+  "parent": "husbandry/root",
+  "criteria": [
+   "ride_a_boat_with_a_goat"
+  ]
+ },
+ "husbandry/wax_on": {
+  "title": "Wax On",
+  "description": "Apply Honeycomb to a Copper block!",
+  "parent": "husbandry/safely_harvest_honey",
+  "criteria": [
+   "wax_on"
+  ]
+ },
+ "husbandry/plant_any_sniffer_seed": {
+  "title": "Planting the Past",
+  "description": "Plant any Sniffer seed",
+  "parent": "husbandry/feed_snifflet",
+  "criteria": [
+   "pitcher_pod",
+   "torchflower"
+  ]
+ },
+ "husbandry/obtain_netherite_hoe": {
+  "title": "Serious Dedication",
+  "description": "Use a Netherite Ingot to upgrade a Hoe, and then reevaluate your life choices",
+  "parent": "husbandry/plant_seed",
+  "criteria": [
+   "netherite_hoe"
+  ]
+ },
+ "husbandry/breed_an_animal": {
+  "title": "The Parrots and the Bats",
+  "description": "Breed two animals together",
+  "parent": "husbandry/root",
+  "criteria": [
+   "bred"
+  ]
+ },
+ "husbandry/obtain_sniffer_egg": {
+  "title": "Smells Interesting",
+  "description": "Obtain a Sniffer Egg",
+  "parent": "husbandry/root",
+  "criteria": [
+   "obtain_sniffer_egg"
+  ]
+ },
+ "husbandry/tadpole_in_a_bucket": {
+  "title": "Bukkit Bukkit",
+  "description": "Catch a Tadpole in a Bucket",
+  "parent": "husbandry/root",
+  "criteria": [
+   "tadpole_bucket"
+  ]
+ },
+ "husbandry/fishy_business": {
+  "title": "Fishy Business",
+  "description": "Catch a fish",
+  "parent": "husbandry/root",
+  "criteria": [
+   "cod",
+   "pufferfish",
+   "salmon",
+   "tropical_fish"
+  ]
+ },
+ "husbandry/wax_off": {
+  "title": "Wax Off",
+  "description": "Scrape Wax off of a Copper block!",
+  "parent": "husbandry/wax_on",
+  "criteria": [
+   "wax_off"
+  ]
+ },
+ "husbandry/complete_catalogue": {
+  "title": "A Complete Catalogue",
+  "description": "Tame all Cat variants!",
+  "parent": "husbandry/tame_an_animal",
+  "criteria": [
+   "minecraft:all_black",
+   "minecraft:black",
+   "minecraft:british_shorthair",
+   "minecraft:calico",
+   "minecraft:jellie",
+   "minecraft:persian",
+   "minecraft:ragdoll",
+   "minecraft:red",
+   "minecraft:siamese",
+   "minecraft:tabby",
+   "minecraft:white"
+  ]
+ },
+ "husbandry/bred_all_animals": {
+  "title": "Two by Two",
+  "description": "Breed all the animals!",
+  "parent": "husbandry/breed_an_animal",
+  "criteria": [
+   "minecraft:axolotl",
+   "minecraft:bee",
+   "minecraft:camel",
+   "minecraft:cat",
+   "minecraft:chicken",
+   "minecraft:cow",
+   "minecraft:donkey",
+   "minecraft:fox",
+   "minecraft:frog",
+   "minecraft:goat",
+   "minecraft:hoglin",
+   "minecraft:horse",
+   "minecraft:llama",
+   "minecraft:mooshroom",
+   "minecraft:mule",
+   "minecraft:ocelot",
+   "minecraft:panda",
+   "minecraft:pig",
+   "minecraft:rabbit",
+   "minecraft:sheep",
+   "minecraft:sniffer",
+   "minecraft:strider",
+   "minecraft:turtle",
+   "minecraft:wolf"
+  ]
+ },
+ "husbandry/axolotl_in_a_bucket": {
+  "title": "The Cutest Predator",
+  "description": "Catch an Axolotl in a Bucket",
+  "parent": "husbandry/tactical_fishing",
+  "criteria": [
+   "axolotl_bucket"
+  ]
+ },
+ "husbandry/tactical_fishing": {
+  "title": "Tactical Fishing",
+  "description": "Catch a Fish... without a Fishing Rod!",
+  "parent": "husbandry/fishy_business",
+  "criteria": [
+   "cod_bucket",
+   "pufferfish_bucket",
+   "salmon_bucket",
+   "tropical_fish_bucket"
+  ]
+ },
+ "husbandry/feed_snifflet": {
+  "title": "Little Sniffs",
+  "description": "Feed a Snifflet",
+  "parent": "husbandry/obtain_sniffer_egg",
+  "criteria": [
+   "feed_snifflet"
+  ]
+ },
+ "husbandry/allay_deliver_cake_to_note_block": {
+  "title": "Birthday Song",
+  "description": "Have an Allay drop a Cake at a Note Block",
+  "parent": "husbandry/allay_deliver_item_to_player",
+  "criteria": [
+   "allay_deliver_cake_to_note_block"
+  ]
+ },
+ "husbandry/safely_harvest_honey": {
+  "title": "Bee Our Guest",
+  "description": "Use a Campfire to collect Honey from a Beehive using a Glass Bottle without aggravating the Bees",
+  "parent": "husbandry/root",
+  "criteria": [
+   "safely_harvest_honey"
+  ]
+ }
+}

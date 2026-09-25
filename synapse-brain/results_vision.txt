@@ -1,0 +1,8 @@
+8 recordings: 3000 training frames, 1000 test frames
+newborn cortex                    front 92.0% (bal 72.6, maj 93.0) | walk 92.2% (bal 74.0, maj 93.0) | tree 63.3% (bal 56.2, maj 59.5) | goal 23.6% (bal 22.5, maj  8.6)
+developed on MineRL videos        front 85.3% (bal 69.0, maj 93.0) | walk 93.2% (bal 79.2, maj 93.0) | tree 66.8% (bal 61.4, maj 59.5) | goal 17.4% (bal 27.6, maj  8.6)
+developed on MineRL + live frames front 90.9% (bal 72.0, maj 93.0) | walk 92.4% (bal 75.4, maj 93.0) | tree 63.3% (bal 57.3, maj 59.5) | goal 34.3% (bal 34.5, maj  8.6)
+CraftJarvis: 593 episodes, 16626 screenshots with actions (1s)
+newborn cortex : accuracy 37.9%  balanced 30.9%  (majority class 36.6%, chance balanced 20%; train 13305, test 3321)
+development: watched 124375 frames from 995 MineRL videos in 160s
+developed cortex: accuracy 34.5%  balanced 25.6%

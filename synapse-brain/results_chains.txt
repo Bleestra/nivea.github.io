@@ -1,0 +1,26 @@
+
+flat  (87s)
+  lives   1- 40: tech 3.80/9  iron pickaxe   1.7%  out of cave    67 steps  out of pit    40 steps
+  lives  41- 80: tech 3.87/9  iron pickaxe   0.0%  out of cave    30 steps  out of pit    16 steps
+  lives  81-120: tech 3.57/9  iron pickaxe   0.0%  out of cave    25 steps  out of pit    10 steps
+  lives 121-160: tech 3.57/9  iron pickaxe   0.0%  out of cave    54 steps  out of pit     9 steps
+
+mind  (362s)
+  lives   1- 40: tech 5.54/9  iron pickaxe  10.0%  out of cave    91 steps  out of pit    13 steps
+  lives  41- 80: tech 6.51/9  iron pickaxe  22.5%  out of cave    63 steps  out of pit     6 steps
+  lives  81-120: tech 8.22/9  iron pickaxe  62.5%  out of cave    52 steps  out of pit     4 steps
+  lives 121-160: tech 7.94/9  iron pickaxe  55.8%  out of cave    61 steps  out of pit     2 steps
+  learned chains (read out of the synapses):
+    have:iron_pick ← have:planks + have:stick + have:table + have:wood_pick + have:cobble + have:stone_pick + have:furnace + have:iron_ingot + free
+    free ← have:dirt + in_pit
+    have:dirt ← in_pit
+    have:iron_ingot ← have:planks + have:stick + have:table + have:wood_pick + have:stone_pick + have:furnace + have:iron_ore + free
+    have:iron_ore ← have:planks + have:stick + have:table + have:wood_pick + have:cobble + have:stone_pick + free
+    have:stone_pick ← have:planks + have:stick + have:table + have:wood_pick + have:cobble + free
+    have:cobble ← have:planks + have:stick + have:table + have:wood_pick + free
+    have:wood_pick ← have:planks + have:stick + have:table + sky + free
+    have:table ← have:planks + sky + free
+    have:planks ← have:log + sky + free
+    have:log ← sky + free
+    have:stick ← have:planks + have:table + sky + free
+    have:furnace ← have:planks + have:stick + have:table + have:wood_pick + have:cobble + have:stone_pick + have:iron_ore + free

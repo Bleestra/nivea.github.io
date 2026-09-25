@@ -1,0 +1,8 @@
+sunsets structured: looks up day 0.136 sunset 0.178 night 0.137; value of warm skies +1.23 vs blue sky +0.14; aesthetic moments 650, awe 66
+   meals {'day': 14, 'sunset': 1, 'night': 6, 'dawn': 4}, fish {'day': 7, 'sunset': 2, 'night': 3, 'dawn': 1}, time share {'day': 7510, 'sunset': 1250, 'night': 2060, 'dawn': 718}
+sunsets random noise: looks up day 0.102 sunset 0.246 night 0.144; value of warm skies +1.17 vs blue sky -0.04; aesthetic moments 824, awe 107
+   meals {'day': 15, 'sunset': 1, 'night': 8, 'dawn': 1}, fish {'day': 1, 'sunset': 0, 'night': 1, 'dawn': 0}, time share {'day': 7510, 'sunset': 1250, 'night': 2162, 'dawn': 720}
+sunsets structured: looks up day 0.086 sunset 0.179 night 0.128; value of warm skies +0.52 vs blue sky +0.02; aesthetic moments 726, awe 25
+   meals {'day': 42, 'sunset': 6, 'night': 11, 'dawn': 2}, fish {'day': 49, 'sunset': 5, 'night': 4, 'dawn': 4}, time share {'day': 7510, 'sunset': 1250, 'night': 2023, 'dawn': 707}
+sunsets random noise: looks up day 0.089 sunset 0.128 night 0.122; value of warm skies +0.72 vs blue sky +0.06; aesthetic moments 1034, awe 94
+   meals {'day': 18, 'sunset': 4, 'night': 4, 'dawn': 1}, fish {'day': 9, 'sunset': 1, 'night': 0, 'dawn': 1}, time share {'day': 7510, 'sunset': 1250, 'night': 2076, 'dawn': 702}

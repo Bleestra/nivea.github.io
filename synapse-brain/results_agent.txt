@@ -1,0 +1,15 @@
+random seed 0: last-20 episodes   0.17,      18 us/step
+random seed 1: last-20 episodes   1.00,      16 us/step
+random seed 2: last-20 episodes   1.06,      18 us/step
+brain seed 0: last-20 episodes  58.31,     152 us/step
+brain seed 1: last-20 episodes  57.40,     147 us/step
+brain seed 2: last-20 episodes  61.82,     145 us/step
+dqn:lr=1e-3:every=4 seed 0: last-20 episodes  22.38,     553 us/step
+dqn:lr=1e-3:every=4 seed 1: last-20 episodes  19.66,     545 us/step
+dqn:lr=1e-3:every=4 seed 2: last-20 episodes  32.04,     555 us/step
+
+mean episode reward (300 steps each), by training stage
+             ep 21     ep 51    ep 101    ep 200   us/step
+random        0.46      0.32      0.92      0.84        17
+brain        26.48     39.29     53.01     60.50       148
+dqn:lr=1e-3:every=4     27.03     28.52     21.29     27.41       551

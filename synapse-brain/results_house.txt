@@ -1,0 +1,6 @@
+raised in a home, dangerous nights   seed 0: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.055, blocks placed 8 (at night 2), deaths 41
+raised in a home, dangerous nights   seed 1: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.085, blocks placed 13 (at night 3), deaths 40
+no home, dangerous nights            seed 0: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.216, blocks placed 22 (at night 2), deaths 36
+no home, dangerous nights            seed 1: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.180, blocks placed 15 (at night 3), deaths 29
+raised in a home, safe nights        seed 0: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.000, blocks placed 8 (at night 2), deaths 16
+raised in a home, safe nights        seed 1: nights closed-in (≥7 walls) 0.000, nights at the birthplace (not right after respawn) 0.057, blocks placed 25 (at night 3), deaths 21

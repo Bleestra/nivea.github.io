@@ -1,0 +1,60 @@
+140 steps, 1 episodes, 117 steps/s: score 0.9%  stage 0  c.sapling:100 place_plant:100 wake_up:100
+50002 steps, 286 episodes, 237 steps/s: score 3.0%  stage 2  c.coal:0 c.drink:23 c.sapling:71 c.stone:0 c.wood:54 defeat_skeleton:0 defeat_zombie:6 eat_cow:20 m.wood_pickaxe:1 m.wood_sword:3 place_plant:58 place_table:18 wake_up:50
+100080 steps, 555 episodes, 232 steps/s: score 3.2%  stage 2  c.coal:0 c.drink:36 c.sapling:77 c.stone:0 c.wood:62 defeat_skeleton:1 defeat_zombie:6 eat_cow:22 m.wood_pickaxe:1 m.wood_sword:3 place_plant:63 place_table:25 wake_up:43
+150051 steps, 813 episodes, 228 steps/s: score 3.4%  stage 2  c.coal:0 c.drink:45 c.sapling:81 c.stone:0 c.wood:63 defeat_skeleton:1 defeat_zombie:10 eat_cow:27 m.wood_pickaxe:2 m.wood_sword:3 place_plant:70 place_table:29 wake_up:37
+200097 steps, 1053 episodes, 225 steps/s: score 3.6%  stage 2  c.coal:0 c.drink:51 c.sapling:80 c.stone:0 c.wood:65 defeat_skeleton:1 defeat_zombie:13 eat_cow:28 m.wood_pickaxe:2 m.wood_sword:3 place_plant:71 place_table:33 wake_up:35
+250019 steps, 1290 episodes, 223 steps/s: score 3.7%  stage 2  c.coal:0 c.drink:55 c.sapling:81 c.stone:0 c.wood:65 defeat_skeleton:1 defeat_zombie:17 eat_cow:31 m.wood_pickaxe:2 m.wood_sword:3 place_plant:72 place_table:35 wake_up:34
+300412 steps, 1522 episodes, 222 steps/s: score 3.7%  stage 2  c.coal:0 c.drink:58 c.sapling:81 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:21 eat_cow:33 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:37 wake_up:35
+350060 steps, 1752 episodes, 220 steps/s: score 3.8%  stage 2  c.coal:0 c.drink:60 c.sapling:82 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:24 eat_cow:35 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:38 wake_up:35
+400052 steps, 1980 episodes, 218 steps/s: score 3.8%  stage 2  c.coal:0 c.drink:62 c.sapling:82 c.stone:0 c.wood:65 defeat_skeleton:1 defeat_zombie:27 eat_cow:36 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:38 wake_up:37
+450042 steps, 2210 episodes, 217 steps/s: score 3.8%  stage 2  c.coal:0 c.drink:64 c.sapling:81 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:30 eat_cow:37 m.wood_pickaxe:2 m.wood_sword:2 place_plant:74 place_table:38 wake_up:37
+500104 steps, 2441 episodes, 215 steps/s: score 3.9%  stage 2  c.coal:0 c.drink:66 c.sapling:80 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:32 eat_cow:38 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:39 wake_up:39
+550195 steps, 2659 episodes, 216 steps/s: score 3.9%  stage 2  c.coal:0 c.drink:67 c.sapling:79 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:34 eat_cow:40 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:39 wake_up:42
+600008 steps, 2889 episodes, 215 steps/s: score 3.9%  stage 2  c.coal:0 c.drink:68 c.sapling:79 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:35 eat_cow:40 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:40 wake_up:43
+650151 steps, 3122 episodes, 215 steps/s: score 3.9%  stage 2  c.coal:0 c.drink:69 c.sapling:79 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:36 eat_cow:41 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:40 wake_up:44
+700347 steps, 3350 episodes, 214 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:69 c.sapling:78 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:37 eat_cow:42 m.wood_pickaxe:2 m.wood_sword:2 place_plant:73 place_table:40 wake_up:45
+750041 steps, 3579 episodes, 214 steps/s: score 3.9%  stage 2  c.coal:0 c.drink:70 c.sapling:77 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:37 eat_cow:42 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:40 wake_up:46
+800118 steps, 3813 episodes, 215 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:70 c.sapling:77 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:38 eat_cow:43 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:40 wake_up:47
+850119 steps, 4034 episodes, 215 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:70 c.sapling:77 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:39 eat_cow:44 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:40 wake_up:47
+900129 steps, 4241 episodes, 214 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:71 c.sapling:77 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:41 eat_cow:45 eat_plant:0 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:40 wake_up:48
+950256 steps, 4464 episodes, 213 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:71 c.sapling:77 c.stone:0 c.wood:66 defeat_skeleton:1 defeat_zombie:41 eat_cow:45 eat_plant:0 m.wood_pickaxe:2 m.wood_sword:2 place_plant:72 place_table:40 wake_up:49
+1000048 steps, 4689 episodes, 213 steps/s: score 4.0%  stage 2  c.coal:0 c.drink:72 c.sapling:76 c.stone:0 c.wood:65 defeat_skeleton:1 defeat_zombie:42 eat_cow:45 eat_plant:0 m.wood_pickaxe:2 m.wood_sword:2 place_plant:71 place_table:40 wake_up:50
+
+FINAL score 3.97% over 4689 episodes
+  collect_sapling       76.2%
+  collect_drink         71.6%
+  place_plant           71.5%
+  collect_wood          65.3%
+  wake_up               49.9%
+  eat_cow               45.3%
+  defeat_zombie         41.9%
+  place_table           39.5%
+  make_wood_pickaxe      2.1%
+  make_wood_sword        1.9%
+  defeat_skeleton        0.8%
+  collect_stone          0.1%
+  collect_coal           0.0%
+  eat_plant              0.0%
+  collect_diamond        0.0%
+  collect_iron           0.0%
+  make_iron_pickaxe      0.0%
+  make_iron_sword        0.0%
+  make_stone_pickaxe     0.0%
+  make_stone_sword       0.0%
+  place_furnace          0.0%
+  place_stone            0.0%
+first time, and what it felt:
+  step      44: wake_up              замешательство 0.71, довольство 0.55, спокойствие 0.25
+  step      52: collect_sapling      замешательство 0.75, довольство 0.51, спокойствие 0.23
+  step      88: place_plant          довольство 0.62, замешательство 0.60, спокойствие 0.28
+  step    1199: collect_wood         довольство 0.61, спокойствие 0.34, замешательство 0.23
+  step    1386: place_table          замешательство 0.84, довольство 0.52, спокойствие 0.24
+  step    3473: collect_drink        радость 0.94, удовлетворение 0.85, интерес 0.85
+  step    5361: eat_cow              удовлетворение 1.00, довольство 0.64, радость 0.55
+  step    8454: defeat_zombie        страх 1.00, злость 1.00, радость 0.45
+  step    8553: make_wood_pickaxe    страх 1.00, замешательство 1.00, злость 0.98
+  step   12582: defeat_skeleton      радость 1.00, интерес 0.79, злость 0.48
+  step   14676: make_wood_sword      радость 1.00, удивление 1.00, веселье 1.00
+  step   19202: collect_stone        страх 1.00, замешательство 1.00, злость 0.80
+  step   19227: collect_coal         замешательство 1.00, злость 0.57, страх 0.48
+  step  863125: eat_plant            удовлетворение 1.00, злость 0.94, радость 0.77
