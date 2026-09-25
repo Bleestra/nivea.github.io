@@ -79,6 +79,27 @@ class BrainAgent:
         and the block row just ahead - not to the whole situation (that would be anxiety)."""
         return cells[[7, 25]]
 
+    def remember(self, cells, a, r, next_cells, done, cap=50000):
+        """Hippocampus: keep the moment for replay."""
+        if not hasattr(self, "mem"):
+            self.mem = []
+        if len(self.mem) >= cap:
+            self.mem[int(self.rng.integers(cap))] = (cells, a, r, next_cells, done)
+        else:
+            self.mem.append((cells, a, r, next_cells, done))
+
+    def replay(self, k):
+        """Replay old moments to the striatum (off-policy: learn from the best next action)."""
+        mem = getattr(self, "mem", None)
+        if not mem or len(mem) < 500:
+            return
+        lr = self.alpha * 0.5
+        for i in self.rng.integers(len(mem), size=k):
+            cells, a, r, nxt, done = mem[int(i)]
+            q = self.W[cells, a].sum()
+            tgt = r + (0.0 if done else self.g * self.W[nxt].sum(0).max())
+            self.W[cells, a] += lr * (tgt - q) / len(cells)
+
     def fear_veto(self, cells):
         """Fear forbids an action only if harm follows IT more than it follows this situation anyway
         (contingency, Rescorla): stepping into lava - yes; hitting back at a zombie that hurts me

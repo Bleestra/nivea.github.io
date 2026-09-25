@@ -19,6 +19,7 @@ const bot = mineflayer.createBot({
 })
 const SELFTEST = process.argv.includes('--selftest')
 const brain = SELFTEST ? null : net.connect(+arg('brain', 5555), arg('brainhost', '127.0.0.1'))
+if (brain) brain.on('close', () => { console.log('the mind is gone'); process.exit(1) })
 const replies = SELFTEST ? { on () {} } : readline.createInterface({ input: brain })
 const VIEWER = +arg('viewer', 0)   // first-person 3D view for the brain's eyes, e.g. --viewer 3007
 const WANDER = +arg('wander', 0)   // teleport somewhere new every N steps (needs op; for data collection)
@@ -169,6 +170,7 @@ function seenThings () {  // nearest visible block of each kind + visible creatu
     const d = e.position.distanceTo(p)
     if (d < 16 && (!found.has(e.name) || found.get(e.name) > d)) found.set(e.name, Math.floor(d))
   }
+  for (const [n, d] of found) if (d <= 4) found.set(n, d)  // (distance kept: the brain knows what is within reach)
   seenCache = { t: step, list: [...found.entries()] }
   return seenCache.list
 }
@@ -610,4 +612,5 @@ bot.once('spawn', async () => {
   }
 })
 bot.on('kicked', console.log)
+bot.on('end', () => { console.log('disconnected'); process.exit(1) })   // the launcher brings the body back
 bot.on('error', console.log)

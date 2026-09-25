@@ -60,13 +60,20 @@ for _ in range(300):  # the mind needs a moment to wake up (loading the voice ta
         if m.poll() is not None:
             raise SystemExit("the brain server stopped - see the messages above")
         time.sleep(1)
-b = subprocess.Popen(body, cwd=HERE)
-print("Synapse is alive. Ctrl+C to let it sleep (its memory is saved).", flush=True)
+print("Synapse is alive. Ctrl+C to let it sleep (its memory is saved). Progress: life/progress.csv", flush=True)
 try:
-    b.wait()
+    while True:                     # live on: if the body falls off the server, it comes back
+        b = subprocess.Popen(body, cwd=HERE)
+        b.wait()
+        if m.poll() is not None:
+            print("the mind stopped - restarting it", flush=True)
+            m = subprocess.Popen(mind, cwd=HERE)
+            time.sleep(40)
+        print("the body disconnected - reconnecting in 10 s", flush=True)
+        time.sleep(10)
 except KeyboardInterrupt:
     pass
 finally:
     b.terminate()
     m.terminate()
-    m.wait(timeout=30)
+    m.wait(timeout=60)

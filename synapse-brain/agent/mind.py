@@ -78,6 +78,7 @@ class Mind:
         self.last_outcome = None                   # True: the plan failed, False: it succeeded, None: nothing
         self.last_fq = None
         self.ao = {}                               # (event, action) -> [successes, context counts, attempts]
+        self.tried = {}                            # situation -> how often each action was tried there
 
     # ---------------------------------------------------------------- concept neurons
     def _neuron(self, name):
@@ -210,6 +211,11 @@ class Mind:
         val = np.where(known, self.Rc[:n, self.ctx], 0.3 * self.R[:n])   # unsure how good it is here
         d = np.maximum(val, 0) + 0.15 / np.sqrt(1 + self.tries[:n])
         d[~seen | active[:n]] = -1
+        means = getattr(self, "means_only", ())       # sensations are means, not things to want for themselves
+        if means:
+            for i in range(n):
+                if self.names[i].startswith(means):
+                    d[i] = -1
         return d
 
     def reason(self, active, target):
@@ -351,9 +357,24 @@ class Mind:
         else:
             self.explore_left -= 1
             a = a_flat
+            k = getattr(self, "try_new", 0.0)
+            if k > 0:                                    # directed curiosity: what have I not tried HERE?
+                sit = hash(tuple(np.nonzero(active[:n])[0]))
+                tried = self.tried.setdefault(sit, np.zeros(self.nA, np.float32))
+                qb = fq + self.flat.fear_veto(fcells) if self.flat.emo else fq.copy()
+                a = int(np.argmax(qb + k / np.sqrt(1.0 + tried) + self.rng.random(self.nA) * 1e-6))
+                if self.rng.random() < explore:
+                    a = int(self.rng.integers(self.nA))
+                tried[a] += 1
+                if len(self.tried) > 200000:
+                    self.tried.clear()
         if self._fprev is not None:                      # habits learn from reward all the time
             c0, a0 = self._fprev
             self.flat.learn(c0, a0, r, obs, fcells, fq, a, done)
+            k = getattr(self, "habit_replay", 0)
+            if k:                                        # ... and from replayed memories
+                self.flat.remember(c0, a0, r, fcells, done)
+                self.flat.replay(k)
         self._ao_attempt(a, active)
         self._fprev = None if done else (fcells, a)
         self._last = None if done else (cells, a)

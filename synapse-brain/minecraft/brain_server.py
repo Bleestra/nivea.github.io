@@ -112,6 +112,18 @@ def save():
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
     if child is not None:
         feel_bridge.save(child, args.limbic)
+        try:                                              # a line of the life log: is he growing?
+            prog = os.path.join(os.path.dirname(os.path.abspath(args.limbic)), "progress.csv")
+            new = not os.path.exists(prog)
+            with open(prog, "a") as f:
+                if new:
+                    f.write("time,age,stage,concepts,advancements,known_items,deaths,feeling\n")
+                L = child.limbic
+                f.write(f"{time.strftime('%Y-%m-%d %H:%M')},{child.age},{L.stage()},{len(child.mind.names)},"
+                        f"{len(me.me.get('advancements', [])) if me else 0},{len(me.me['known_items']) if me else 0},"
+                        f"{len(me.me.get('deaths', [])) if me else 0},{L.say().split(' — ')[0]}\n")
+        except Exception as e:
+            print("progress log:", e, flush=True)
     elif mind is not None:
         mind.save(args.mind)
     if teacher is not None:

@@ -86,6 +86,9 @@ class MCChild(Child):
         super().__init__(n_actions, seed=seed, taste=MC_TASTE, items=("log", "cobble", "food", "fish", "rotten_flesh"),
                          eat_action=6, wait_action=4, kinds=KINDS)
         self.m = {}
+        self.mind.min_desire = 0.5
+        # sensations and places are means, not things to want for themselves
+        self.mind.means_only = ("see:", "reach:", "walls", "saw:", "deep", "underground", "stuck", "free", "indoors", "sky")
 
     def concepts(self, o):
         s = state_from(self.m)                        # everything it holds, sky, stuck, day, fed, healthy
@@ -98,8 +101,10 @@ class MCChild(Child):
         s["indoors"] = int(not self.m.get("sky", 1) and self.m.get("y", 64) >= 55)   # a roof over my head, not a cave
         s["deep"] = int(self.m.get("y", 64) < 16)                                      # far below the surface
         s["see:diamond"] = int(bool(self.m.get("diamond_seen")))
-        for name, _ in self.m.get("seen", []):                                        # what my eyes see now
+        for name, d in self.m.get("seen", []):                                        # what my eyes see now
             s["see:" + name] = 1
+            if d <= 4:
+                s["reach:" + name] = 1                                                 # ... and can touch
         if (self.m.get("fev") or {}).get("trades"):
             s["saw:trades"] = 1
         tr = (self.m.get("fev") or {}).get("traded")

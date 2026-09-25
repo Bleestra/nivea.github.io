@@ -60,7 +60,10 @@ class CrafterChild(Child):
                          kinds=["zombie", "hostile", "animal"], n_front=len(CLS))
         self.mind.flat.cells = crafter_cells.__get__(self.mind.flat)
         self.mind.flat.cue = lambda cells: cells[[0, 1]]
-        self.mind.min_desire = float(__import__("os").environ.get("MIN_DESIRE", "0.3"))
+        self.mind.min_desire = float(__import__("os").environ.get("MIN_DESIRE", "0.5"))
+        self.mind.means_only = ("see:", "facing:", "dark", "reach:")
+        self.mind.try_new = float(__import__("os").environ.get("TRY_NEW", "0"))
+        self.mind.habit_replay = int(__import__("os").environ.get("REPLAY", "0"))
         self.mind.flat.use_fear = __import__("os").environ.get("FEAR", "1") == "1"
 
     def senses(self, o):
@@ -75,6 +78,7 @@ class Body:
 
     def __init__(self):
         self.prev = None
+        self.health_of, self.last_act = {}, None
 
     def read(self, env, info, done, new_ach):
         p = env._player
@@ -104,9 +108,15 @@ class Body:
         feat = [2, 0, 0, 0, 0, 0, 0]
         obs = (v, facing, nearest, invv, vit, feat, light)
         st = {"have:" + k: inv[k] for k in ITEMS}
+        for k in ("wood", "stone", "coal", "iron", "sapling"):   # number sense: one, a few, many
+            for q in (2, 3, 5):
+                st[f"have:{k}>={q}"] = int(inv[k] >= q)
         for k in IMPORTANT:
             st["see:" + CLS[k]] = int((view == k).any())
         st["facing:" + CLS[facing]] = 1
+        reach = view[3:6, 2:5]                            # within arm's reach (the 3x3 around me)
+        for k in IMPORTANT:
+            st["reach:" + CLS[k]] = int((reach == k).any())
         st.update({"fed": int(inv["food"] >= 5), "hydrated": int(inv["drink"] >= 5), "rested": int(inv["energy"] >= 5),
                    "healthy": int(inv["health"] >= 6), "dark": int(env._world.daylight < 0.3)})
         for k, n in info["achievements"].items():
@@ -115,6 +125,20 @@ class Body:
         prev = self.prev or dict(inv)
         hurt, got = [], [k for k in ITEMS if inv[k] > prev.get(k, 0)]
         near = []
+        others_hurt, deaths = [], []
+        seen_now = {}
+        for obj in env._world.objects:                      # what happened to the beings around me
+            k = {"Cow": "animal", "Zombie": "zombie", "Skeleton": "hostile"}.get(type(obj).__name__)
+            if k is None:
+                continue
+            seen_now[id(obj)] = (k, obj.health, obj.pos)
+            old = self.health_of.get(id(obj))
+            if old is not None and obj.health < old[1]:
+                others_hurt.append((k, id(obj) % 100000, int(old[1] - obj.health), "self" if self.last_act == 5 else ""))
+        for oid, (k, hp, pos) in self.health_of.items():
+            if oid not in seen_now and abs(pos[0] - x) + abs(pos[1] - y) <= 2:
+                deaths.append((k, oid % 100000, False, "self" if self.last_act == 5 else "", True))
+        self.health_of = seen_now
         for obj in env._world.objects:
             d = abs(obj.pos[0] - x) + abs(obj.pos[1] - y)
             k = {"Cow": "animal", "Zombie": "zombie", "Skeleton": "hostile", "Arrow": "hostile"}.get(type(obj).__name__)
@@ -129,7 +153,7 @@ class Body:
              "hunger": int(min(inv["food"], inv["drink"]) * 20 / 9), "fatigue": (9 - inv["energy"]) * 50,
              "nausea": 0, "inv": {k: inv[k] for k in ITEMS}, "t": env._step, "pos": (int(x), int(y)),
              "dir": 0, "near": near, "carer_holds": None, "state": st, "lost_built": [], "night": light == 0,
-             "ev": {"deaths": [], "hurt": hurt, "destroyed": [], "ate": ate, "caught": False, "tamed": None, "tone": 0,
+             "ev": {"deaths": deaths, "hurt": hurt + others_hurt, "destroyed": [], "ate": ate, "caught": False, "tamed": None, "tone": 0,
                     "gift": False, "carer_did": None, "explosion": None, "sounds": set(), "died": done and inv["health"] <= 0,
                     "slept": inv["energy"] > prev["energy"] and p.sleeping, "placed": None, "got": got + new_ach,
                     "cat_with_carer": False}}
@@ -154,6 +178,7 @@ def run(steps=1_000_000, seed=0, log_every=50_000):
         obs, r, done, info = env.step(0)
         ach_names = ach_names or list(info["achievements"])
         body.prev, a, fb, inv, unlocked = None, None, 0, {}, set()
+        body.health_of = {}
         while True:
             new = [k for k, v in info["achievements"].items() if v and k not in unlocked]
             unlocked.update(new)
@@ -165,6 +190,7 @@ def run(steps=1_000_000, seed=0, log_every=50_000):
             if done:
                 break
             fb, inv = int(o["view"][7]), dict(o["inv"])
+            body.last_act = a
             obs, r, done, info = env.step(a)
             n += 1
         episodes.append(unlocked)
