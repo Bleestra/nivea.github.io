@@ -1,15 +1,21 @@
 """
 Brain server for Minecraft: the SynapseBrain-Agent learns while it plays.
 
-The Mineflayer bot (bot.js) sends one JSON line per decision:
-    {"obs": [25 block classes], "inv": logs_in_inventory, "reward": r, "done": false}
-and gets back one line: {"action": a}  (0 forward, 1 turn left, 2 turn right, 3 dig, 4 wait).
+The body - the Mineflayer bot (bot.js) or the Fabric mod in the real game client (../fabric-mod) -
+sends one JSON line per decision:
+    {"obs": [25 block classes], "inv": logs_in_inventory, "reward": r, "done": false, ...}
+and gets back one line: {"action": a, "target": ..., "say": ..., "hud": {...}}.
+The Fabric body also sends what its eyes see, straight from the game's renderer:
+    "frame": base64 of raw BGR bytes, "frame_wh": [w, h]
 
-    python3 brain_server.py [--port 5555] [--load brain_mc.npz]
+    python3 brain_server.py [--port 5555] [--load brain_mc.npz] [--see] [--device auto|cpu|cuda]
 The brain's synapses are saved to brain_mc.npz every 2000 steps and on exit, so learning
-carries over between sessions.
+carries over between sessions. With --see on a GPU the visual cortex is the large one
+(vision/visual_cortex_gpu.py); the rest of the brain stays on the CPU, where its small
+sparse steps are faster (measured: 23 us per step on the CPU, 366 us on an RTX 3090).
 """
 import argparse
+import base64
 import json
 import os
 import socketserver
@@ -20,6 +26,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "agent"))
 from brain_agent import BrainAgent  # noqa: E402
+from mind import swap_in  # noqa: E402
 
 p = argparse.ArgumentParser()
 p.add_argument("--port", type=int, default=5555)
@@ -29,15 +36,36 @@ p.add_argument("--curiosity", type=float, default=0.05, help="intrinsic reward f
 p.add_argument("--no-fear", action="store_true", help="switch the amygdala off")
 p.add_argument("--eyes", default="", help="URL of the bot's first-person viewer, e.g. http://localhost:3007")
 p.add_argument("--record", default="", help="directory to save (frame, senses) pairs for training vision")
-p.add_argument("--see", action="store_true", help="feed the visual cortex code to the striatum")
-p.add_argument("--blind", action="store_true", help="with --see: drop the direct block senses, act from vision")
+p.add_argument("--see", action="store_true", help="eyes: the visual cortex sees, learns to recognise, the brain reacts")
+p.add_argument("--blind", action="store_true", help="the same as --senses human")
+p.add_argument("--senses", default="grow", choices=["full", "grow", "human"],
+               help="with --see: full - direct senses + eyes; grow - the eyes take over as they learn (as a child); "
+                    "human - only what a person has (vision, hearing, touch, the body, the HUD)")
+p.add_argument("--name", default="", help="the name of a newborn (an existing self.json keeps its own)")
+p.add_argument("--telemetry", default="", help="directory for the dashboard: live state, decisions, events, series")
 p.add_argument("--self", default="", help="path of self.json: intrinsic motivation + autobiographical memory")
 p.add_argument("--voice", default="", help="trained language brain (train_voice.py) to answer in chat")
 p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, reasoning, self-knowledge (needs --self)")
 p.add_argument("--limbic", default="", help="directory: the whole growing brain with feelings (mind + limbic system; needs --self)")
+p.add_argument("--device", default="cpu", choices=["auto", "cpu", "cuda"],
+               help="where the live visual cortex computes: cpu (default - the GPU is busy drawing the game) or cuda")
+p.add_argument("--neurons", type=int, default=131072, help="visual cortex size on the GPU")
+p.add_argument("--retina", type=int, default=256, help="picture size the GPU retina sees (pixels per side)")
+p.add_argument("--zones", type=int, default=8, help="the picture is understood in zones x zones (as the body's vis_labels)")
 args = p.parse_args()
+_hold = os.path.join(os.path.dirname(os.path.abspath(args.load)), "HOLD")
+if os.path.exists(_hold):                                 # memory under maintenance: wake up when it is done
+    print("waiting: HOLD (the memory is being worked on)", flush=True)
+    while os.path.exists(_hold):
+        time.sleep(1)
+if args.device != "auto":
+    os.environ["SYNAPSE_DEVICE"] = args.device
+if args.blind:
+    args.senses = "human"
 
-N_ACT = 41 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+from actions import ACTIONS  # noqa: E402
+
+N_ACT = len(ACTIONS) if args.self else 5  # the whole player repertoire (bot.js has the first 41)
 mind = None
 child = None
 if args.limbic:
@@ -50,6 +78,13 @@ if args.limbic:
               f"stage «{__import__('limbic').STAGE_NAMES[child.limbic.stage()]}»", flush=True)
     mind = child.mind
     agent = mind.flat
+    if os.environ.get("EPISODIC", "1") == "1":            # every moment lived, within the project's disk budget
+        import limits
+        from episodic import Episodic, faiss
+
+        mind.episodic = Episodic(os.path.join(args.limbic, "episodes"), room=limits.disk_room)
+        print(f"episodic memory: {mind.episodic.n:,} moments lived"
+              f"{'' if faiss is not None else ' (no faiss: exact search over the last moments)'}", flush=True)
 elif args.mind:
     from mind import Mind  # noqa: E402
     from mind_bridge import ru_thought, state_from, talk  # noqa: E402
@@ -68,20 +103,26 @@ me = None
 if args.self:
     from personality import Self
 
-    me = Self(args.self)
+    me = Self(args.self, name=args.name) if args.name else Self(args.self)
     print(f"I am {me.me['name']}, {me.me['age_steps']} steps old, I know {len(me.me['known_items'])} things",
           flush=True)
-agent.blind = args.blind
-cortex = None
+seeing = None
+MODELS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
 if args.see:
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vision"))
-    from visual_cortex import VisualCortex, retina  # noqa: E402
+    from seeing import Seeing  # noqa: E402
 
-    cortex = VisualCortex(seed=1)
-    vc = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models", "visual_cortex.npz")
-    if os.path.exists(vc):
-        cortex.syn[:] = np.load(vc)["syn"]
-        print("visual cortex loaded (developed)", flush=True)
+    try:
+        seeing = Seeing(os.path.splitext(args.load)[0], args.device, args.neurons, args.retina, MODELS, args.zones)
+    except ImportError:                                  # no PyTorch: the eyes need it for recognition
+        print("the eyes need PyTorch (pip install torch)", flush=True)
+    if seeing:
+        print(seeing.describe() + f"; senses: {args.senses}", flush=True)
+tele = None
+if args.telemetry:
+    from telemetry import Telemetry  # noqa: E402
+
+    tele = Telemetry(args.telemetry, args.senses if seeing else "no eyes")
 if os.path.exists(args.load):
     z = np.load(args.load)
     na = min(z["W"].shape[1], N_ACT)  # a brain grown with fewer actions keeps what it knows
@@ -93,18 +134,43 @@ if os.path.exists(args.load):
     if agent.FQ is not None and "FB" in z.files:
         if z["FB"].shape == agent.FB.shape:
             agent.FB[:] = z["FB"]
+    z.close()                                  # (an open file cannot be replaced by the next save on Windows)
     print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
 if child is None and mind is not None and mind.load(args.mind):
     print(f"mind loaded: {len(mind.names)} concepts, {int(mind.nev.sum())} events remembered", flush=True)
-teacher = None
-if cortex is not None:
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "vision"))
-    from teacher import SensorTeacher  # noqa: E402
+def frame_of(m):
+    """What the body's eyes saw, if it sent a picture (the Fabric body does): uint8 BGR (h, w, 3)."""
+    raw = m.get("frame")
+    if not raw:
+        return None
+    w, h = m.get("frame_wh", (64, 64))
+    buf = np.frombuffer(bytearray(base64.b64decode(raw)), np.uint8)
+    return buf.reshape(h, w, 3) if buf.size == w * h * 3 else None
 
-    teacher = SensorTeacher(cortex.n)
-    tpath = os.path.splitext(args.load)[0] + "_eyes.npz"
-    if os.path.exists(tpath):
-        teacher.load(tpath)
+
+def small(frame):
+    """The 64x64 picture the older parts of the brain expect (sky colours, recordings)."""
+    if frame is None or frame.shape[:2] == (64, 64):
+        return frame
+    import cv2
+
+    return cv2.resize(frame, (64, 64), interpolation=cv2.INTER_AREA)
+
+
+def hud():
+    """What the body shows above the game: who I am, what I feel, what I want."""
+    if child is None:
+        return None
+    from limbic import STAGE_NAMES
+
+    L, mi = child.limbic, child.mind
+    step = mi.names[mi.goal] if getattr(mi, "goal", None) is not None else ""
+    aim = mi.names[mi.intent] if getattr(mi, "intent", None) is not None else ""
+    goal = (f"{aim} · шаг: {step}" if step and step != aim else aim) if aim else step      # what I decided, and the step
+    t = int(me.me.get("lived_ticks", 0)) if me else 0                   # game time lived: 24000 ticks a day
+    lived = f"{t // 24000} д {t % 24000 // 1000} ч" if t >= 24000 else f"{t // 1000} ч {t % 1000 * 60 // 1000} мин"
+    return {"name": me.me["name"] if me else "Synapse", "age": int(child.age), "lived": lived, "stage": STAGE_NAMES[L.stage()],
+            "feeling": L.say()[:160], "goal": goal}
 
 
 core = None
@@ -114,15 +180,33 @@ if child is not None:
     core = Grown(child, me, voice)
 
 
+def grow():
+    """The mind has no ceilings of its own; its skill synapses grow when crowded, within the PC's room."""
+    m = child.mind if child is not None else mind
+    if m is None:
+        return
+    try:
+        import limits
+
+        if m.grow_skills(limits.room_to_grow()):
+            print(f"skills grew: {len(m.G):,} synapse rows ({m.G.nbytes / 2 ** 30:.1f} GB); "
+                  f"concepts {len(m.names):,} (room {len(m.val):,})", flush=True)
+    except Exception as e:
+        print("grow:", e, flush=True)
+
+
 def save():
+    grow()
     extra = {"FQ": agent.FQ, "FB": agent.FB} if agent.FQ is not None else {}
-    np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
+    tmp = os.path.splitext(args.load)[0] + ".saving.npz"                    # aside, then swapped in
+    np.savez(tmp, W=agent.W, F=agent.F, steps=agent.steps, **extra)
+    swap_in(tmp, args.load)
     if child is not None:
         feel_bridge.save(child, args.limbic)
         try:                                              # a line of the life log: is he growing?
             prog = os.path.join(os.path.dirname(os.path.abspath(args.limbic)), "progress.csv")
             new = not os.path.exists(prog)
-            with open(prog, "a") as f:
+            with open(prog, "a", encoding="utf-8") as f:
                 if new:
                     f.write("time,age,stage,concepts,advancements,known_items,deaths,feeling\n")
                 L = child.limbic
@@ -133,8 +217,8 @@ def save():
             print("progress log:", e, flush=True)
     elif mind is not None:
         mind.save(args.mind)
-    if teacher is not None:
-        teacher.save(os.path.splitext(args.load)[0] + "_eyes.npz")
+    if seeing is not None:                                    # the eyes develop live: keep what they learned
+        seeing.save()
     if me:
         me.save()
 
@@ -177,32 +261,41 @@ class Handler(socketserver.StreamRequestHandler):
         if child is not None:
             core.new_body()
         total, t0 = 0.0, time.time()
+        pace = {}                                              # where a moment's time goes (moving averages, ms)
+        def lap(key, since):
+            now_ = time.perf_counter()
+            pace[key] = pace.get(key, (now_ - since) * 1000) * 0.9 + (now_ - since) * 100
+            return now_
         for line in self.rfile:
+            t_in = time.perf_counter()
             m = json.loads(line)
-            obs = (np.array(m["obs"], np.int64), min(int(m.get("inv", 0)), 7), int(m.get("goal", 0)))
+            t_in = lap("brain_read_ms", t_in)
             n_msg += 1
             if args.eyes and eyes is None and n_msg == 5:  # the viewer starts after the bot spawns
                 eyes = Eyes(args.eyes)
                 print("eyes open", flush=True)
-            code = None
-            frame = None
-            if eyes:
+            frame = frame_of(m)                                # the Fabric body sends what it sees
+            if frame is None and eyes:
                 frame = eyes.look()
-                if frame is not None and cortex is not None:
-                    code = cortex(retina(frame), plasticity=True)  # the cortex keeps developing live
-                    # the direct senses teach the eyes; blind: act from what the eyes perceive
-                    pg, ps, pt = teacher.teach(code, obs[0], int(m.get("sky", 0)), obs[2] // 4)
-                    if args.blind:
-                        obs = (pg, obs[1], pt * 4 + 2)
-                        m["sky"] = ps
-                    obs = obs + (code,)
-                if frame is not None and args.record:
-                    rec.append((frame, obs[0].copy(), obs[2]))
+            full_frame, percept = frame, None
+            if frame is not None:
+                if args.record:
+                    rec.append((small(frame), np.array(m["obs"], np.int64), int(m.get("goal", 0))))
                     if len(rec) >= 500:
                         save_rec(rec)
                         rec = []
-            if len(obs) == 3:
-                obs = obs + (None,)
+                if seeing is not None:
+                    # the eyes see and learn to recognise (the direct senses and the rays only teach them);
+                    # then, as the chosen senses say, what the eyes perceive replaces the direct senses
+                    percept = seeing.look(frame, m)
+                    seeing.apply(m, args.senses)
+                    m["_vis_ids"] = percept["ids"]             # what is recognised where: cells for the habits
+                    m["_motion"] = percept.get("motion")        # what moves, what comes closer
+                frame = small(frame)
+            t_in = lap("brain_eyes_ms", t_in)
+            vis = np.array(percept["ids"], np.int64) if percept is not None else None
+            obs = (np.array(m["obs"], np.int64), min(int(m.get("inv", 0)), 7), int(m.get("goal", 0)), vis)
+            tgt = None
             say, reward = None, float(m["reward"])
             if me and child is None:  # the reward comes from inside: novelty, places, hunger, pain, advancements
                 reward, say = me.feel(m)
@@ -232,7 +325,7 @@ class Handler(socketserver.StreamRequestHandler):
                         else:
                             os.remove(force)
                         print(f"[forced] action {forced}", flush=True)
-                a, tgt, say2, o = core.decide(m, frame if eyes else None, forced)
+                a, tgt, say2, o = core.decide(m, frame, forced)
                 say = say or say2
                 fev = m.get("fev") or {}
                 if fev.get("trades") or fev.get("traded") or any(k in ("villager", "golem") for k, _, _ in o["near"]):
@@ -254,24 +347,45 @@ class Handler(socketserver.StreamRequestHandler):
                 if prev is not None:
                     agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, done)
                 prev = None if done else (cells, a)
+            t_in = lap("brain_think_ms", t_in)
             total += reward
-            reply = {"action": a}
+            if a >= int(m.get("n_actions", N_ACT)):            # this body cannot do it (bot.js has 41 actions)
+                a_body = 4
+            else:
+                a_body = a
+            reply = {"action": a_body}
             if child is not None and tgt is not None:
                 reply["target"] = tgt                                 # where a motor program is aimed
             if say:
                 reply["say"] = say
                 print("says:", say, flush=True)
+            h = hud() if child is not None else None
+            if m.get("want_hud") and h is not None:            # the Fabric body shows it above the game
+                reply["hud"] = h
             self.wfile.write((json.dumps(reply, ensure_ascii=False) + "\n").encode())
+            if tele is not None:
+                try:
+                    m["_pace"] = {**(m.get("pace") or {}), **pace}
+                    tele.moment(m, a, tgt, say, reward, h, full_frame, seeing, child, me)
+                except Exception as e:                         # the dashboard must never stop a life
+                    print("telemetry:", e, flush=True)
             if agent.steps % 200 == 0:
                 print(f"step {agent.steps}: reward so far {total:.1f} "
                       f"({agent.steps / max(time.time() - t0, 1e-9):.1f} steps/s)", flush=True)
+            lap("brain_rest_ms", t_in)
             if agent.steps % 2000 == 0:
+                t_save = time.perf_counter()
                 save()
-                if teacher is not None:
-                    print("eyes agree with the senses:", teacher.report(), flush=True)
+                print(f"saved the brain in {time.perf_counter() - t_save:.1f} s", flush=True)
+                if seeing is not None:
+                    st = seeing.stats()
+                    print(f"eyes: recognise {st['things'] * 100:.0f}% of zones ({st['vocabulary']} names), "
+                          f"ground {st['ground'] * 100:.0f}%, sky {st['sky'] * 100:.0f}%, trust {st['trust']}", flush=True)
         if rec:
             save_rec(rec)
         save()
+        if tele is not None:
+            tele.flush()
         print("bot disconnected, brain saved", flush=True)
 
 
@@ -287,7 +401,28 @@ import signal  # noqa: E402
 
 signal.signal(signal.SIGTERM, _on_term)
 
+def _watch_stop():
+    """world.py asks a brain to go to sleep by leaving a STOP file next to its memory (on Windows a process
+    cannot be sent SIGTERM): save everything, then exit."""
+    import threading
+
+    flag = os.path.join(os.path.dirname(os.path.abspath(args.load)), "STOP")
+
+    def loop():
+        while True:
+            time.sleep(1.0)
+            if os.path.exists(flag):
+                os.remove(flag)
+                print("asked to sleep: saving", flush=True)
+                save()
+                if tele is not None:
+                    tele.offline()
+                os._exit(0)
+    threading.Thread(target=loop, daemon=True).start()
+
+
 if __name__ == "__main__":
+    _watch_stop()
     with socketserver.ThreadingTCPServer(("127.0.0.1", args.port), Handler) as srv:
         print(f"brain listening on 127.0.0.1:{args.port}", flush=True)
         try:

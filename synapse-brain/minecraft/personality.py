@@ -48,6 +48,7 @@ class Self:
             self.save()
         items = m.get("items", {})
         r, say = -0.01, None
+        self.novelty_now = 0.0                        # the joy of a discovery this moment (not the thing's own worth)
         # novelty and habituation
         if self.prev_items is not None:
             for k, n in items.items():
@@ -56,6 +57,7 @@ class Self:
                     continue
                 if k not in self.me["known_items"]:
                     r += 1.0
+                    self.novelty_now += 1.0
                     say = self.discover(k)
                 elif k not in self.this_life:
                     r += 0.3                  # getting back what I had lost: satisfaction of rebuilding
@@ -102,13 +104,13 @@ class Self:
         entry = {"step": self.me["age_steps"], "item": item, "time": time.strftime("%H:%M:%S")}
         self.me["discoveries"].append(entry)
         n = len(self.me["discoveries"])
-        with open(self.diary, "a") as f:
+        with open(self.diary, "a", encoding="utf-8") as f:
             f.write(f"- шаг {entry['step']} ({entry['time']}): впервые получил {name} — открытие №{n}\n")
         self.save()  # a discovery is never forgotten
         return f"Я впервые получил {name}! Это моё открытие №{n}."
 
     def note(self, what, speech):
-        with open(self.diary, "a") as f:
+        with open(self.diary, "a", encoding="utf-8") as f:
             f.write(f"- шаг {self.me['age_steps']} ({time.strftime('%H:%M:%S')}): {what}\n")
         self.save()
         return speech
@@ -118,7 +120,7 @@ class Self:
               "tried to swim in lava": "попал в лаву", "suffocated in a wall": "задохнулся в стене",
               "starved to death": "умер от голода"}.get(cause, cause)
         self.me.setdefault("deaths", []).append({"step": self.me["age_steps"], "cause": cause})
-        with open(self.diary, "a") as f:
+        with open(self.diary, "a", encoding="utf-8") as f:
             f.write(f"- шаг {self.me['age_steps']} ({time.strftime('%H:%M:%S')}): погиб — {ru}. Всё, что было в руках, "
                     f"потеряно, но знания остались со мной.\n")
         self.prev_items = {}

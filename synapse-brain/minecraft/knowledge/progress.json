@@ -1,0 +1,878 @@
+{
+ "husbandry/axolotl_in_a_bucket": {
+  "parent": "husbandry/tactical_fishing",
+  "tree": "husbandry",
+  "title": "The Cutest Predator",
+  "wants": []
+ },
+ "husbandry/silk_touch_nest": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Total Beelocation",
+  "wants": []
+ },
+ "husbandry/plant_any_sniffer_seed": {
+  "parent": "husbandry/feed_snifflet",
+  "tree": "husbandry",
+  "title": "Planting the Past",
+  "wants": []
+ },
+ "husbandry/make_a_sign_glow": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Glow and Behold!",
+  "wants": []
+ },
+ "husbandry/balanced_diet": {
+  "parent": "husbandry/plant_seed",
+  "tree": "husbandry",
+  "title": "A Balanced Diet",
+  "wants": []
+ },
+ "husbandry/breed_an_animal": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "The Parrots and the Bats",
+  "wants": []
+ },
+ "husbandry/bred_all_animals": {
+  "parent": "husbandry/breed_an_animal",
+  "tree": "husbandry",
+  "title": "Two by Two",
+  "wants": []
+ },
+ "husbandry/allay_deliver_cake_to_note_block": {
+  "parent": "husbandry/allay_deliver_item_to_player",
+  "tree": "husbandry",
+  "title": "Birthday Song",
+  "wants": []
+ },
+ "husbandry/complete_catalogue": {
+  "parent": "husbandry/tame_an_animal",
+  "tree": "husbandry",
+  "title": "A Complete Catalogue",
+  "wants": []
+ },
+ "husbandry/repair_wolf_armor": {
+  "parent": "husbandry/tame_an_animal",
+  "tree": "husbandry",
+  "title": "repair wolf armor",
+  "wants": []
+ },
+ "husbandry/obtain_netherite_hoe": {
+  "parent": "husbandry/plant_seed",
+  "tree": "husbandry",
+  "title": "Serious Dedication",
+  "wants": [
+   [
+    "have:netherite_hoe"
+   ]
+  ]
+ },
+ "husbandry/wax_off": {
+  "parent": "husbandry/wax_on",
+  "tree": "husbandry",
+  "title": "Wax Off",
+  "wants": []
+ },
+ "husbandry/fishy_business": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Fishy Business",
+  "wants": []
+ },
+ "husbandry/tadpole_in_a_bucket": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Bukkit Bukkit",
+  "wants": []
+ },
+ "husbandry/ride_a_boat_with_a_goat": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Whatever Floats Your Goat!",
+  "wants": []
+ },
+ "husbandry/safely_harvest_honey": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Bee Our Guest",
+  "wants": []
+ },
+ "husbandry/tame_an_animal": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Best Friends Forever",
+  "wants": []
+ },
+ "husbandry/froglights": {
+  "parent": "husbandry/leash_all_frog_variants",
+  "tree": "husbandry",
+  "title": "With Our Powers Combined!",
+  "wants": [
+   [
+    "have:ochre_froglight"
+   ],
+   [
+    "have:pearlescent_froglight"
+   ],
+   [
+    "have:verdant_froglight"
+   ]
+  ]
+ },
+ "husbandry/allay_deliver_item_to_player": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "You've Got a Friend in Me",
+  "wants": []
+ },
+ "husbandry/wax_on": {
+  "parent": "husbandry/safely_harvest_honey",
+  "tree": "husbandry",
+  "title": "Wax On",
+  "wants": []
+ },
+ "husbandry/root": {
+  "parent": null,
+  "tree": "husbandry",
+  "title": "Husbandry",
+  "wants": []
+ },
+ "husbandry/tactical_fishing": {
+  "parent": "husbandry/fishy_business",
+  "tree": "husbandry",
+  "title": "Tactical Fishing",
+  "wants": []
+ },
+ "husbandry/whole_pack": {
+  "parent": "husbandry/tame_an_animal",
+  "tree": "husbandry",
+  "title": "whole pack",
+  "wants": []
+ },
+ "husbandry/obtain_sniffer_egg": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "Smells Interesting",
+  "wants": [
+   [
+    "have:sniffer_egg"
+   ]
+  ]
+ },
+ "husbandry/kill_axolotl_target": {
+  "parent": "husbandry/axolotl_in_a_bucket",
+  "tree": "husbandry",
+  "title": "The Healing Power of Friendship!",
+  "wants": []
+ },
+ "husbandry/plant_seed": {
+  "parent": "husbandry/root",
+  "tree": "husbandry",
+  "title": "A Seedy Place",
+  "wants": []
+ },
+ "husbandry/remove_wolf_armor": {
+  "parent": "husbandry/tame_an_animal",
+  "tree": "husbandry",
+  "title": "remove wolf armor",
+  "wants": []
+ },
+ "husbandry/feed_snifflet": {
+  "parent": "husbandry/obtain_sniffer_egg",
+  "tree": "husbandry",
+  "title": "Little Sniffs",
+  "wants": []
+ },
+ "husbandry/leash_all_frog_variants": {
+  "parent": "husbandry/tadpole_in_a_bucket",
+  "tree": "husbandry",
+  "title": "When the Squad Hops into Town",
+  "wants": []
+ },
+ "nether/find_fortress": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "A Terrible Fortress",
+  "wants": []
+ },
+ "nether/obtain_ancient_debris": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Hidden in the Depths",
+  "wants": [
+   [
+    "have:ancient_debris"
+   ]
+  ]
+ },
+ "nether/loot_bastion": {
+  "parent": "nether/find_bastion",
+  "tree": "nether",
+  "title": "War Pigs",
+  "wants": []
+ },
+ "nether/fast_travel": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Subspace Bubble",
+  "wants": []
+ },
+ "nether/ride_strider": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "This Boat Has Legs",
+  "wants": []
+ },
+ "nether/charge_respawn_anchor": {
+  "parent": "nether/obtain_crying_obsidian",
+  "tree": "nether",
+  "title": "Not Quite \"Nine\" Lives",
+  "wants": []
+ },
+ "nether/uneasy_alliance": {
+  "parent": "nether/return_to_sender",
+  "tree": "nether",
+  "title": "Uneasy Alliance",
+  "wants": []
+ },
+ "nether/distract_piglin": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Oh Shiny",
+  "wants": []
+ },
+ "nether/netherite_armor": {
+  "parent": "nether/obtain_ancient_debris",
+  "tree": "nether",
+  "title": "Cover Me in Debris",
+  "wants": [
+   [
+    "have:netherite_helmet"
+   ],
+   [
+    "have:netherite_chestplate"
+   ],
+   [
+    "have:netherite_leggings"
+   ],
+   [
+    "have:netherite_boots"
+   ]
+  ]
+ },
+ "nether/get_wither_skull": {
+  "parent": "nether/find_fortress",
+  "tree": "nether",
+  "title": "Spooky Scary Skeleton",
+  "wants": [
+   [
+    "have:wither_skeleton_skull"
+   ]
+  ]
+ },
+ "nether/all_potions": {
+  "parent": "nether/brew_potion",
+  "tree": "nether",
+  "title": "A Furious Cocktail",
+  "wants": []
+ },
+ "nether/brew_potion": {
+  "parent": "nether/obtain_blaze_rod",
+  "tree": "nether",
+  "title": "Local Brewery",
+  "wants": []
+ },
+ "nether/explore_nether": {
+  "parent": "nether/ride_strider",
+  "tree": "nether",
+  "title": "Hot Tourist Destinations",
+  "wants": []
+ },
+ "nether/ride_strider_in_overworld_lava": {
+  "parent": "nether/ride_strider",
+  "tree": "nether",
+  "title": "Feels Like Home",
+  "wants": []
+ },
+ "nether/find_bastion": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Those Were the Days",
+  "wants": []
+ },
+ "nether/summon_wither": {
+  "parent": "nether/get_wither_skull",
+  "tree": "nether",
+  "title": "Withering Heights",
+  "wants": []
+ },
+ "nether/create_beacon": {
+  "parent": "nether/summon_wither",
+  "tree": "nether",
+  "title": "Bring Home the Beacon",
+  "wants": []
+ },
+ "nether/obtain_blaze_rod": {
+  "parent": "nether/find_fortress",
+  "tree": "nether",
+  "title": "Into Fire",
+  "wants": [
+   [
+    "have:blaze_rod"
+   ]
+  ]
+ },
+ "nether/return_to_sender": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Return to Sender",
+  "wants": []
+ },
+ "nether/use_lodestone": {
+  "parent": "nether/obtain_ancient_debris",
+  "tree": "nether",
+  "title": "Country Lode, Take Me Home",
+  "wants": []
+ },
+ "nether/root": {
+  "parent": null,
+  "tree": "nether",
+  "title": "Nether",
+  "wants": [
+   [
+    "in:the_nether"
+   ]
+  ]
+ },
+ "nether/obtain_crying_obsidian": {
+  "parent": "nether/root",
+  "tree": "nether",
+  "title": "Who is Cutting Onions?",
+  "wants": [
+   [
+    "have:crying_obsidian"
+   ]
+  ]
+ },
+ "nether/create_full_beacon": {
+  "parent": "nether/create_beacon",
+  "tree": "nether",
+  "title": "Beaconator",
+  "wants": []
+ },
+ "nether/all_effects": {
+  "parent": "nether/all_potions",
+  "tree": "nether",
+  "title": "How Did We Get Here?",
+  "wants": []
+ },
+ "story/enter_the_nether": {
+  "parent": "story/form_obsidian",
+  "tree": "story",
+  "title": "We Need to Go Deeper",
+  "wants": [
+   [
+    "in:the_nether"
+   ]
+  ]
+ },
+ "story/follow_ender_eye": {
+  "parent": "story/enter_the_nether",
+  "tree": "story",
+  "title": "Eye Spy",
+  "wants": []
+ },
+ "story/upgrade_tools": {
+  "parent": "story/mine_stone",
+  "tree": "story",
+  "title": "Getting an Upgrade",
+  "wants": [
+   [
+    "have:stone_pickaxe"
+   ]
+  ]
+ },
+ "story/mine_diamond": {
+  "parent": "story/iron_tools",
+  "tree": "story",
+  "title": "Diamonds!",
+  "wants": [
+   [
+    "have:diamond"
+   ]
+  ]
+ },
+ "story/iron_tools": {
+  "parent": "story/smelt_iron",
+  "tree": "story",
+  "title": "Isn't It Iron Pick",
+  "wants": [
+   [
+    "have:iron_pickaxe"
+   ]
+  ]
+ },
+ "story/shiny_gear": {
+  "parent": "story/mine_diamond",
+  "tree": "story",
+  "title": "Cover Me with Diamonds",
+  "wants": [
+   [
+    "have:diamond_boots"
+   ],
+   [
+    "have:diamond_chestplate"
+   ],
+   [
+    "have:diamond_helmet"
+   ],
+   [
+    "have:diamond_leggings"
+   ]
+  ]
+ },
+ "story/enter_the_end": {
+  "parent": "story/follow_ender_eye",
+  "tree": "story",
+  "title": "The End?",
+  "wants": [
+   [
+    "in:the_end"
+   ]
+  ]
+ },
+ "story/lava_bucket": {
+  "parent": "story/smelt_iron",
+  "tree": "story",
+  "title": "Hot Stuff",
+  "wants": [
+   [
+    "have:lava_bucket"
+   ]
+  ]
+ },
+ "story/smelt_iron": {
+  "parent": "story/upgrade_tools",
+  "tree": "story",
+  "title": "Acquire Hardware",
+  "wants": [
+   [
+    "have:iron_ingot"
+   ]
+  ]
+ },
+ "story/obtain_armor": {
+  "parent": "story/smelt_iron",
+  "tree": "story",
+  "title": "Suit Up",
+  "wants": [
+   [
+    "have:iron_boots"
+   ],
+   [
+    "have:iron_chestplate"
+   ],
+   [
+    "have:iron_helmet"
+   ],
+   [
+    "have:iron_leggings"
+   ]
+  ]
+ },
+ "story/form_obsidian": {
+  "parent": "story/lava_bucket",
+  "tree": "story",
+  "title": "Ice Bucket Challenge",
+  "wants": [
+   [
+    "have:obsidian"
+   ]
+  ]
+ },
+ "story/root": {
+  "parent": null,
+  "tree": "story",
+  "title": "Minecraft",
+  "wants": [
+   [
+    "have:crafting_table"
+   ]
+  ]
+ },
+ "story/mine_stone": {
+  "parent": "story/root",
+  "tree": "story",
+  "title": "Stone Age",
+  "wants": [
+   [
+    "have:cobblestone",
+    "have:blackstone",
+    "have:cobbled_deepslate"
+   ]
+  ]
+ },
+ "story/enchant_item": {
+  "parent": "story/mine_diamond",
+  "tree": "story",
+  "title": "Enchanter",
+  "wants": []
+ },
+ "story/deflect_arrow": {
+  "parent": "story/obtain_armor",
+  "tree": "story",
+  "title": "Not Today, Thank You",
+  "wants": []
+ },
+ "story/cure_zombie_villager": {
+  "parent": "story/enter_the_nether",
+  "tree": "story",
+  "title": "Zombie Doctor",
+  "wants": []
+ },
+ "end/dragon_egg": {
+  "parent": "end/kill_dragon",
+  "tree": "end",
+  "title": "The Next Generation",
+  "wants": [
+   [
+    "have:dragon_egg"
+   ]
+  ]
+ },
+ "end/dragon_breath": {
+  "parent": "end/kill_dragon",
+  "tree": "end",
+  "title": "You Need a Mint",
+  "wants": [
+   [
+    "have:dragon_breath"
+   ]
+  ]
+ },
+ "end/enter_end_gateway": {
+  "parent": "end/kill_dragon",
+  "tree": "end",
+  "title": "Remote Getaway",
+  "wants": []
+ },
+ "end/kill_dragon": {
+  "parent": "end/root",
+  "tree": "end",
+  "title": "Free the End",
+  "wants": []
+ },
+ "end/levitate": {
+  "parent": "end/find_end_city",
+  "tree": "end",
+  "title": "Great View From Up Here",
+  "wants": []
+ },
+ "end/respawn_dragon": {
+  "parent": "end/kill_dragon",
+  "tree": "end",
+  "title": "The End... Again...",
+  "wants": []
+ },
+ "end/root": {
+  "parent": null,
+  "tree": "end",
+  "title": "The End",
+  "wants": [
+   [
+    "in:the_end"
+   ]
+  ]
+ },
+ "end/find_end_city": {
+  "parent": "end/enter_end_gateway",
+  "tree": "end",
+  "title": "The City at the End of the Game",
+  "wants": []
+ },
+ "end/elytra": {
+  "parent": "end/find_end_city",
+  "tree": "end",
+  "title": "Sky's the Limit",
+  "wants": [
+   [
+    "have:elytra"
+   ]
+  ]
+ },
+ "adventure/kill_a_mob": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Monster Hunter",
+  "wants": []
+ },
+ "adventure/kill_all_mobs": {
+  "parent": "adventure/kill_a_mob",
+  "tree": "adventure",
+  "title": "Monsters Hunted",
+  "wants": []
+ },
+ "adventure/voluntary_exile": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Voluntary Exile",
+  "wants": []
+ },
+ "adventure/honey_block_slide": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Sticky Situation",
+  "wants": []
+ },
+ "adventure/summon_iron_golem": {
+  "parent": "adventure/trade",
+  "tree": "adventure",
+  "title": "Hired Help",
+  "wants": []
+ },
+ "adventure/salvage_sherd": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Respecting the Remnants",
+  "wants": [
+   [
+    "have:angler_pottery_sherd",
+    "have:archer_pottery_sherd",
+    "have:arms_up_pottery_sherd",
+    "have:blade_pottery_sherd",
+    "have:brewer_pottery_sherd",
+    "have:burn_pottery_sherd"
+   ]
+  ]
+ },
+ "adventure/blowback": {
+  "parent": "adventure/minecraft_trials_edition",
+  "tree": "adventure",
+  "title": "blowback",
+  "wants": []
+ },
+ "adventure/under_lock_and_key": {
+  "parent": "adventure/minecraft_trials_edition",
+  "tree": "adventure",
+  "title": "under lock and key",
+  "wants": []
+ },
+ "adventure/who_needs_rockets": {
+  "parent": "adventure/minecraft_trials_edition",
+  "tree": "adventure",
+  "title": "who needs rockets",
+  "wants": []
+ },
+ "adventure/hero_of_the_village": {
+  "parent": "adventure/voluntary_exile",
+  "tree": "adventure",
+  "title": "Hero of the Village",
+  "wants": []
+ },
+ "adventure/fall_from_world_height": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Caves & Cliffs",
+  "wants": []
+ },
+ "adventure/very_very_frightening": {
+  "parent": "adventure/throw_trident",
+  "tree": "adventure",
+  "title": "Very Very Frightening",
+  "wants": []
+ },
+ "adventure/lighten_up": {
+  "parent": "adventure/minecraft_trials_edition",
+  "tree": "adventure",
+  "title": "lighten up",
+  "wants": []
+ },
+ "adventure/overoverkill": {
+  "parent": "adventure/minecraft_trials_edition",
+  "tree": "adventure",
+  "title": "overoverkill",
+  "wants": []
+ },
+ "adventure/revaulting": {
+  "parent": "adventure/under_lock_and_key",
+  "tree": "adventure",
+  "title": "revaulting",
+  "wants": []
+ },
+ "adventure/totem_of_undying": {
+  "parent": "adventure/kill_a_mob",
+  "tree": "adventure",
+  "title": "Postmortal",
+  "wants": []
+ },
+ "adventure/brush_armadillo": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "brush armadillo",
+  "wants": []
+ },
+ "adventure/sleep_in_bed": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Sweet Dreams",
+  "wants": []
+ },
+ "adventure/crafters_crafting_crafters": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "crafters crafting crafters",
+  "wants": []
+ },
+ "adventure/play_jukebox_in_meadows": {
+  "parent": "adventure/sleep_in_bed",
+  "tree": "adventure",
+  "title": "Sound of Music",
+  "wants": []
+ },
+ "adventure/read_power_of_chiseled_bookshelf": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "The Power of Books",
+  "wants": []
+ },
+ "adventure/two_birds_one_arrow": {
+  "parent": "adventure/ol_betsy",
+  "tree": "adventure",
+  "title": "Two Birds, One Arrow",
+  "wants": []
+ },
+ "adventure/arbalistic": {
+  "parent": "adventure/ol_betsy",
+  "tree": "adventure",
+  "title": "Arbalistic",
+  "wants": []
+ },
+ "adventure/whos_the_pillager_now": {
+  "parent": "adventure/ol_betsy",
+  "tree": "adventure",
+  "title": "Who's the Pillager Now?",
+  "wants": []
+ },
+ "adventure/spyglass_at_dragon": {
+  "parent": "adventure/spyglass_at_ghast",
+  "tree": "adventure",
+  "title": "Is It a Plane?",
+  "wants": []
+ },
+ "adventure/spyglass_at_ghast": {
+  "parent": "adventure/spyglass_at_parrot",
+  "tree": "adventure",
+  "title": "Is It a Balloon?",
+  "wants": []
+ },
+ "adventure/trim_with_any_armor_pattern": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Crafting a New Look",
+  "wants": []
+ },
+ "adventure/walk_on_powder_snow_with_leather_boots": {
+  "parent": "adventure/sleep_in_bed",
+  "tree": "adventure",
+  "title": "Light as a Rabbit",
+  "wants": []
+ },
+ "adventure/minecraft_trials_edition": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "minecraft trials edition",
+  "wants": []
+ },
+ "adventure/shoot_arrow": {
+  "parent": "adventure/kill_a_mob",
+  "tree": "adventure",
+  "title": "Take Aim",
+  "wants": []
+ },
+ "adventure/spyglass_at_parrot": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Is It a Bird?",
+  "wants": []
+ },
+ "adventure/craft_decorated_pot_using_only_sherds": {
+  "parent": "adventure/salvage_sherd",
+  "tree": "adventure",
+  "title": "Careful Restoration",
+  "wants": []
+ },
+ "adventure/lightning_rod_with_villager_no_fire": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Surge Protector",
+  "wants": []
+ },
+ "adventure/adventuring_time": {
+  "parent": "adventure/sleep_in_bed",
+  "tree": "adventure",
+  "title": "Adventuring Time",
+  "wants": []
+ },
+ "adventure/throw_trident": {
+  "parent": "adventure/kill_a_mob",
+  "tree": "adventure",
+  "title": "A Throwaway Joke",
+  "wants": []
+ },
+ "adventure/root": {
+  "parent": null,
+  "tree": "adventure",
+  "title": "Adventure",
+  "wants": []
+ },
+ "adventure/trade": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "What a Deal!",
+  "wants": []
+ },
+ "adventure/sniper_duel": {
+  "parent": "adventure/shoot_arrow",
+  "tree": "adventure",
+  "title": "Sniper Duel",
+  "wants": []
+ },
+ "adventure/ol_betsy": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Ol' Betsy",
+  "wants": []
+ },
+ "adventure/trim_with_all_exclusive_armor_patterns": {
+  "parent": "adventure/trim_with_any_armor_pattern",
+  "tree": "adventure",
+  "title": "Smithing with Style",
+  "wants": []
+ },
+ "adventure/avoid_vibration": {
+  "parent": "adventure/root",
+  "tree": "adventure",
+  "title": "Sneak 100",
+  "wants": []
+ },
+ "adventure/kill_mob_near_sculk_catalyst": {
+  "parent": "adventure/kill_a_mob",
+  "tree": "adventure",
+  "title": "It Spreads",
+  "wants": []
+ },
+ "adventure/bullseye": {
+  "parent": "adventure/shoot_arrow",
+  "tree": "adventure",
+  "title": "Bullseye",
+  "wants": []
+ },
+ "adventure/trade_at_world_height": {
+  "parent": "adventure/trade",
+  "tree": "adventure",
+  "title": "Star Trader",
+  "wants": []
+ }
+}

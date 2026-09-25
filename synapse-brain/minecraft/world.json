@@ -1,0 +1,31 @@
+{
+  "_help": "One world, several Synapses. world.py reads this file. 'instances': 'auto' - as many as the PC can hold (up to max_instances), or a number. Senses: grow - the eyes take over from the direct senses as they learn (as a child); human - only what a person has (vision, hearing, touch, the body, the HUD); full - the direct senses + the eyes. The first AI plays in the big window you watch; the others in small windows in the background.",
+  "server": {
+    "version": "1.21.4",
+    "port": 25565,
+    "memory_gb": 4,
+    "difficulty": "easy",
+    "seed": "",
+    "view_distance": 8,
+    "tick_rate": 60,
+    "max_tick_rate": 200,
+    "gamerules": {"keepInventory": true}
+  },
+  "_gamerules": "keepInventory: things are kept on death (the childhood rule - fear, pain and death stay, only the things are not lost). Remove it for the full game.",
+  "_pace": "tick_rate: the pace at start (20 is normal Minecraft). max_tick_rate: world.py then runs the world as fast as the brains keep up - their thinking stays within ~5 ticks, a person's reaction time - up to this. step_ms: the pause between moments. vision: the picture's size, zones of understanding, neurons of the visual cortex.",
+  "step_ms": 20,
+  "vision": {"picture": 256, "zones": 8, "neurons": 131072},
+  "_limits": "The minds have no ceilings of their own: concepts, chains, skills and the memory of every moment grow while there is room. disk_gb: the whole project (worlds, lives, clients, episodic memories) stays within this; keep_free_gb: always left free on the drive; keep_ram_gb: RAM a brain never takes for growing.",
+  "limits": {"disk_gb": 100, "keep_free_gb": 10, "keep_ram_gb": 3},
+  "instances": "auto",
+  "max_instances": 4,
+  "dashboard_port": 8765,
+  "main_window": "1280x720",
+  "background_window": "480x270",
+  "ais": [
+    {"name": "Synapse1", "senses": "grow", "eyes": true, "voice": false},
+    {"name": "Synapse2", "senses": "human", "eyes": true, "voice": false},
+    {"name": "Synapse3", "senses": "full", "eyes": true, "voice": false},
+    {"name": "Synapse4", "senses": "grow", "eyes": true, "voice": false}
+  ]
+}

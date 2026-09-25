@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "package": "ai.synapse.minecraft.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ClientPacketListenerMixin",
+    "FishingHookAccessor",
+    "KeyboardHandlerMixin",
+    "MinecraftTickRateMixin",
+    "MouseHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

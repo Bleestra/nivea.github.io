@@ -24,6 +24,7 @@ class Child:
     def __init__(self, n_actions, seed=0, taste=None, items=("log", "cobble", "apple", "fish", "rotten_flesh"),
                  eat_action=5, wait_action=10, kinds=KINDS, n_front=12):
         self.mind = Mind(n_actions, seed=seed, n_front=n_front)
+        self.mind.urgent_ctx = (3, 7)             # danger (hungry or not): it may break into any intention
         self.mind.planning = False
         self.limbic = Limbic(seed, taste)
         self.items = list(items)
@@ -69,9 +70,18 @@ class Child:
         if getattr(self, "_v_age", -1) < 0 or self.age - self._v_age >= 500 or len(self._v) != n:
             v = m.instrumental(m.frontier(np.maximum(m.R[:n], 0)))
             means = getattr(m, "means_only", ())
-            keep = np.array([not nm.startswith(means) for nm in m.names]) if means else np.ones(n, bool)
+            keep = ~m._mask(means) if means else np.ones(n, bool)
             self._v, self._v_age = np.minimum(v * keep, 3.0), self.age
-        return float(sum(self._v[m.idx[k]] for k, x in state.items() if x > 0 and k in m.idx and m.idx[k] < n))
+        total = 0.0
+        for k, x in state.items():
+            if x <= 0:
+                continue
+            if k.startswith("stored:"):             # what I put away is still mine (object permanence)
+                k = "have:" + k[7:]
+            i = m.idx.get(k)
+            if i is not None and i < n:             # more of a thing is worth more, but less and less:
+                total += self._v[i] * 2.0 * (1.0 - 0.5 ** min(float(x), 30.0))   # 1, 1.5, 1.75 ... up to 2
+        return total
 
     # ---------------------------------------------------------------- one moment
     def step(self, o, act_prev, front_before, inv_before, extra_reward=0.0):
@@ -124,6 +134,14 @@ class Child:
             phi = self._worth(state)
             r += 0.95 * phi - getattr(self, "phi_prev", phi)
             self.phi_prev = phi
+        # emotions come with innate action tendencies (Frijda): fear vetoes what hurt me (the amygdala), anger
+        # urges me to strike the one I blame while he is near - an urge, not an order: the mind weighs it
+        # with everything it has learned (and fear of what striking him cost me before still vetoes it)
+        atk = getattr(self, "attack_action", None)
+        if atk is not None:
+            blamed_near = any(L.grudge(k) > 0.1 for k, _, d in o["near"] if d <= 8)
+            m.tendency = np.zeros(m.nA, np.float32)
+            m.tendency[atk] = E["anger"] if blamed_near else 0.0
         if self.relative_value:
             self.r_avg += 0.001 * (r - self.r_avg)
             self.v_avg += 0.001 * (value - self.v_avg)

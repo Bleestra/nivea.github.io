@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "synapse_body",
+	"version": "${version}",
+	"name": "Synapse Body",
+	"description": "The body of Synapse (SynapseBrain) in the real Minecraft client: senses, eyes from the game's own renderer, and every player action as a motor function. What to do and when, the brain learns by itself.",
+	"authors": ["Bleestra"],
+	"contact": {
+		"sources": "https://github.com/Bleestra/nivea.github.io/tree/main/synapse-brain/fabric-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/synapse_body/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"ai.synapse.minecraft.SynapseBody"
+		]
+	},
+	"mixins": [
+		{
+			"config": "synapse_body.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*",
+		"baritone": "*"
+	}
+}

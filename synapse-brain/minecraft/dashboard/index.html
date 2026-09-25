@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synapse · мир</title>
+<style>
+:root {
+  --bg: #f4f5f7; --panel: #ffffff; --panel2: #f0f2f5; --line: #dde1e7; --text: #1b1f24; --muted: #5d6673;
+  --accent: #0f9d8e; --good: #1f9d55; --bad: #d64545; --warn: #c98a0b; --shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1216; --panel: #171b21; --panel2: #1e232b; --line: #2a303a; --text: #e6e9ee; --muted: #8b95a3;
+    --accent: #35d6c8; --good: #4ccf7f; --bad: #ff6b6b; --warn: #f0b83e; --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1216; --panel: #171b21; --panel2: #1e232b; --line: #2a303a; --text: #e6e9ee; --muted: #8b95a3;
+  --accent: #35d6c8; --good: #4ccf7f; --bad: #ff6b6b; --warn: #f0b83e; --shadow: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 14px; padding: 10px 20px; flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+header h1 b { color: var(--accent); }
+.pill { font-size: 12px; padding: 2px 9px; border-radius: 999px; background: var(--panel2); color: var(--muted); white-space: nowrap; }
+.pill.on { color: var(--good); } .pill.off { color: var(--bad); }
+.spacer { flex: 1; }
+button, .btn { font: inherit; font-size: 13px; background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+  border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+button.active { border-color: var(--accent); color: var(--accent); }
+main { max-width: 1500px; margin: 0 auto; padding: 16px 20px 60px; }
+section { margin-bottom: 22px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; cursor: pointer; user-select: none; }
+th.num, td.num { text-align: right; }
+th.sorted { color: var(--accent); }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--panel2); }
+tbody tr.sel { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.scroll { overflow-x: auto; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-right: 6px; vertical-align: 1px; }
+.dot.on { background: var(--good); }
+.rank { color: var(--muted); width: 28px; }
+.badge { font-size: 11px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.badge.human { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.badge.grow { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+.card { overflow: hidden; cursor: pointer; }
+.card.sel { outline: 2px solid var(--accent); }
+.view { position: relative; aspect-ratio: 1 / 1; background: #000; max-height: 330px; width: 100%; display: flex; }
+.view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.view .none { margin: auto; color: #8b95a3; font-size: 13px; }
+.view .act { position: absolute; left: 8px; bottom: 8px; right: 8px; background: rgba(0,0,0,.62); color: #fff;
+  border-radius: 6px; padding: 4px 8px; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .body { padding: 10px 12px 12px; display: grid; gap: 6px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.name { font-weight: 650; font-size: 15px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bars { display: grid; grid-template-columns: 40px 1fr 34px; gap: 4px 8px; align-items: center; font-size: 12px; }
+.bar { height: 7px; background: var(--panel2); border-radius: 4px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+.bar.hp > i { background: var(--bad); } .bar.food > i { background: var(--warn); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12px; background: var(--panel2); border-radius: 6px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.chip b { font-weight: 650; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 12px; border-bottom: 1px solid var(--line); align-items: center; }
+.tabs .title { font-weight: 650; margin-right: 10px; }
+.tabbody { padding: 12px; }
+.grid2 { display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } main { padding: 12px; } }
+.vision { position: relative; width: 100%; max-width: 420px; aspect-ratio: 1 / 1; background: #000; border-radius: 8px; overflow: hidden; }
+.vision img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.zones { position: absolute; inset: 0; display: grid; }
+.zone { border: 1px solid rgba(255,255,255,.18); color: #fff; font-size: 9.5px; padding: 1px 2px; text-shadow: 0 1px 2px #000;
+  overflow: hidden; line-height: 1.15; }
+.zone.wrong { border-color: rgba(255,107,107,.9); background: rgba(255,107,107,.12); }
+.zone small { display: block; opacity: .8; }
+.events { max-height: 520px; overflow: auto; }
+.ev { display: grid; grid-template-columns: 130px 92px 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.ev .k { font-size: 11px; border-radius: 6px; padding: 1px 6px; background: var(--panel2); text-align: center; height: fit-content; }
+.k.advancement { color: var(--warn); } .k.death { color: var(--bad); } .k.discovery { color: var(--good); } .k.vision, .k.recall, .k.understood, .k.guide { color: var(--accent); } .k.develop { color: var(--good); } .k.pain { color: var(--bad); } .k.imitation, .k.watched { color: var(--warn); }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.chart { width: 100%; height: 280px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; margin-top: 6px; }
+.legend i { display: inline-block; width: 12px; height: 3px; vertical-align: 3px; margin-right: 5px; border-radius: 2px; }
+pre.diary { white-space: pre-wrap; font: 12.5px/1.5 ui-monospace, Consolas, monospace; max-height: 560px; overflow: auto; margin: 0; }
+.inv { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 4px 12px; font-size: 12.5px; }
+.empty { color: var(--muted); padding: 18px; text-align: center; }
+.note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1><b>Synapse</b> · мир</h1>
+  <span id="srv" class="pill">сервер: …</span>
+  <span id="online" class="pill">…</span>
+  <span class="spacer"></span>
+  <span id="upd" class="pill">—</span>
+  <button id="pause">Пауза обновления</button>
+  <button id="theme" title="Светлая / тёмная тема">Тема</button>
+</header>
+<main>
+  <section>
+    <h2>Кто лучше</h2>
+    <div class="panel scroll"><table id="board"><thead></thead><tbody></tbody></table></div>
+    <div class="note">Счёт = 10 × достижения + 25 × технологии + 2 × разных предметов + 0,5 × исследованных чанков + 20 × точность зрения − 3 × смерти. Колонки сортируются щелчком; строка выбирает ИИ.</div>
+  </section>
+  <section>
+    <h2>Сейчас</h2>
+    <div id="cards" class="cards"></div>
+  </section>
+  <section>
+    <div class="panel">
+      <div class="tabs" id="tabs"></div>
+      <div class="tabbody" id="tabbody"><div class="empty">Выберите ИИ</div></div>
+    </div>
+  </section>
+</main>
+<script>
+const COLORS = ["#35d6c8", "#f0b83e", "#b48cff", "#ff7a7a", "#6fb3ff", "#8bd95c"];
+const SENSES = {grow: "растёт (зрение сменяет датчики)", human: "как человек", full: "датчики + зрение", "no eyes": "без глаз"};
+const COLS = [
+  ["rank", "#", false], ["name", "ИИ", false], ["senses", "чувства", false], ["age", "возраст", true],
+  ["advancements", "достижения", true], ["items", "предметы", true], ["tech", "технологии", true],
+  ["deaths", "смерти", true], ["life_avg", "ср. жизнь", true], ["explored", "чанков", true],
+  ["concepts", "понятий", true], ["vision", "зрение", true], ["places", "мест помнит", true],
+  ["copied", "подражал", true], ["fail_rate", "неудач", true], ["score", "счёт", true]];
+const TECH = ["—", "дерево", "камень", "железо", "алмаз", "незерит"];
+let all = [], sel = localStorage.getItem("synapse.sel") || null, tab = localStorage.getItem("synapse.tab") || "decisions";
+let sortKey = "score", sortDir = -1, paused = false, series = {}, metric = "advancements", evFilter = "all";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const pct = v => v == null ? "—" : Math.round(v * 100) + "%";
+const color = name => COLORS[Math.max(0, all.findIndex(a => a.name === name)) % COLORS.length];
+function score(s) {
+  if (!s) return 0;
+  return Math.round(10 * s.advancements + 25 * s.tech + 2 * s.items + 0.5 * s.explored + 20 * (s.vision || 0) - 3 * s.deaths);
+}
+try { const t = localStorage.getItem("synapse.theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+$("#theme").onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("synapse.theme", next); } catch (e) {}
+};
+$("#pause").onclick = e => { paused = !paused; e.target.classList.toggle("active", paused); e.target.textContent = paused ? "Обновление на паузе" : "Пауза обновления"; };
+
+async function get(url) { const r = await fetch(url, {cache: "no-store"}); if (!r.ok) throw new Error(r.status); return r.json(); }
+
+function board() {
+  const rows = all.map(a => ({...(a.scores || {}), name: a.name, senses: a.senses || "—", online: a.online, score: score(a.scores)}));
+  rows.sort((x, y) => {
+    const a = x[sortKey], b = y[sortKey];
+    return (typeof a === "number" && typeof b === "number" ? a - b : String(a).localeCompare(String(b))) * sortDir;
+  });
+  const byScore = [...rows].sort((a, b) => b.score - a.score).map(r => r.name);
+  $("#board thead").innerHTML = "<tr>" + COLS.map(([k, t, n]) =>
+    `<th data-k="${k}" class="${n ? "num" : ""} ${k === sortKey ? "sorted" : ""}">${t}${k === sortKey ? (sortDir < 0 ? " ↓" : " ↑") : ""}</th>`).join("") + "</tr>";
+  $("#board tbody").innerHTML = rows.map(r => `<tr data-n="${esc(r.name)}" class="${r.name === sel ? "sel" : ""}">
+    <td class="rank">${byScore.indexOf(r.name) + 1}</td>
+    <td><span class="dot ${r.online ? "on" : ""}"></span><b>${esc(r.name)}</b></td>
+    <td><span class="badge ${esc(r.senses)}">${esc(SENSES[r.senses] || r.senses)}</span></td>
+    <td class="num">${r.age ?? "—"}</td><td class="num">${r.advancements ?? "—"}</td><td class="num">${r.items ?? "—"}</td>
+    <td class="num">${TECH[r.tech] ?? "—"}</td><td class="num">${r.deaths ?? "—"}</td><td class="num">${r.life_avg ?? "—"}</td>
+    <td class="num">${r.explored ?? "—"}</td><td class="num">${r.concepts ?? "—"}</td><td class="num">${pct(r.vision)}</td>
+    <td class="num">${r.places ?? "—"}</td><td class="num">${r.copied ?? "—"}</td><td class="num">${pct(r.fail_rate)}</td>
+    <td class="num"><b>${r.score}</b></td></tr>`).join("") || `<tr><td colspan="16" class="empty">Пока ни одного ИИ</td></tr>`;
+  document.querySelectorAll("#board th").forEach(th => th.onclick = () => {
+    const k = th.dataset.k; if (k === "rank") return;
+    if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = -1; }
+    board();
+  });
+  document.querySelectorAll("#board tbody tr[data-n]").forEach(tr => tr.onclick = () => select(tr.dataset.n));
+}
+
+/** A picture that refreshes without flicker: the next frame loads aside and replaces the old one when ready. */
+function refreshPicture(img, url) {
+  if (!img || img.dataset.loading) return;
+  img.dataset.loading = "1";
+  const next = new Image();
+  next.onload = () => { img.src = next.src; img.style.visibility = "visible"; delete img.dataset.loading; };
+  next.onerror = () => { img.style.visibility = "hidden"; delete img.dataset.loading; };
+  next.src = url + "?t=" + Date.now();
+}
+
+function cardBody(a) {
+  const s = a.scores || {};
+  return `<div class="row"><span class="dot ${a.online ? "on" : ""}"></span><span class="name">${esc(a.name)}</span>
+      <span class="badge ${esc(a.senses)}">${esc(SENSES[a.senses] || a.senses || "")}</span>
+      <span class="muted small">${esc(a.missing ? "ещё не рождён" : (a.stage || "") + (a.lived ? " · прожил " + a.lived : ""))}</span></div>
+    <div class="small clip" title="${esc(a.feeling)}">Чувствует: ${esc((a.feeling || "—").split(" — ")[0])}</div>
+    <div class="small clip muted" title="${esc(a.thought)}">${esc(a.thought || (a.goal ? "Хочет: " + a.goal : "Осматривается"))}</div>
+    ${a.development && a.development.next ? `<div class="small clip">Растёт к: <b>${esc(a.development.next)}</b></div>` : ""}
+    <div class="bars"><span class="muted">HP</span><div class="bar hp"><i style="width:${(a.hp ?? 0) / 20 * 100}%"></i></div><span>${a.hp != null ? Math.round(a.hp) : "—"}</span>
+      <span class="muted">еда</span><div class="bar food"><i style="width:${(a.food ?? 0) / 20 * 100}%"></i></div><span>${a.food ?? "—"}</span></div>
+    <div class="chips"><span class="chip">достижения <b>${s.advancements ?? 0}</b></span><span class="chip">предметы <b>${s.items ?? 0}</b></span>
+      <span class="chip">тех <b>${TECH[s.tech] ?? "—"}</b></span><span class="chip">смерти <b>${s.deaths ?? 0}</b></span>
+      <span class="chip">зрение <b>${pct(s.vision)}</b></span></div>`;
+}
+
+function cards() {
+  const box = $("#cards");
+  const names = all.map(a => a.name).join("|");
+  if (box.dataset.names !== names) {                   // who is in the world changed: build the cards once
+    box.dataset.names = names;
+    box.innerHTML = all.map(a => `<div class="panel card" data-n="${esc(a.name)}">
+      <div class="view"><img alt="что видит ${esc(a.name)}" style="visibility:hidden"><div class="act" hidden></div></div>
+      <div class="body"></div></div>`).join("") || `<div class="empty">Запустите мир: python world.py</div>`;
+    box.querySelectorAll(".card").forEach(c => c.onclick = () => select(c.dataset.n));
+  }
+  all.forEach(a => {
+    const c = box.querySelector(`.card[data-n="${CSS.escape(a.name)}"]`);
+    if (!c) return;
+    c.classList.toggle("sel", a.name === sel);
+    c.querySelector(".body").innerHTML = cardBody(a);
+    const last = (a.decisions || []).slice(-1)[0], act = c.querySelector(".act");
+    act.hidden = !last;
+    if (last) act.textContent = last.action + (last.target != null ? " → " + JSON.stringify(last.target) : "");
+    if (!a.missing) refreshPicture(c.querySelector("img"), `/api/ai/${encodeURIComponent(a.name)}/frame.jpg`);
+  });
+}
+
+function select(n) { sel = n; try { localStorage.setItem("synapse.sel", n); } catch (e) {} board(); cards(); detail(true); }
+
+const TABS = [["decisions", "Решения"], ["life", "Жизнь"], ["vision", "Зрение"], ["compare", "Сравнение"], ["mind", "Чувства и вещи"], ["diary", "Дневник"]];
+async function detail(force) {
+  const a = all.find(x => x.name === sel);
+  if (!a) { $("#tabs").innerHTML = ""; return; }
+  $("#tabs").innerHTML = `<span class="title">${esc(a.name)}</span>` + TABS.map(([k, t]) => `<button data-t="${k}" class="${k === tab ? "active" : ""}">${t}</button>`).join("");
+  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; try { localStorage.setItem("synapse.tab", tab); } catch (e) {} detail(true); });
+  const body = $("#tabbody");
+  const view = tab + ":" + a.name, fresh = force || body.dataset.view !== view;
+  body.dataset.view = view;
+  if (tab === "decisions") {
+    const d = [...(a.decisions || [])].reverse();
+    body.innerHTML = d.length ? `<div class="scroll"><table><thead><tr><th>время</th><th class="num">шаг</th><th>действие</th><th>на что</th><th>хочет</th><th>чувство</th><th>вышло?</th><th class="num">награда</th><th class="num">HP</th></tr></thead><tbody>` +
+      d.map(x => `<tr><td>${esc(x.t)}</td><td class="num">${x.step}</td><td><b>${esc(x.action)}</b></td><td>${esc(x.target == null ? "" : JSON.stringify(x.target))}</td>
+        <td>${esc(x.goal)}</td><td>${esc(x.feeling)}</td><td>${x.ok === undefined ? "" : x.ok ? '<span style="color:var(--good)">да</span>' : '<span style="color:var(--bad)">нет</span> <span class="muted">' + esc(x.why || "") + "</span>"}</td>
+        <td class="num">${x.reward}</td><td class="num">${x.hp ?? ""}</td></tr>`).join("") +
+      `</tbody></table></div><div class="note">Последние решения. Какие действия он выбирает чаще: ${Object.entries(a.action_use || {}).map(([k, v]) => esc(k) + " " + v).join(", ")}</div>`
+      : `<div class="empty">Решений пока нет</div>`;
+  } else if (tab === "life") {
+    const ev = force || !lifeCache[a.name] ? await get(`/api/ai/${encodeURIComponent(a.name)}/events?n=500`).catch(() => []) : lifeCache[a.name];
+    lifeCache[a.name] = ev;
+    const kinds = {all: "всё", advancement: "достижения", discovery: "впервые", death: "смерти", vision: "зрение", say: "слова", develop: "развитие", guide: "гайд", recall: "справочник", pain: "боль", watched: "видел", imitation: "повторил", understood: "понял речь", traded: "торговля", read: "чтение"};
+    const list = [...ev].reverse().filter(e => evFilter === "all" || e.kind === evFilter);
+    body.innerHTML = `<div class="filters">${Object.entries(kinds).map(([k, t]) => `<button data-f="${k}" class="${k === evFilter ? "active" : ""}">${t}</button>`).join("")}</div>
+      <div class="events">${list.map(e => `<div class="ev"><span class="muted small">${esc(e.t)}<br>шаг ${e.step}</span><span class="k ${esc(e.kind)}">${esc(kinds[e.kind] || e.kind)}</span><span>${esc(e.text)}</span></div>`).join("") || `<div class="empty">Пока ничего</div>`}</div>`;
+    document.querySelectorAll(".filters button").forEach(b => b.onclick = () => { evFilter = b.dataset.f; detail(false); });
+  } else if (tab === "vision") {
+    const v = a.vision;
+    if (!v) { body.innerHTML = `<div class="empty">У этого ИИ нет глаз (запуск без --eyes)</div>`; return; }
+    const G = Math.round(Math.sqrt(v.zones.length)) || 5;
+    const zones = v.zones.map((z, i) => {
+      const truth = v.labels[i] ? v.labels[i][0] : null;
+      const wrong = truth && truth !== z[0];
+      const tip = `${z[0]} · ${Math.round(z[2] * 100)}% · ${["≤2", "≤5", "≤12", ">12"][z[1]]}` + (wrong ? " · на самом деле: " + truth : "");
+      return `<div class="zone ${wrong ? "wrong" : ""}" title="${esc(tip)}">${esc(z[0].replace(/_/g, " "))}${G <= 5 ? `<small>${Math.round(z[2] * 100)}% · ${["≤2", "≤5", "≤12", ">12"][z[1]]}</small>` : ""}</div>`;
+    }).join("");
+    const known = (v.known || []).map(([n, r, c]) => `<span class="muted">${esc(n)}</span><div class="bar"><i style="width:${r * 100}%"></i></div><span>${Math.round(r * 100)}%</span>`).join("");
+    if (fresh || !body.querySelector(".vision")) {
+      body.innerHTML = `<div class="grid2"><div><div class="vision"><img alt="что он видит" style="visibility:hidden"><div class="zones"></div></div>
+        <div class="note">Что он видит и как понимает каждую зону кадра (наведите — уверенность и расстояние). Красная рамка — ошибся (в подсказке: что там на самом деле).</div></div>
+        <div class="vstats"></div></div>`;
+    }
+    const zb = body.querySelector(".zones");
+    zb.style.gridTemplateColumns = zb.style.gridTemplateRows = `repeat(${G}, 1fr)`;
+    zb.innerHTML = zones;
+    refreshPicture(body.querySelector(".vision img"), `/api/ai/${encodeURIComponent(a.name)}/frame.jpg`);
+    body.querySelector(".vstats").innerHTML = `<div><div class="chips" style="margin-bottom:10px"><span class="chip">узнаёт зоны <b>${pct(v.things)}</b></span><span class="chip">расстояние <b>${pct(v.distance)}</b></span>
+        <span class="chip">земля впереди <b>${pct(v.ground)}</b></span><span class="chip">небо <b>${pct(v.sky)}</b></span><span class="chip">знает названий <b>${v.vocabulary}</b></span></div>
+        <div class="small muted" style="margin:6px 0">Насколько он уже полагается на глаза вместо датчиков:</div>
+        <div class="bars" style="grid-template-columns:110px 1fr 40px">${Object.entries(v.trust || {}).map(([k, x]) => `<span class="muted">${{grid: "земля впереди", sky: "небо", tree: "где дерево", things: "что вокруг"}[k] || k}</span><div class="bar"><i style="width:${x * 100}%"></i></div><span>${pct(x)}</span>`).join("")}</div>
+        <div class="small muted" style="margin:12px 0 6px">Что научился узнавать (доля правильно узнанных зон):</div>
+        <div class="bars" style="grid-template-columns:150px 1fr 40px; max-height:330px; overflow:auto">${known || `<span class="muted">пока мало видел</span>`}</div></div>`;
+  } else if (tab === "compare") {
+    const now = Date.now();
+    await Promise.all(all.map(async x => {
+      if (force || !series[x.name] || now - (series[x.name].t || 0) > 15000) {
+        series[x.name] = {t: now, rows: await get(`/api/ai/${encodeURIComponent(x.name)}/series`).catch(() => [])};
+      }
+    }));
+    const M = {advancements: "достижения", items: "разных предметов", tech: "технологии", vision: "точность зрения", deaths: "смерти",
+               concepts: "понятий в разуме", explored: "исследовано чанков", life_avg: "средняя жизнь (шагов)", reward_avg: "средняя награда",
+               places: "мест помнит", copied: "подражал", fail_rate: "доля неудач"};
+    body.innerHTML = `<div class="filters">${Object.entries(M).map(([k, t]) => `<button data-m="${k}" class="${k === metric ? "active" : ""}">${t}</button>`).join("")}</div>
+      ${chart(metric)}<div class="legend">${all.map(x => `<span><i style="background:${color(x.name)}"></i>${esc(x.name)}</span>`).join("")}</div>
+      <div class="note">По горизонтали — возраст (шаги жизни), чтобы честно сравнивать тех, кто родился позже.</div>`;
+    document.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { metric = b.dataset.m; detail(false); });
+  } else if (tab === "mind") {
+    const emo = Object.entries(a.emotions || {});
+    body.innerHTML = `<div class="grid2"><div><div class="small muted" style="margin-bottom:6px">Чувства сейчас (${esc(a.stage || "")})</div>
+        <div class="bars" style="grid-template-columns:130px 1fr 40px">${emo.map(([k, v]) => `<span>${esc(k)}</span><div class="bar"><i style="width:${Math.min(1, v) * 100}%"></i></div><span>${v}</span>`).join("") || `<span class="muted">спокоен</span>`}</div>
+        <div class="small muted" style="margin:14px 0 6px">Решил (намерение)</div><div>${a.intent && a.intent.what ? `<b>${esc(a.intent.what)}</b> · держит ${a.intent.for} моментов${a.intent.fails ? ` · неудач ${a.intent.fails}` : ""}${a.intent.saved ? ` · после опасности вернётся к «${esc(a.intent.saved)}»` : ""}` : "—"}</div>
+        <div class="small muted" style="margin:14px 0 6px">Что думает</div><div>${esc(a.thought || "—")}</div>
+        <div class="small muted" style="margin:14px 0 6px">Где</div><div>${esc(a.dim || "")} · ${esc((a.pos || []).join(", "))} · в руке: ${esc(a.held || "ничего")}</div>
+        <div class="small muted" style="margin:14px 0 6px">Помнит, где есть (не видя сейчас)</div><div>${esc((a.places_known || []).join(", ") || "—")}</div>
+        ${a.memory ? `<div class="small muted" style="margin:14px 0 6px">Память (растёт без потолка)</div><div class="small">
+          понятий <b>${a.memory.concepts}</b> · связей ${a.memory.links} · прожитых моментов <b>${a.memory.moments ?? "—"}</b> · навыки ${a.memory.skills_gb} ГБ<br>
+          сумка: свободно ${a.memory.bag_free ?? "?"} из 36 · сундуков ${a.memory.chests}${Object.keys(a.memory.stored || {}).length ? " · в них: " + esc(Object.entries(a.memory.stored).map(([k, v]) => k + " " + v).join(", ")) : ""}</div>` : ""}
+        <div class="small muted" style="margin:14px 0 6px">Темп жизни (куда уходит время одного момента)</div>
+        <div class="small">${a.pace && a.pace.moments_per_s != null ? `<b>${a.pace.moments_per_s}</b> моментов/с · мир ${a.pace.ticks_per_s ?? "?"} тиков/с<br>` +
+          `глаза тела ${a.pace.eyes_ms ?? "?"} мс · чувства ${a.pace.senses_ms ?? "?"} мс · действие ${a.pace.act_ms ?? "?"} мс · пауза ${a.pace.wait_ms ?? "?"} мс<br>` +
+          `мозг: зрение ${a.pace.brain_eyes_ms ?? "?"} мс · мышление ${a.pace.brain_think_ms ?? "?"} мс · прочее ${a.pace.brain_rest_ms ?? "?"} мс` : "—"}</div>
+        <div class="small muted" style="margin:14px 0 6px">Что не получается (раз из попыток, почему)</div>
+        <div class="small">${(a.fails || []).map(([n, t, f, w]) => `${esc(n)}: ${f} из ${t}${w ? " — " + esc(w) : ""}`).join("<br>") || "—"}</div></div>
+      <div><div class="small muted" style="margin-bottom:6px">Инвентарь</div><div class="inv">${Object.entries(a.inventory || {}).map(([k, v]) => `<span>${esc(k)} <b>${v}</b></span>`).join("") || `<span class="muted">пусто</span>`}</div></div></div>`;
+  } else if (tab === "diary") {
+    const d = await get(`/api/ai/${encodeURIComponent(a.name)}/diary`).catch(() => ({text: ""}));
+    body.innerHTML = `<pre class="diary">${esc(d.text.split("\n").reverse().join("\n")) || "Дневник пуст"}</pre>`;
+  }
+}
+const lifeCache = {};
+
+function chart(key) {
+  const W = 1000, H = 280, P = {l: 46, r: 12, t: 12, b: 26};
+  const lines = all.map(a => ({name: a.name, pts: (series[a.name]?.rows || []).filter(r => r[key] != null).map(r => [r.age ?? r.step, r[key]])}));
+  const xs = lines.flatMap(l => l.pts.map(p => p[0])), ys = lines.flatMap(l => l.pts.map(p => p[1]));
+  if (!xs.length) return `<div class="empty">Пока нет истории: точки пишутся каждые 100 шагов</div>`;
+  const x0 = Math.min(...xs), x1 = Math.max(...xs, x0 + 1), y0 = Math.min(0, ...ys), y1 = Math.max(...ys, y0 + (key === "vision" ? 1 : 1e-9));
+  const X = x => P.l + (x - x0) / (x1 - x0) * (W - P.l - P.r), Y = y => H - P.b - (y - y0) / (y1 - y0 || 1) * (H - P.t - P.b);
+  const ticks = [0, .25, .5, .75, 1].map(f => y0 + f * (y1 - y0));
+  const fmt = v => key === "vision" ? Math.round(v * 100) + "%" : Math.abs(v) >= 100 ? Math.round(v) : +v.toFixed(2);
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="график">
+    ${ticks.map(t => `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--line)"/><text x="${P.l - 6}" y="${Y(t) + 4}" fill="var(--muted)" font-size="11" text-anchor="end">${fmt(t)}</text>`).join("")}
+    <text x="${W - P.r}" y="${H - 6}" fill="var(--muted)" font-size="11" text-anchor="end">возраст ${x1}</text>
+    ${lines.map(l => l.pts.length ? `<polyline fill="none" stroke="${color(l.name)}" stroke-width="2" vector-effect="non-scaling-stroke" points="${l.pts.map(p => X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1)).join(" ")}"/>` : "").join("")}
+  </svg>`;
+}
+
+async function tick() {
+  if (paused) return;
+  try {
+    const [w, a] = await Promise.all([get("/api/world"), get("/api/all")]);
+    all = a;
+    $("#srv").textContent = "сервер: " + (w.server ? "работает" : "не отвечает");
+    $("#srv").className = "pill " + (w.server ? "on" : "off");
+    const on = all.filter(x => x.online).length;
+    $("#online").textContent = `живы ${on} из ${all.length}`;
+    $("#upd").textContent = "обновлено " + new Date().toLocaleTimeString();
+    if (!sel && all.length) sel = all[0].name;
+    board(); cards();
+    if (tab !== "diary" && tab !== "compare") detail(false);
+  } catch (e) {
+    $("#upd").textContent = "нет связи с панелью";
+  }
+}
+tick();
+setInterval(tick, 1500);
+setInterval(() => { if (!paused && tab === "compare") detail(false); }, 15000);
+</script>
+</body>
+</html>

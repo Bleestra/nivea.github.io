@@ -1,0 +1,76 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+}
+
+repositories {
+	// Loom adds the repositories for Minecraft and Fabric by itself.
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"synapse_body" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+}
+
+// Baritone (LGPL-3.0, https://github.com/cabaletta/baritone) walks the body along a path: a motor
+// function, like mineflayer-pathfinder for bot.js. The official release jar is fetched once into libs/
+// and checked against its published SHA-1; it is not kept in the repository.
+def baritoneJar = file("libs/baritone-api-fabric-${project.baritone_version}.jar")
+tasks.register('fetchBaritone') {
+	outputs.file baritoneJar
+	onlyIf { !baritoneJar.exists() }
+	doLast {
+		baritoneJar.parentFile.mkdirs()
+		def url = "https://github.com/cabaletta/baritone/releases/download/v${project.baritone_version}/baritone-api-fabric-${project.baritone_version}.jar"
+		new URL(url).withInputStream { i -> baritoneJar.withOutputStream { it << i } }
+		def sha1 = java.security.MessageDigest.getInstance('SHA-1').digest(baritoneJar.bytes).encodeHex().toString()
+		if (sha1 != project.baritone_sha1) {
+			baritoneJar.delete()
+			throw new GradleException("Baritone checksum mismatch: ${sha1}")
+		}
+	}
+}
+if (!baritoneJar.exists()) {
+	tasks.named('compileClientJava') { dependsOn 'fetchBaritone' }
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	modCompileOnly files(baritoneJar)
+}
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+	it.options.encoding = 'UTF-8'
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
+	from("LICENSE") {
+		rename { "${it}_$projectName"}
+	}
+}

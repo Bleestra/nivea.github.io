@@ -58,6 +58,7 @@ STAGE_OF = {k: 0 for k in ("contentment", "distress", "interest", "disgust", "st
 STAGE_OF.update({k: 2 for k in ("embarrassment", "awkwardness", "envy", "jealousy", "admiration",
                                 "empathic_pain", "schadenfreude", "contempt", "nostalgia", "regret")})
 STAGE_OF.update({k: 3 for k in ("pride", "shame", "guilt")})
+BEINGS = {"zombie", "creeper", "hostile", "animal", "carer", "peer", "villager", "golem", "cat", "mycat"}
 STAGE_NAMES = ["новорождённый", "первичные эмоции", "осознание себя", "внутренние нормы"]
 DIRS = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 PLACED = (4, 5)                    # classes the agent can build (block, chest): only for reading its own map
@@ -135,6 +136,12 @@ class Limbic:
         return (x - m) / (np.sqrt(v) + 1e-3)
 
     # ---------------------------------------------------------------- development
+    def grudge(self, kind):
+        """What I hold against this kind of being: the harm that comes with it, less the good it does me
+        (gifts, help) and less how dear one of them is to me. One does not strike the hand that feeds."""
+        dear = max((a for b, a in self.attach_being.items() if self.kind_of.get(b) == kind), default=0.0)
+        return self.blame.get(kind, 0.0) - self.help.get(kind, 0.0) - dear
+
     def stage(self):
         """Emotional development by readiness, not by a timer: expectations must be learned before
         joy/fear/anger exist, a self-model before self-conscious emotions, standards before pride."""
@@ -306,9 +313,12 @@ class Limbic:
         # not mere co-presence: a cat that happens to sit nearby is not blamed for a creeper
         self.bad_all = self.bad_all * 0.9998 + min(bad, 3.0)
         self.n_all = self.n_all * 0.9998 + 1
-        for k in kinds_near:
+        # when my body knows who hurt me (the game says: a zombie), the harm is that one's, not of whoever stood by
+        hurt_by = {cause for who, _, dmg, cause in ev["hurt"] if who == "self" and dmg > 0 and cause in BEINGS}
+        guilty = hurt_by or kinds_near
+        for k in kinds_near | hurt_by:
             bp, n_p = self.bad_with.get(k, (0.0, 0.0))
-            self.bad_with[k] = (bp * 0.9998 + min(bad, 3.0), n_p * 0.9998 + 1)
+            self.bad_with[k] = (bp * 0.9998 + (min(bad, 3.0) if k in guilty else 0.0), n_p * 0.9998 + 1)
         for k, (bp, n_p) in self.bad_with.items():
             if n_p >= 5:
                 base = self.bad_all / self.n_all + 1e-4
@@ -316,8 +326,9 @@ class Limbic:
         good_from_other = (1.0 if ev["gift"] else 0.0) + (0.7 if ev["carer_did"] else 0.0)
         if good_from_other:
             self.help["carer"] = self.help.get("carer", 0.0) + 0.3 * (good_from_other - self.help.get("carer", 0.0))
-        blamed = max(kinds_near, key=lambda k: self.blame.get(k, 0.0), default=None) if kinds_near else None
-        if bad > 0.05 and blamed is not None and self.blame.get(blamed, 0) > 0.1:
+        near_guilty = kinds_near | hurt_by
+        blamed = max(near_guilty, key=self.grudge, default=None) if near_guilty else None
+        if bad > 0.05 and blamed is not None and self.grudge(blamed) > 0.1:
             self.blamed_now = blamed
         # ---- attachment (Hebbian): being near someone when I feel good makes them dear
         pos_affect = max(0.0, r) + (0.2 if "purr" in ev["sounds"] else 0.0) + (0.2 if tone == 1 else 0.0)
@@ -340,9 +351,12 @@ class Limbic:
         self.dear_avg += 0.02 * (dn - self.dear_avg)                    # the constant comfort of home fades (adaptation)
         # ---- anger's satisfaction: hurting the one I blame
         anger_prev = self.lingering["anger"]
-        for who, bid, dmg, cause in ev["hurt"]:
-            if cause == "self" and who in self.blame and anger_prev > 0.1:
-                r += 0.5 * anger_prev * self.blame[who]
+        for who, bid, dmg, cause in ev["hurt"]:                        # the harder the blow, the more it satisfies
+            if cause == "self" and who in self.blame and anger_prev > 0.1:   # (a fist 1, a sword 4-7)
+                r += 0.5 * anger_prev * self.blame[who] * min(float(dmg), 6.0) / 3.0
+        for kind, bid, tamed, cause, seen in ev["deaths"]:              # the one who threatened me fell by my hand:
+            if cause == "self" and self.blame.get(kind, 0.0) > 0.1:     # relief (the danger is gone) and triumph
+                r += 0.5 * self.blame[kind] * (0.5 + anger_prev)
         blamed_died = [k for k, bid, tamed, cause, seen in ev["deaths"] if seen and self.blame.get(k, 0) > 0.3]
         # ---- social standards: what does my caregiver think of what I did?
         if tone in (1, 3) and act is not None:
