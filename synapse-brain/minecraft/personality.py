@@ -38,6 +38,7 @@ class Self:
         self.places = set(map(tuple, self.me["places"]))
         self.prev_items, self.prev_food, self.prev_health = None, 20, 20
         self.since_joy = 0  # steps since anything pleasant happened
+        self.this_life = set()  # what I have had since I was last born
         self.diary = os.path.splitext(path)[0] + "_diary.md"
 
     def feel(self, m):
@@ -56,8 +57,11 @@ class Self:
                 if k not in self.me["known_items"]:
                     r += 1.0
                     say = self.discover(k)
+                elif k not in self.this_life:
+                    r += 0.3                  # getting back what I had lost: satisfaction of rebuilding
                 else:
                     r += 0.05 * min(gain, 4)
+                self.this_life.add(k)
                 self.me["known_items"][k] = self.me["known_items"].get(k, 0) + gain
         self.prev_items = dict(items)
         # exploration of places
@@ -81,6 +85,7 @@ class Self:
                                 f"Это уже {len(self.me['advancements'])}-е.")
         if m.get("died"):
             say = self.remember_death(m["died"])
+            self.this_life = set()
         self.prev_food, self.prev_health = food, hp
         self.since_joy = 0 if r > 0.05 else self.since_joy + 1
         return r, say

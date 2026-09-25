@@ -14,9 +14,12 @@ import pickle
 import re
 import sys
 
+import zlib
+
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "agent"))
+from brain_agent import _h  # noqa: E402
 from child import Child  # noqa: E402
 from limbic import NAMES  # noqa: E402
 from mind_bridge import ru, state_from  # noqa: E402
@@ -86,9 +89,22 @@ class MCChild(Child):
         super().__init__(n_actions, seed=seed, taste=MC_TASTE, items=("log", "cobble", "food", "fish", "rotten_flesh"),
                          eat_action=6, wait_action=4, kinds=KINDS)
         self.m = {}
-        self.mind.min_desire = 0.5
+        self.mind.min_desire = float(os.environ.get("MIN_DESIRE_MC", "0.2"))
+        base = self.mind.flat.cells
+
+        def cells(obs):                       # the striatum also knows what I have and what is around (concepts)
+            c = base(obs)
+            extra = [_h(31, zlib.crc32(k.encode()), min(int(v), 3)) for k, v in self._concepts.items() if v]
+            return np.concatenate([c, np.array(extra, np.int64)]) if extra else c
+        self.mind.flat.cells = cells
+        self._concepts = {}
         # sensations and places are means, not things to want for themselves
-        self.mind.means_only = ("see:", "reach:", "walls", "saw:", "deep", "underground", "stuck", "free", "indoors", "sky")
+        self.mind.means_only = ("see:", "reach:", "walls", "saw:", "deep", "underground", "stuck", "free", "indoors", "sky",
+                                "near:", "day", "in:", "can_craft:")
+
+    def senses(self, o):
+        self._concepts = self.concepts(o)
+        return super().senses(o)
 
     def concepts(self, o):
         s = state_from(self.m)                        # everything it holds, sky, stuck, day, fed, healthy
@@ -101,6 +117,9 @@ class MCChild(Child):
         s["indoors"] = int(not self.m.get("sky", 1) and self.m.get("y", 64) >= 55)   # a roof over my head, not a cave
         s["deep"] = int(self.m.get("y", 64) < 16)                                      # far below the surface
         s["see:diamond"] = int(bool(self.m.get("diamond_seen")))
+        s["in:" + str(self.m.get("dim", "overworld")).replace("minecraft:", "")] = 1  # which world I am in
+        for k in self.m.get("craftable", []):                                          # the recipe book shows it
+            s["can_craft:" + k] = 1
         for name, d in self.m.get("seen", []):                                        # what my eyes see now
             s["see:" + name] = 1
             if d <= 4:
@@ -249,11 +268,19 @@ def attention(child, a, m):
     seen = [name for name, _ in m.get("seen", [])]
     g = mind.goal
     if kind == "craft_target":
+        craftable = m.get("craftable", [])
         if g is not None and mind.names[g].startswith("have:"):
-            return mind.names[g][5:]
-        n = len(mind.names)
-        want = [i for i in range(n) if mind.names[i].startswith("have:") and mind.val[i] <= 0 and mind.R[i] > 0]
-        return mind.names[max(want, key=lambda i: mind.R[i])][5:] if want else None
+            if mind.names[g][5:] in craftable or not craftable:
+                return mind.names[g][5:]
+            for i in mind.pre(g):                         # a step towards it that I can make now
+                if mind.names[i].startswith("have:") and mind.names[i][5:] in craftable:
+                    return mind.names[i][5:]
+        if not craftable:
+            return None
+        new = [k for k in craftable if "have:" + k not in mind.idx or mind.nev[mind.idx["have:" + k]] == 0]
+        if new:                                           # something I have never made: curiosity
+            return new[int(np.random.randint(len(new)))]
+        return max(craftable, key=lambda k: mind.R[mind.idx["have:" + k]] if "have:" + k in mind.idx else 0.0)
     if g is not None:
         nodes = [g] + list(mind.pre(g))
         for (e, act), rec in mind.ao.items():
@@ -265,9 +292,26 @@ def attention(child, a, m):
                 return name[4:]
         if mind.names[g].startswith("have:") and mind.names[g][5:] in seen:
             return mind.names[g][5:]
-    novel = [x for x in seen if "see:" + x not in mind.idx or mind.nev[mind.idx["see:" + x]] <= 1]
-    if novel:
-        return novel[int(np.random.randint(len(novel)))]
-    if seen:
-        return max(seen, key=lambda x: mind.R[mind.idx["see:" + x]] if "see:" + x in mind.idx else 0.0)
-    return None
+    # no plan: what do I expect to get from each thing I see? (learned: this action on that thing gave me ...)
+    worth = {}
+    for (e, act), rec in mind.ao.items():
+        if act != a or rec[0] < 1 or not mind.names[e].startswith("have:"):
+            continue
+        need = [mind.names[i] for i in mind._ao_need(rec)] if rec[0] >= 2 else []
+        for x in seen:
+            if "see:" + x in need or "reach:" + x in need:
+                p = rec[0] / (rec[2] + 1.0)
+                worth[x] = max(worth.get(x, 0.0), p * (max(mind.R[e], 0.0) + 0.3 / np.sqrt(1 + mind.nev[e])))
+    tried = getattr(child, "tried_on", {})
+    child.tried_on = tried
+    fresh = [x for x in seen if tried.get((a, x), 0) < 3]          # never really tried this on it: curiosity
+    if fresh and (not worth or np.random.random() < 0.3):
+        x = fresh[int(np.random.randint(len(fresh)))]
+    elif worth:
+        x = max(worth, key=worth.get)
+    elif seen:
+        x = seen[int(np.random.randint(len(seen)))]
+    else:
+        return None
+    tried[(a, x)] = tried.get((a, x), 0) + 1
+    return x

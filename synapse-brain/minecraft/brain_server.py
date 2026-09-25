@@ -37,7 +37,7 @@ p.add_argument("--mind", default="", help="mind.npz: learned chains, skills, rea
 p.add_argument("--limbic", default="", help="directory: the whole growing brain with feelings (mind + limbic system; needs --self)")
 args = p.parse_args()
 
-N_ACT = 40 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
+N_ACT = 41 if args.self else 5  # full player repertoire of bot.js (see ACTIONS there)
 mind = None
 child = None
 if args.limbic:
@@ -107,6 +107,13 @@ if cortex is not None:
         teacher.load(tpath)
 
 
+core = None
+if child is not None:
+    from brain_core import Grown  # noqa: E402
+
+    core = Grown(child, me, voice)
+
+
 def save():
     extra = {"FQ": agent.FQ, "FB": agent.FB} if agent.FQ is not None else {}
     np.savez(args.load, W=agent.W, F=agent.F, steps=agent.steps, **extra)
@@ -167,8 +174,8 @@ class Handler(socketserver.StreamRequestHandler):
         rec = []
         prev = None  # (cells, action)
         last_target, last_said = None, 0.0
-        body = feel_bridge.Body() if child is not None else None
-        a_prev, front_prev, inv_prev, last_felt = None, 0, {}, 0.0
+        if child is not None:
+            core.new_body()
         total, t0 = 0.0, time.time()
         for line in self.rfile:
             m = json.loads(line)
@@ -197,12 +204,12 @@ class Handler(socketserver.StreamRequestHandler):
             if len(obs) == 3:
                 obs = obs + (None,)
             say, reward = None, float(m["reward"])
-            if me:  # the reward comes from inside: novelty, places, hunger, pain, advancements
+            if me and child is None:  # the reward comes from inside: novelty, places, hunger, pain, advancements
                 reward, say = me.feel(m)
                 # inner senses + touch/balance all around + sky + the feeling of being stuck
                 inner = me.drives(m) + list(m.get("around", [])) + [m.get("sky", 0), m.get("stuck", 0)]
                 obs = obs + ([int(x or 0) for x in inner],)  # a sense not ready yet (at spawn) reads 0
-            for user, text in m.get("heard", []):  # someone spoke to us
+            for user, text in (m.get("heard", []) if child is None else []):  # someone spoke to us
                 if child is not None and not say:
                     say = feel_bridge.talk(child, text)  # feelings, loves, fears
                 if mind is not None and not say:
@@ -213,31 +220,26 @@ class Handler(socketserver.StreamRequestHandler):
                     me.note(f"{user} сказал: «{text}»" + (f"; я ответил: «{say}»" if say else ""), None)
             done = bool(m.get("done"))
             if child is not None:
-                o = body.to_o(m, a_prev, frame if eyes else None)
-                child.m = m
-                a = child.step(o, a_prev, front_prev, inv_prev, extra_reward=0.3 * reward)
-                a_prev, front_prev, inv_prev = a, int(o["view"][7]), dict(o["inv"])
+                forced = None
+                force = os.environ.get("FORCE_FILE")                # the experimenter's hand (for staged experiments)
+                if force and os.path.exists(force):
+                    parts = open(force).read().split()
+                    if parts:
+                        forced = int(parts[0])
+                        left = int(parts[1]) - 1 if len(parts) > 1 else 0
+                        if left > 0:
+                            open(force, "w").write(f"{forced} {left}")
+                        else:
+                            os.remove(force)
+                        print(f"[forced] action {forced}", flush=True)
+                a, tgt, say2, o = core.decide(m, frame if eyes else None, forced)
+                say = say or say2
                 fev = m.get("fev") or {}
-                if fev.get("read"):                                   # reading: text -> beliefs in the mind
-                    from reading import read as parse_text, MC_NAMES  # noqa: E402
-                    claims, values = parse_text(fev["read"], MC_NAMES)
-                    child.mind.tell(claims, values)
-                    print(f"[read] {fev['read'][:80]}... -> {claims} {values}", flush=True)
-                    if me:
-                        me.note(f"прочитал книгу: «{fev['read'][:120]}»; поверил: " + "; ".join(
-                            f"{t} ← {' + '.join(p)}" for t, p in claims), None)
                 if fev.get("trades") or fev.get("traded") or any(k in ("villager", "golem") for k, _, _ in o["near"]):
                     vs = [x for x in o["near"] if x[0] in ("villager", "golem")]
                     print(f"[village] step {agent.steps} action {a} near {vs[:3]} trades {fev.get('trades', [])[:3]} "
-                          f"traded {fev.get('traded')} hurt {[h for h in o['ev']['hurt'] if h[0] in ('villager', 'golem', 'self')]} "
-                          f"indoors {child.concepts(o).get('indoors')} feel {child.limbic.say()[:60]}", flush=True)
-                L = child.limbic
-                if max(L.e.values()) > 0.6 and time.time() - last_felt > 90:
-                    last_felt = time.time()
-                    felt = L.say()
-                    if me:
-                        me.note("чувствую: " + felt, None)
-                    say = say or felt
+                          f"traded {fev.get('traded')} indoors {child.concepts(o).get('indoors')} "
+                          f"feel {child.limbic.say()[:60]}", flush=True)
             elif mind is not None:
                 a = mind.step(obs, state_from(m), reward, done, explore=me.exploration() if me else 0.1)
                 if mind.target is not None and mind.target != last_target and time.time() - last_said > 60:
@@ -252,25 +254,10 @@ class Handler(socketserver.StreamRequestHandler):
                 if prev is not None:
                     agent.learn(prev[0], prev[1], reward, obs, cells, qv, a, done)
                 prev = None if done else (cells, a)
-            force = os.environ.get("FORCE_FILE")                    # the experimenter's hand (for staged experiments)
-            if force and os.path.exists(force):
-                parts = open(force).read().split()
-                if parts:
-                    a = int(parts[0])
-                    left = int(parts[1]) - 1 if len(parts) > 1 else 0
-                    if left > 0:
-                        open(force, "w").write(f"{a} {left}")
-                    else:
-                        os.remove(force)
-                    if child is not None:
-                        a_prev = a                                   # the brain feels it as its own movement
-                    print(f"[forced] action {a}", flush=True)
             total += reward
             reply = {"action": a}
-            if child is not None:
-                tgt = feel_bridge.attention(child, a, m)              # where a motor program is aimed
-                if tgt is not None:
-                    reply["target"] = tgt
+            if child is not None and tgt is not None:
+                reply["target"] = tgt                                 # where a motor program is aimed
             if say:
                 reply["say"] = say
                 print("says:", say, flush=True)

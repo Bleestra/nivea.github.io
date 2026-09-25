@@ -35,7 +35,7 @@ const ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait',
   'equip_tool', 'place_block', 'craft_gear', 'smelt', 'sleep', 'drop_junk', 'pillar_up', 'dig_up',
   'fish', 'interact', 'store', 'take', 'place_chest', 'trade', 'read',
   // motor programs aimed by the brain's attention (reply.target): reach, dig, craft, walk to a remembered place
-  'approach', 'mine_target', 'craft_target', 'goto_place', 'explore']
+  'approach', 'mine_target', 'craft_target', 'goto_place', 'explore', 'place_frame']
 
 // ---------------------------------------------------------------- knowledge: recipes + advancements
 const K = path.join(__dirname, 'knowledge')
@@ -361,6 +361,48 @@ async function dropJunk () {
   if (j) { try { await bot.tossStack(j) } catch (e) {} }
 }
 
+async function useItem () {
+  const has = n => items().find(i => i.name === n)
+  const near = (pred, d = 6) => bot.findBlock({ matching: pred, maxDistance: d })
+  try {
+    const frame = has('flint_and_steel') && near(b => b.name === 'obsidian')
+    if (frame) {  // light the portal: strike on the top of the lowest obsidian of the frame
+      const low = bot.findBlocks({ matching: b => b.name === 'obsidian', maxDistance: 6, count: 20 }).sort((a, b) => a.y - b.y)[0]
+      await bot.equip(has('flint_and_steel'), 'hand'); await bot.activateBlock(bot.blockAt(low), new Vec3(0, 1, 0)); return
+    }
+    const eye = has('ender_eye')
+    const pf = eye && near(b => b.name === 'end_portal_frame' && !(b.getProperties && b.getProperties().eye), 5)
+    if (pf) { await bot.equip(eye, 'hand'); await bot.activateBlock(pf); return }
+    if (eye) { await bot.equip(eye, 'hand'); await bot.look(bot.entity.yaw, 0.3, true); bot.activateItem(); await bot.waitForTicks(20); return }
+    const bow = has('bow')
+    const foe = bow && has('arrow') && bot.nearestEntity(e => (isHostile(e) || e.name === 'end_crystal' || e.name === 'ender_dragon') && e.position.distanceTo(bot.entity.position) < 24)
+    if (foe) { await bot.equip(bow, 'hand'); await bot.lookAt(foe.position.offset(0, foe.height * 0.7, 0), true); bot.activateItem(); await bot.waitForTicks(22); bot.deactivateItem(); return }
+  } catch (e) { dbg('use', e.message) }
+  bot.activateItem(); await bot.waitForTicks(10); bot.deactivateItem()
+}
+
+async function placeFrame () {  // 10 obsidian in a 4x5 frame 2 blocks ahead; corners from any block
+  const obs = items().find(i => i.name === 'obsidian')
+  if (!obs || obs.count < 10) return
+  const filler = () => items().find(i => mcData.blocksByName[i.name] && mcData.blocksByName[i.name].boundingBox === 'block' && i.name !== 'obsidian' && !/table|furnace|bed|chest/.test(i.name))
+  const p = bot.entity.position.floored(); const [fx, fz] = DIRS[heading]; const [rx, rz] = DIRS[(heading + 1) % 4]
+  const at = (u, h) => p.offset(fx * 2 + rx * (u - 1), h, fz * 2 + rz * (u - 1))
+  const plan = [[1, 0, 'o'], [2, 0, 'o'], [0, 0, 'f'], [3, 0, 'f'], [0, 1, 'o'], [3, 1, 'o'], [0, 2, 'o'], [3, 2, 'o'],
+    [0, 3, 'o'], [3, 3, 'o'], [0, 4, 'f'], [3, 4, 'f'], [1, 4, 'o'], [2, 4, 'o']]
+  for (const [u, h, kind] of plan) {
+    const pos = at(u, h); const here = bot.blockAt(pos)
+    if (here && here.boundingBox === 'block') continue
+    const item = kind === 'o' ? items().find(i => i.name === 'obsidian') : filler()
+    if (!item) return
+    const refs = [[0, -1, 0], [1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1], [0, 1, 0]]
+    for (const [dx, dy, dz] of refs) {
+      const ref = bot.blockAt(pos.offset(dx, dy, dz))
+      if (!ref || ref.boundingBox !== 'block') continue
+      try { await bot.equip(item, 'hand'); await bot.placeBlock(ref, new Vec3(-dx, -dy, -dz)); break } catch (e) { dbg('frame', e.message) }
+    }
+  }
+}
+
 async function pillarUp () {
   const full = n => mcData.blocksByName[n] && mcData.blocksByName[n].boundingBox === 'block' &&
     !/table|furnace|bed|chest|sapling|torch|slab|stairs|wall|fence|door|trapdoor|sand|gravel|leaves|glass/.test(n)
@@ -408,7 +450,7 @@ async function act (a) {
     case 'look_up': pitch = Math.max(-1, pitch - 1); await face(); break
     case 'look_down': pitch = Math.min(1, pitch + 1); await face(); break
     case 'attack': await attack(); break
-    case 'use_item': bot.activateItem(); await bot.waitForTicks(10); bot.deactivateItem(); break
+    case 'use_item': await useItem(); break  // the hands know how to use a thing on the thing in front
     case 'dig_down': await digAt(0, -1, 0); break
     case 'equip_armor': await equipArmor(); break
     case 'equip_weapon': await equipBest(/_(sword|axe)$/, n => tier(n) * 2 + (n.endsWith('_sword') ? 1 : 0)); break
@@ -457,6 +499,7 @@ async function act (a) {
     case 'craft_target': await craftFrom(() => craftable([String(target || '')]), true); break  // make the item the mind wants
     case 'goto_place': if (Array.isArray(target)) { try { await bot.pathfinder.goto(new goals.GoalXZ(target[0], target[1])) } catch (e) { dbg('goto', e.message) } finally { bot.pathfinder.setGoal(null) } } break
     case 'explore': { const a = Math.random() * 2 * Math.PI; const p = bot.entity.position; try { await bot.pathfinder.goto(new goals.GoalXZ(Math.floor(p.x + 24 * Math.cos(a)), Math.floor(p.z + 24 * Math.sin(a)))) } catch (e) { dbg('explore', e.message) } finally { bot.pathfinder.setGoal(null) } break }
+    case 'place_frame': await placeFrame(); break  // a nether portal frame from obsidian (a motor pattern)
     case 'read': { const b = items().find(i => i.name === 'written_book' || i.name === 'writable_book'); if (b) feelEv.read = bookText(b); break }
     case 'trade': {  // try the first offer I can pay for
       const t = await villagerNear()
@@ -528,9 +571,11 @@ async function selftest () {  // --selftest: prove every action works (needs op 
   let p0 = null
   await check('approach', async () => { bot.chat('/setblock ~6 ~ ~ oak_log'); await bot.waitForTicks(10); target = 'oak_log'; dbg('seen log', !!nearestSeenBlock('oak_log'), bot.findBlocks({ matching: x => x.name === 'oak_log', maxDistance: 16, count: 5 }).map(String)) }, () => { const b = nearestSeenBlock('oak_log'); dbg('after', b && b.position.distanceTo(bot.entity.position)); return b && b.position.distanceTo(bot.entity.position) < 3.5 })
   await check('mine_target', async () => { target = 'oak_log' }, () => items().some(i => i.name === 'oak_log'))
-  await check('craft_target', async () => { await give('oak_planks 4'); await give('stick 2'); target = 'wooden_shovel' }, () => items().some(i => i.name === 'wooden_shovel'))
+  await check('craft_target', async () => { bot.chat('/clear @s'); await bot.waitForTicks(10); await give('crafting_table 1'); await give('oak_planks 4'); await give('stick 2'); target = 'wooden_shovel' }, () => items().some(i => i.name === 'wooden_shovel'))
   await check('goto_place', async () => { p0 = bot.entity.position.clone(); target = [Math.floor(p0.x) + 7, Math.floor(p0.z)] }, () => bot.entity.position.distanceTo(p0) > 4)
   await check('explore', async () => { p0 = bot.entity.position.clone() }, () => bot.entity.position.distanceTo(p0) > 5)
+  await check('place_frame', async () => { bot.chat('/clear @s'); bot.chat('/fill ~-3 ~ ~-3 ~3 ~5 ~3 air'); await bot.waitForTicks(10); await give('obsidian 10'); await give('cobblestone 8'); await bot.waitForTicks(10) }, () => bot.findBlocks({ matching: b => b.name === 'obsidian', maxDistance: 6, count: 20 }).length >= 10)
+  await check('use_item', () => give('flint_and_steel 1'), () => bot.findBlock({ matching: b => b.name === 'nether_portal', maxDistance: 8 }))
   console.log('SELFTEST ' + JSON.stringify(res))
   process.exit(0)
 }
@@ -592,7 +637,7 @@ bot.once('spawn', async () => {
       items: inventory(), chunk: [Math.floor(pos.x / 16), Math.floor(pos.z / 16)], food: bot.food, health: bot.health,
       can_craft_new: canCraftNew, feat: features(), died: done ? deathMsg : '',
       sky: seesSky(), around: around(), stuck: stuck(), y: Math.floor(pos.y),
-      near: nearList(), fev: takeFeelEv(), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
+      near: nearList(), fev: takeFeelEv(), dim: String(bot.game.dimension || 'overworld').replace('minecraft:', ''), time: bot.time ? bot.time.timeOfDay : 6000, heading, pitch,
       xz: [Math.floor(pos.x), Math.floor(pos.z)], held: bot.heldItem ? bot.heldItem.name : '', diamond_seen: oreSeen(), seen: seenThings(),
       carer_holds: (() => { const p = bot.nearestEntity(x => x.type === 'player' && x.position.distanceTo(bot.entity.position) < 8); return p && p.heldItem ? p.heldItem.name : null })(),
       heard: heard.splice(0), advancements: newAdvancements.splice(0)

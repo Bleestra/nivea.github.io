@@ -31,6 +31,7 @@ IMPORTANT = [1, 3, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 18]
 ITEMS = ['sapling', 'wood', 'stone', 'coal', 'iron', 'diamond', 'wood_pickaxe', 'stone_pickaxe', 'iron_pickaxe',
          'wood_sword', 'stone_sword', 'iron_sword']
 WALK = {2, 4, 5}
+STATIC = [1, 3, 6, 7, 8, 9, 10, 11, 12]                 # things that stay where they are (water, stone, tree, ...)
 KIND = {14: "animal", 15: "zombie", 16: "hostile", 17: "hostile"}
 
 
@@ -50,6 +51,10 @@ def crafter_cells(self, obs):
     c += [_h(11, facing, i, x) for i, x in enumerate(vit)]
     c.append(_h(7, light))
     c += [_h(13, i, x) for i, x in enumerate(feat)]
+    if len(obs) > 7:                                                     # hippocampal map: where I saw things before
+        for k, d in obs[7].items():
+            c.append(_h(20, k, d))
+            c.append(_h(21, k, d, tier))
     c.append(_h(8))
     return np.array(c, np.int64)
 
@@ -61,13 +66,13 @@ class CrafterChild(Child):
         self.mind.flat.cells = crafter_cells.__get__(self.mind.flat)
         self.mind.flat.cue = lambda cells: cells[[0, 1]]
         self.mind.min_desire = float(__import__("os").environ.get("MIN_DESIRE", "0.5"))
-        self.mind.means_only = ("see:", "facing:", "dark", "reach:")
+        self.mind.means_only = ("see:", "facing:", "dark", "reach:", "know:")
         self.mind.try_new = float(__import__("os").environ.get("TRY_NEW", "0"))
         self.mind.habit_replay = int(__import__("os").environ.get("REPLAY", "0"))
         self.mind.flat.use_fear = __import__("os").environ.get("FEAR", "1") == "1"
 
     def senses(self, o):
-        return o["obs"][:6] + (o["obs"][6],)
+        return o["obs"]
 
     def concepts(self, o):
         return o["state"]
@@ -79,6 +84,7 @@ class Body:
     def __init__(self):
         self.prev = None
         self.health_of, self.last_act = {}, None
+        self.places = {}
 
     def read(self, env, info, done, new_ach):
         p = env._player
@@ -100,13 +106,31 @@ class Body:
                 q = pts[int(np.argmin(d))]
                 dx, dy = int(np.sign(q[0] - 4)), int(np.sign(q[1] - 3))
                 nearest[k] = (dx + 1) * 3 + (dy + 1) + 9 * min(int(d.min()) // 2, 3) + 1
+        # the map of this world (place cells): what static thing I saw where, and where it still is
+        for i in range(9):
+            for j in range(7):
+                a, b = x - 4 + i, y - 3 + j
+                k = int(view[i, j])
+                for kk in STATIC:
+                    if kk == k:
+                        self.places.setdefault(kk, set()).add((a, b))
+                    elif (a, b) in self.places.get(kk, ()):
+                        self.places[kk].discard((a, b))         # it is gone (mined, used up)
+        remembered = {}
+        for kk, pts in self.places.items():
+            if kk in nearest or not pts:
+                continue
+            q = min(pts, key=lambda p: abs(p[0] - x) + abs(p[1] - y))
+            d = abs(q[0] - x) + abs(q[1] - y)
+            dx, dy = int(np.sign(q[0] - x)), int(np.sign(q[1] - y))
+            remembered[kk] = (dx + 1) * 3 + (dy + 1) + 9 * (0 if d <= 8 else 1 if d <= 16 else 2 if d <= 32 else 3) + 1
         inv = info["inventory"]
         invv = [min(inv[k], 5) for k in ITEMS]
         vit = [inv["health"] // 3, inv["food"] // 3, inv["drink"] // 3, inv["energy"] // 3]
         light = int(env._world.daylight * 3)
         v = np.concatenate([[0] * 7, [facing], view.ravel()])
         feat = [2, 0, 0, 0, 0, 0, 0]
-        obs = (v, facing, nearest, invv, vit, feat, light)
+        obs = (v, facing, nearest, invv, vit, feat, light, remembered)
         st = {"have:" + k: inv[k] for k in ITEMS}
         for k in ("wood", "stone", "coal", "iron", "sapling"):   # number sense: one, a few, many
             for q in (2, 3, 5):
@@ -114,6 +138,8 @@ class Body:
         for k in IMPORTANT:
             st["see:" + CLS[k]] = int((view == k).any())
         st["facing:" + CLS[facing]] = 1
+        for kk in remembered:
+            st["know:" + CLS[kk]] = 1                     # I know where there is one (though I don't see it)
         reach = view[3:6, 2:5]                            # within arm's reach (the 3x3 around me)
         for k in IMPORTANT:
             st["reach:" + CLS[k]] = int((reach == k).any())
@@ -179,6 +205,7 @@ def run(steps=1_000_000, seed=0, log_every=50_000):
         ach_names = ach_names or list(info["achievements"])
         body.prev, a, fb, inv, unlocked = None, None, 0, {}, set()
         body.health_of = {}
+        body.places = {}                                    # a new world: a new map
         while True:
             new = [k for k, v in info["achievements"].items() if v and k not in unlocked]
             unlocked.update(new)
