@@ -70,6 +70,11 @@ class CrafterChild(Child):
         self.mind.try_new = float(__import__("os").environ.get("TRY_NEW", "0"))
         self.mind.habit_replay = int(__import__("os").environ.get("REPLAY", "0"))
         self.mind.flat.use_fear = __import__("os").environ.get("FEAR", "1") == "1"
+        env = __import__("os").environ                 # the mechanisms found in MineSim (off by default here)
+        self.relative_value = env.get("RELATIVE", "0") == "1"
+        self.mind.secondary = env.get("SECONDARY", "0") == "1"
+        self.cortical_dopamine = env.get("CORTICAL_DA", "0") == "1"
+        self.mind.contingency = env.get("CONTINGENCY", "0") == "1"
 
     def senses(self, o):
         return o["obs"]
