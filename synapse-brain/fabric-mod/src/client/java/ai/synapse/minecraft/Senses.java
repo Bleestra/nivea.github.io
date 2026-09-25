@@ -63,7 +63,7 @@ public final class Senses {
 
     // what happened since the last moment (bot.js feelEv)
     private static final JsonArray evDeaths = new JsonArray(), evHurt = new JsonArray(), evLost = new JsonArray();
-    private static volatile boolean boom, gift;
+    private static volatile boolean boom, gift, found;
     private static Integer tamed;
     private static String carerDid;
     static String ate, traded, read;
@@ -118,6 +118,7 @@ public final class Senses {
         LocalPlayer p = mc.player;
         if (p == null || playerId != p.getId()) return;
         if (nearestPlayer(mc, 5) != null) gift = true;   // picked something up while a person stood by: a gift
+        if (breaking.isEmpty()) found = true;             // ... or found lying (not the drop of a block I just broke)
     }
 
     /** System messages: my advancements (by their id, whatever the client's language) and my death. */
@@ -733,6 +734,7 @@ public final class Senses {
         while (!evBroke.isEmpty()) evBroke.remove(0);
         e.addProperty("boom", boom && boomAt != null && boomAt.distanceTo(Minecraft.getInstance().player.position()) < 24);
         e.addProperty("gift", gift);
+        e.addProperty("found", found);                    // picked up something that was lying there
         if (tamed != null) e.addProperty("tamed", tamed);
         if (carerDid != null) e.addProperty("carerDid", carerDid);
         if (ate != null) e.addProperty("ate", ate);
@@ -744,7 +746,7 @@ public final class Senses {
         while (!evDeaths.isEmpty()) evDeaths.remove(0);
         while (!evHurt.isEmpty()) evHurt.remove(0);
         while (!evLost.isEmpty()) evLost.remove(0);
-        boom = gift = false;
+        boom = gift = found = false;
         tamed = null;
         carerDid = ate = traded = read = null;
         trades = new JsonArray();

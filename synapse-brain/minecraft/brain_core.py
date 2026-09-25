@@ -191,7 +191,8 @@ class Grown:
         child.m = m
         child.mind.novelty = getattr(me, "novelty_now", 0.0) if me else 0.0   # (the mind keeps it apart)
         child.mind.last_ok = (m.get("act") or {}).get("ok")          # did my last action do anything
-        child.mind.external = bool((m.get("fev") or {}).get("gift"))  # someone gave it to me (a person by me)
+        fev = m.get("fev") or {}                              # it came to me from outside: given, or found lying
+        child.mind.external = bool(fev.get("gift") or fev.get("found"))
         a = child.step(o, self.a_prev, self.front_prev, self.inv_prev, extra_reward=reward)
         if force is not None:
             a = force                                         # the experimenter's hand, felt as its own movement
