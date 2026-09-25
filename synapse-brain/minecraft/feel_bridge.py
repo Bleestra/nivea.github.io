@@ -90,6 +90,11 @@ class MCChild(Child):
                          eat_action=6, wait_action=4, kinds=KINDS)
         self.m = {}
         self.mind.min_desire = float(os.environ.get("MIN_DESIRE_MC", "0.2"))
+        self.relative_value = os.environ.get("RELATIVE", "1") == "1"
+        self.mind.secondary = os.environ.get("SECONDARY", "1") == "1"
+        self.cortical_dopamine = os.environ.get("CORTICAL_DA", "1") == "1"
+        self.mind.contingency = os.environ.get("CONTINGENCY", "1") == "1"
+        self.hunger_ctx = os.environ.get("HUNGER_CTX", "1") == "1"
         base = self.mind.flat.cells
 
         def cells(obs):                       # the striatum also knows what I have and what is around (concepts)
@@ -154,7 +159,7 @@ class Body:
             cause = min(((k, d) for k, _, d in near if k in ("zombie", "creeper", "hostile")), key=lambda x: x[1], default=("world", 0))[0]
             hurt.append(("self", 0, int(round(self.hp - hp)), cause))
         self.hp = hp
-        if m.get("sleeping"):
+        if m.get("sleeping") or m.get("died"):             # slept, or a new body after respawn
             self.fatigue = 0
         self.fatigue += 1
         ate = fev.get("ate")
@@ -207,7 +212,7 @@ def save(child, path):
     with open(os.path.join(path, "limbic.pkl"), "wb") as f:
         pickle.dump(child.limbic, f)
     with open(os.path.join(path, "age.txt"), "w") as f:
-        f.write(str(child.age))
+        f.write(f"{child.age} {child.r_avg} {child.v_avg}")
 
 
 def load(child, path):
@@ -217,7 +222,10 @@ def load(child, path):
     with open(os.path.join(path, "limbic.pkl"), "rb") as f:
         child.limbic = pickle.load(f)
     with open(os.path.join(path, "age.txt")) as f:
-        child.age = int(f.read())
+        parts = f.read().split()
+    child.age = int(parts[0])
+    if len(parts) == 3:
+        child.r_avg, child.v_avg = float(parts[1]), float(parts[2])
     return True
 
 

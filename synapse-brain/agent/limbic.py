@@ -244,7 +244,7 @@ class Limbic:
         r += heal / 8.0
         r -= 0.004 * max(0, 10 - o["hunger"])
         r -= 0.03 * o["nausea"]
-        r -= 0.002 * max(0, o["fatigue"] - 250) / 50
+        r -= 0.002 * min(1000, max(0, o["fatigue"] - 250)) / 50             # tiredness saturates, as in a body
         if ev["slept"]:
             r += 0.3
         startle = 1.0 if "boom" in ev["sounds"] else 0.5 if "hiss" in ev["sounds"] else 0.0

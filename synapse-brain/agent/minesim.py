@@ -34,6 +34,14 @@ ACTIONS = ['forward', 'turn_left', 'turn_right', 'dig_front', 'wait', 'craft_new
            'drop_junk', 'pillar_up', 'dig_up', 'fish', 'interact', 'store', 'take', 'place_chest', 'trade', 'read',
            'approach', 'mine_target', 'craft_target', 'goto_place', 'explore', 'place_frame']
 A = {n: i for i, n in enumerate(ACTIONS)}
+# exhaustion per moment (~1 s) of each kind of effort (Minecraft: walking .01/m, sprint-jump .2, mining .005/block,
+# attacking .1; 4.0 exhaustion = 1 food point); a whole chunk crossed = ~16 m
+EXHAUST = {"explore": 0.2, "goto_place": 0.2, "forward": 0.04, "back": 0.04, "strafe_left": 0.04, "strafe_right": 0.04,
+           "approach": 0.06, "jump": 0.05, "attack": 0.1, "mine_target": 0.03, "dig_front": 0.03, "dig_down": 0.1,
+           "dig_up": 0.1, "pillar_up": 0.1, "toggle_sprint": 0.05}
+SHELTER = 8                                       # placed blocks that make walls and a roof around one
+STEP_OUT = {"forward", "back", "strafe_left", "strafe_right", "jump", "approach", "explore", "attack", "dig_down",
+            "dig_up", "pillar_up", "fish", "trade", "interact"}
 DAY = 1200                                        # moments per Minecraft day (~1 s each)
 NIGHT = (700, 1200)
 
@@ -109,6 +117,7 @@ class MineSim:
     def __init__(self, seed=0):
         self.rng = np.random.default_rng(seed)
         self.t = 0                                        # morning
+        self.last_act, self.exhaustion = "wait", 0.0
         self.scenes = {}                                  # (dim, x, z, depth) -> scene (a persistent world)
         self.spawn = ("overworld", 0, 0, 0)
         self.stronghold = (int(self.rng.integers(6, 12)) * (1 if self.rng.random() < .5 else -1),
@@ -167,10 +176,14 @@ class MineSim:
         return self.scenes[key]
 
     def new_life(self):
+        if getattr(self, "where", None) is not None and self.where in getattr(self, "scenes", {}):
+            self._leave()
         self.where = self.spawn
+        self.scene()["inside"] = False
         self.t += (DAY - self.t % DAY) if self.night() else 0        # you wake up in the morning (as after a bed)
         self.inv, self.worn = {}, set()
         self.hp, self.food, self.held = 20.0, 20, None
+        self.exhaustion = 0.0
         self.height = 0                                   # pillared up (for the end crystals)
         self.nether_entry = None
         self.eye_hint = 0
@@ -211,6 +224,10 @@ class MineSim:
         if block not in sc["things"] or not self.can_mine(block):
             return False
         sc["things"][block] -= 1
+        if sc["placed"].get(block, 0) > sc["things"][block]:
+            sc["placed"][block] = sc["things"][block]
+            if sum(sc["placed"].values()) < SHELTER:
+                sc["inside"] = False
         if sc["things"][block] <= 0:
             del sc["things"][block]
             sc["reach"].discard(block)
@@ -274,7 +291,7 @@ class MineSim:
             return                                          # it is flying, out of reach
         dmg = max([1] + [WEAPON.get(k, 1) for k in self.inv if k in WEAPON and self.held == "weapon"])
         mob["hp"] -= dmg
-        mob["angry"] = True
+        mob["angry"] = mob["hit"] = True
         self.fev["hurt"].append([KIND.get(mob["name"], "hostile"), mob["id"] % 100000, int(dmg), "self"])
         if mob["name"] == "zombified_piglin":
             for m in sc["mobs"]:
@@ -296,9 +313,22 @@ class MineSim:
             self.adv.add(adv_id)
             self.adv_new.append([adv_id, ADV[adv_id]["title"]])
 
+    def _enter(self, sc):
+        sc["inside"] = True
+        for m in sc["mobs"]:
+            m["near"] = False
+
+    def _leave(self):
+        old = self.scene()
+        old["inside"] = False
+        old["mobs"] = [m for m in old["mobs"] if m["name"] not in HOSTILE or m["name"] == "ender_dragon"
+                       or old["kind"] in ("fortress", "stronghold")]   # hostile mobs despawn far from a player
+
     def travel(self, key):
+        self._leave()
         self.where = key
         sc = self.scene()
+        sc["inside"] = False
         sc["reach"] = set()
         for m in sc["mobs"]:
             m["near"] = False
@@ -309,10 +339,13 @@ class MineSim:
         self.fev, self.adv_new = self._fev(), []
         self.sleeping = False
         name = ACTIONS[a]
+        self.last_act = name
         sc = self.scene()
         r = self.rng
         dim, x, z, depth = self.where
         self.t += 1
+        if name in STEP_OUT:                                     # walking out of my shelter
+            sc["inside"] = False
         if name in ("forward", "back", "strafe_left", "strafe_right", "turn_left", "turn_right", "jump"):
             opts = list(sc["things"]) + [m["name"] for m in sc["mobs"]]
             if opts and r.random() < .3:                     # a few steps: something else comes within reach
@@ -436,16 +469,20 @@ class MineSim:
                     self.advance("nether/find_fortress")
             if self.where[:3] == ("overworld",) + self.stronghold and depth >= 1:
                 self.advance("story/follow_ender_eye")
-            if r.random() < .004:
-                self.hurt(12, "lava")                              # walking about, one misstep
+            if "lava" in self.scene()["things"] and r.random() < .01:
+                self.hurt(12, "lava")                              # a lava pool here, one misstep (pathfinding avoids most)
         elif name == "goto_place" and target and dim == "overworld":
-            self.travel(("overworld", int(target[0]) // 16, int(target[1]) // 16, 0))
+            nsc = self.travel(("overworld", int(target[0]) // 16, int(target[1]) // 16, 0))
+            if sum(nsc["placed"].values()) >= SHELTER:
+                self._enter(nsc)                                 # home: in through the door
         elif name == "place_block":
             blk = next((k for k in FULL_BLOCKS if k in self.inv), None)
             if blk:
                 self.take(blk)
                 sc["things"][blk] = sc["things"].get(blk, 0) + 1
                 sc["placed"][blk] = sc["placed"].get(blk, 0) + 1
+                if dim == "overworld" and depth == 0 and sum(sc["placed"].values()) >= SHELTER:
+                    self._enter(sc)                              # walls and a roof around me
         elif name == "place_frame" and self.inv.get("obsidian", 0) >= 10 and dim == "overworld":
             self.take("obsidian", 10)
             sc["things"]["nether_portal_frame"] = 1
@@ -499,12 +536,15 @@ class MineSim:
         r = self.rng
         dim, x, z, depth = self.where
         # the body: hunger and healing
-        if self.t % 40 == 0:
+        self.exhaustion = getattr(self, "exhaustion", 0.0) + EXHAUST.get(self.last_act, 0.005)
+        if self.exhaustion >= 4.0:                                     # Minecraft's exhaustion: effort costs food
+            self.exhaustion -= 4.0
             self.food = max(0, self.food - 1)
-        if self.food == 0 and self.t % 20 == 0:
-            self.hurt(1, "hunger")
-        if self.food >= 18 and self.t % 20 == 0:
+        if self.food == 0 and self.t % 20 == 0 and self.hp > 1:
+            self.hurt(1, "hunger")                                     # Normal difficulty: hunger leaves half a heart
+        if self.food >= 18 and self.t % 20 == 0 and self.hp < 20:
             self.hp = min(20.0, self.hp + 1)
+            self.exhaustion += 6.0                                     # healing is paid for with food
         # creatures
         dark = depth > 0 or dim != "overworld" or self.night()
         if dim == "overworld" and depth == 0 and self.night() and r.random() < .01 and len(sc["mobs"]) < 6:
@@ -515,9 +555,15 @@ class MineSim:
             self._spawn(sc, MOBS["dark"][int(r.integers(4))][0])
         if dim == "overworld" and depth == 0 and not self.night():
             sc["mobs"] = [m for m in sc["mobs"] if m["name"] not in ("zombie", "skeleton") or depth > 0]
+            for m in sc["mobs"]:
+                if m["name"] == "spider" and not m.get("hit"):
+                    m["angry"] = False                       # spiders are calm in daylight unless provoked
         for m in list(sc["mobs"]):
             h = HOSTILE.get(m["name"])
             if h is None or not m["angry"]:
+                continue
+            if sc.get("inside"):
+                m["near"] = False                            # walls between us
                 continue
             if not m["near"] and r.random() < (.06 if dark else .02):
                 m["near"] = True                             # it comes to me
@@ -570,7 +616,8 @@ class MineSim:
         msg = {"obs": grid, "inv": items.get("oak_log", 0), "goal": 0, "reward": 0.0, "done": bool(died),
                "items": items, "chunk": [x, z], "food": self.food, "health": max(0.0, self.hp),
                "can_craft_new": False, "feat": feat, "died": died, "heard": [], "advancements": self.adv_new,
-               "sky": int(dim == "overworld" and depth == 0), "around": [0, 0, 0, 0, 0, 0], "stuck": 0, "y": y,
+               "sky": int(dim == "overworld" and depth == 0 and not sc.get("inside")),
+               "around": [7] * 6 if sc.get("inside") else [0] * 6, "stuck": 0, "y": y,
                "near": near, "fev": self.fev, "time": tod, "heading": 0, "pitch": 0, "xz": [x * 16, z * 16],
                "held": self.held or "", "diamond_seen": 5 if any("diamond_ore" in k for k in sc["things"]) else 0,
                "seen": seen, "dim": dim, "sleeping": getattr(self, "sleeping", False),

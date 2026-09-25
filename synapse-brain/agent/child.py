@@ -31,6 +31,10 @@ class Child:
         self.prev = None          # (cells, action) for the self-model (cerebellar forward model)
         self.age = 0
         self.eat_action, self.wait_action, self.kinds = eat_action, wait_action, list(kinds)
+        # dopamine says "better or worse than usual", not how good in absolute terms: the usual level
+        # (tonic dopamine, the average reward of this life) is subtracted from what the mind and the habits learn
+        self.relative_value = False
+        self.r_avg, self.v_avg = 0.0, 0.0
 
     # ---------------------------------------------------------------- senses -> cells and concepts
     def senses(self, o):
@@ -55,6 +59,19 @@ class Child:
         s["fed"] = int(o["hunger"] >= 18)
         s["healthy"] = int(o["hp"] >= 15)
         return s
+
+    def _worth(self, state):
+        """What the things I have and the state I am in are worth to me (learned, secondary values)."""
+        m = self.mind
+        n = len(m.names)
+        if n == 0:
+            return 0.0
+        if getattr(self, "_v_age", -1) < 0 or self.age - self._v_age >= 500 or len(self._v) != n:
+            v = m.instrumental(m.frontier(np.maximum(m.R[:n], 0)))
+            means = getattr(m, "means_only", ())
+            keep = np.array([not nm.startswith(means) for nm in m.names]) if means else np.ones(n, bool)
+            self._v, self._v_age = np.minimum(v * keep, 3.0), self.age
+        return float(sum(self._v[m.idx[k]] for k, x in state.items() if x > 0 and k in m.idx and m.idx[k] < n))
 
     # ---------------------------------------------------------------- one moment
     def step(self, o, act_prev, front_before, inv_before, extra_reward=0.0):
@@ -87,7 +104,7 @@ class Child:
         m.planning = stage >= 1                       # the prefrontal cortex matures
         m.alpha = 0.3 * (0.4 + 0.6 * np.exp(-self.age / 60000))
         E = L.e
-        explore = float(np.clip(0.03 + 0.3 * np.exp(-self.age / 15000) + 0.2 * E["boredom"] + 0.1 * E["interest"]
+        explore = float(np.clip(getattr(self, "explore_min", 0.03) + 0.3 * np.exp(-self.age / 15000) + 0.2 * E["boredom"] + 0.1 * E["interest"]
                                 - 0.1 * E["sadness"], 0.02, 0.5))
         if o["ev"]["slept"]:
             L.sleep()
@@ -97,7 +114,21 @@ class Child:
         # context for values: what the sky looks like (bright / warm / dark) and whether danger is felt
         sky = int(np.bincount(o["sky"], minlength=8).argmax())
         ctx = 3 if E["fear"] > 0.3 or any(k in ("zombie", "creeper") and d <= 3 for k, _, d in o["near"]) else (0 if sky in (1, 2) else 1 if sky in (3, 4, 5, 6) else 2)
-        a = m.step(obs, self.concepts(o), r, done=bool(o["ev"]["died"]), explore=explore, value=L.appraised, ctx=ctx)
+        if getattr(self, "hunger_ctx", False) and o["hunger"] < 12:
+            ctx += 4                                  # the body's state is part of the situation: hungry
+        value = L.appraised
+        if getattr(self, "cortical_dopamine", False):
+            # the cortex tells the midbrain what the present situation is worth for what it leads to (OFC -> VTA):
+            # getting a means to something good feels good now, losing everything I carried hurts
+            state = self.concepts(o)
+            phi = self._worth(state)
+            r += 0.95 * phi - getattr(self, "phi_prev", phi)
+            self.phi_prev = phi
+        if self.relative_value:
+            self.r_avg += 0.001 * (r - self.r_avg)
+            self.v_avg += 0.001 * (value - self.v_avg)
+            r, value = r - self.r_avg, value - self.v_avg
+        a = m.step(obs, state if getattr(self, "cortical_dopamine", False) else self.concepts(o), r, done=bool(o["ev"]["died"]), explore=explore, value=value, ctx=ctx)
         # insula veto: food that once made me sick is refused unless I am starving (learned in one shot)
         if a == self.eat_action:
             foods = [k for k in ("apple", "fish", "rotten_flesh") if o["inv"].get(k)]

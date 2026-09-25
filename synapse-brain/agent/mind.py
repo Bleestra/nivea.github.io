@@ -32,6 +32,7 @@ Nothing here is a rule about the world. There are only populations of neurons an
                    the skills (habit=0.3).
 """
 import os
+import pickle
 from collections import deque
 
 import numpy as np
@@ -56,10 +57,10 @@ class Mind:
         self.base = np.zeros(E, np.float32)        # how often each concept is active at all
         self.nev = np.zeros(E, np.int64)           # how many times each event happened
         self.R = np.zeros(E, np.float32)           # learned value of each event (dopamine)
-        self.Rc = np.zeros((E, 4), np.float32)     # ... in each context (e.g. day / dusk / night / danger)
-        self.nc = np.zeros((E, 4), np.float32)
-        self.succ_c = np.zeros((E, 4), np.float32)  # competence in each context too: sunsets happen only at dusk
-        self.tries_c = np.zeros((E, 4), np.float32)
+        self.Rc = np.zeros((E, 8), np.float32)     # ... in each context (day / dusk / night / danger; x hungry or not)
+        self.nc = np.zeros((E, 8), np.float32)
+        self.succ_c = np.zeros((E, 8), np.float32)  # competence in each context too: sunsets happen only at dusk
+        self.tries_c = np.zeros((E, 8), np.float32)
         self.ctx = 0
         self.succ = np.zeros(E, np.float32)       # competence: successes / attempts per goal
         self.tries = np.zeros(E, np.float32)
@@ -160,7 +161,8 @@ class Mind:
 
     def ao_plan(self, g, active):
         """The action that made g happen before in the context I am in now (or None)."""
-        best, bp = None, 0.25
+        base = self.nev[g] / max(1.0, self.steps)       # how often it happens anyway, whatever I do
+        best, bp = None, max(0.05, 3 * base) if getattr(self, "contingency", False) else 0.25
         for (e, a), rec in self.ao.items():
             if e != g or rec[0] < 2:
                 continue
@@ -209,6 +211,8 @@ class Mind:
         seen = self.nev[:n] > 0
         known = self.nc[:n, self.ctx] >= 2                # in this context I know how good it is
         val = np.where(known, self.Rc[:n, self.ctx], 0.3 * self.R[:n])   # unsure how good it is here
+        if getattr(self, "secondary", False):
+            val = self.instrumental(self.frontier(np.maximum(val, 0)))
         d = np.maximum(val, 0) + 0.15 / np.sqrt(1 + self.tries[:n])
         d[~seen | active[:n]] = -1
         means = getattr(self, "means_only", ())       # sensations are means, not things to want for themselves
@@ -217,6 +221,34 @@ class Mind:
                 if self.names[i].startswith(means):
                     d[i] = -1
         return d
+
+    def frontier(self, v):
+        """Curiosity about the unknown that is within reach: 'I could make something I have never had'
+        is worth what discoveries have been worth to me so far."""
+        nov = max(0.0, getattr(self, "first_v", 0.0))
+        if nov <= 0:
+            return v
+        v = v.copy()
+        for i, nm in enumerate(self.names[:len(v)]):
+            if nm.startswith("can_craft:"):
+                h = self.idx.get("have:" + nm[10:])
+                if h is None or self.nev[h] == 0:
+                    v[i] = max(v[i], nov)
+        return v
+
+    def instrumental(self, v, g=0.7):
+        """Secondary (conditioned) value: a thing is also worth what it leads to - money for what it buys,
+        wood for what it becomes. Value flows backwards through the learned chains, fading at each link."""
+        n = len(v)
+        C = self.C[:n, :n]                                               # P[p, e]: p is a precondition of e,
+        P = (C >= 0.9) & (C - self.base[:n, None] >= 0.2) & (self.nev[:n] >= 3)[None, :]   # specific to e, not always there
+        np.fill_diagonal(P, False)
+        for _ in range(8):
+            w = np.maximum(v, g * (P * v[None, :]).max(1))
+            if np.allclose(w, v):
+                break
+            v = w
+        return v
 
     def reason(self, active, target):
         """Spread desire backwards through chain synapses; return (subgoal, chain) or (None, chain)."""
@@ -304,6 +336,9 @@ class Mind:
                 lr = max(1.0 / self.nev[e], 0.05)
                 self.C[:n, e] += lr * (before[:n] - self.C[:n, e])
                 v = r if value is None else value         # how good it was for me, all things considered
+                if self.nev[e] == 1:                         # a first time ever: how good are discoveries?
+                    self.first_n = getattr(self, "first_n", 0) + 1
+                    self.first_v = getattr(self, "first_v", 0.0) + (v - getattr(self, "first_v", 0.0)) / self.first_n
                 self.R[e] += lr * (v - self.R[e])
                 self.nc[e, ctx] += 1
                 self.Rc[e, ctx] += max(1.0 / self.nc[e, ctx], 0.05) * (v - self.Rc[e, ctx])
@@ -390,7 +425,9 @@ class Mind:
         extra = {"FQ": self.flat.FQ, "FB": self.flat.FB} if self.flat.FQ is not None else {}
         np.savez(path, G=self.G, C=self.C, base=self.base, nev=self.nev, R=self.R, Rc=self.Rc, nc=self.nc, succ_c=self.succ_c, tries_c=self.tries_c, succ=self.succ,
                  tries=self.tries, names=np.array(self.names, dtype=object), W=self.flat.W, F=self.flat.F,
-                 steps=self.steps, **extra)
+                 steps=self.steps, first=np.array([getattr(self, "first_n", 0), getattr(self, "first_v", 0.0)]), **extra)
+        with open(os.path.splitext(path)[0] + "_ao.pkl", "wb") as f:     # what my actions did (contingencies)
+            pickle.dump(self.ao, f)
 
     def load(self, path):
         if not os.path.exists(path):
@@ -400,7 +437,11 @@ class Mind:
         self.G[:, :na] = z["G"][:, :na]
         for k in ("C", "base", "nev", "R", "succ", "tries", "Rc", "nc", "succ_c", "tries_c"):
             if k in z.files:
-                getattr(self, k)[...] = z[k]
+                x = getattr(self, k)
+                if x.ndim == 2 and x.shape[1] != z[k].shape[1]:              # older brains knew fewer contexts
+                    x[:, :z[k].shape[1]] = z[k]
+                else:
+                    x[...] = z[k]
         self.names = list(z["names"])
         self.idx = {k: i for i, k in enumerate(self.names)}
         self.flat.W[:, :na], self.flat.F[:] = z["W"][:, :na], z["F"]
@@ -410,4 +451,10 @@ class Mind:
             if z["FB"].shape == self.flat.FB.shape:
                 self.flat.FB[:] = z["FB"]
         self.steps = int(z["steps"])
+        if "first" in z.files:
+            self.first_n, self.first_v = int(z["first"][0]), float(z["first"][1])
+        ao = os.path.splitext(path)[0] + "_ao.pkl"
+        if os.path.exists(ao):
+            with open(ao, "rb") as f:
+                self.ao = pickle.load(f)
         return True
