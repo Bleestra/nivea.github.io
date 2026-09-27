@@ -60,7 +60,9 @@ final class Motor {
         // bridge, pillar, use a bucket, throw a pearl or an eye, fight: everything a person does
         "look_left_fine", "look_right_fine", "look_up_fine", "look_down_fine", "walk", "hit", "use", "hold_use",
         "hotbar_1", "hotbar_2", "hotbar_3", "hotbar_4", "hotbar_5", "hotbar_6", "hotbar_7", "hotbar_8", "hotbar_9",
-        "swap_hands", "drop_item"};
+        "swap_hands", "drop_item",
+        "place_up",                                            // a block just over my head (a roof, a lid)
+        "recipe_book"};                                        // open the recipe book and read what it shows
 
     private static final Pattern SMELTABLE = Pattern.compile("^raw_|_ore$|^sand$|^cobblestone$|^beef$|^porkchop$|^chicken$|^mutton$|^cod$|^salmon$|^potato$|_log$");
     private static final Pattern FUEL = Pattern.compile("^coal$|^charcoal$|_planks$|_log$|^stick$");
@@ -68,6 +70,7 @@ final class Motor {
     private static final Pattern NOT_PILLAR = Pattern.compile("table|furnace|bed|chest|sapling|torch|slab|stairs|wall|fence|door|trapdoor|sand|gravel|leaves|glass");
     private static final Pattern PET_FOOD = Pattern.compile("^(cod|salmon|bone|wheat|carrot|seeds|wheat_seeds)$");
     private static final Random RNG = new Random();
+    private static double exploreAng = Double.NaN;                   // the way I have been exploring
 
     enum S { NEXT, WAIT, END }
 
@@ -83,6 +86,8 @@ final class Motor {
         String need;                                           // what was missing, as the mind says it (have:X, see:X)
         Snapshot before;
         int settle = -1;                                       // ticks left to feel the result (the server answers late)
+        long id = -1;                                          // which moment of the brain it answers (echoed back)
+        boolean stopped;                                       // cut off from outside (death, pause, the safety net)
         Program then(Step s) { steps.addLast(s); return this; }
         void now(Step s) { steps.addFirst(s); }
     }
@@ -145,6 +150,7 @@ final class Motor {
         SynapseBody.doing = a >= 0 && a < ACTIONS.length ? ACTIONS[a] + (target != null && !target.isJsonNull() ? " → " + target : "") : "?";
         Program p = new Program();
         p.action = a;
+        if (reply.has("id")) p.id = reply.get("id").getAsLong();
         current = p;
         try {
             p.before = Snapshot.of(mc);
@@ -185,7 +191,10 @@ final class Motor {
     }
 
     static void stop(Minecraft mc) {
-        if (current != null) finish(mc);
+        if (current != null) {
+            current.stopped = true;
+            finish(mc);
+        }
     }
 
     private static void finish(Minecraft mc) {
@@ -225,6 +234,9 @@ final class Motor {
         r.addProperty("action", name);
         r.addProperty("ok", ok);
         r.addProperty("ticks", p.ticks);                         // how long it took: the effort
+        if (p.id >= 0) r.addProperty("id", p.id);                // the brain checks it is the answer to its last moment
+        if (p.ticks > p.limit) r.addProperty("timeout", true);   // did not finish in its time (not the same as failing)
+        if (p.stopped) r.addProperty("interrupted", true);       // cut off: it says little about the action itself
         if (!ok) r.addProperty("why", why);
         if (!ok && p.need != null) r.addProperty("need", p.need);   // (set by fail(), or by the action itself)
         return r;
@@ -240,6 +252,29 @@ final class Motor {
         if (mc.options == null) return;
         mc.options.keyShift.setDown(Senses.sneak);
         mc.options.keySprint.setDown(Senses.sprint);
+        // a reflex, not a decision: in water the body keeps its head above it (as a person paddles up without
+        // thinking) - where to swim, the brain still decides
+        if (mc.player != null && mc.player.isInWater()) {
+            mc.options.keyJump.setDown(true);
+            mc.options.keyShift.setDown(false);                 // (crouching in water pulls one down)
+        } else if (mc.player != null && mc.player.onGround() && ledgeAhead(mc, mc.player)) {
+            mc.options.keyShift.setDown(true);                  // an edge with a fall that hurts: crouch (as a person
+        }                                                       // stops short of a drop without thinking)
+    }
+
+    /** Walking towards a drop of four blocks or more (or onto lava): the fear of heights. Water below breaks a fall. */
+    private static boolean ledgeAhead(Minecraft mc, LocalPlayer pl) {
+        Vec3 v = pl.getDeltaMovement();
+        double len = Math.sqrt(v.x * v.x + v.z * v.z);
+        if (len < 0.02) return false;                           // standing still: no edge to fear
+        BlockPos ahead = BlockPos.containing(pl.getX() + v.x / len * 0.8, pl.getY(), pl.getZ() + v.z / len * 0.8);
+        for (int k = 1; k <= 4; k++) {
+            BlockPos b = ahead.below(k);
+            var s = mc.level.getBlockState(b);
+            if (!s.getFluidState().isEmpty()) return s.getFluidState().is(net.minecraft.tags.FluidTags.LAVA);
+            if (!s.getCollisionShape(mc.level, b).isEmpty()) return false;
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------ the repertoire
@@ -283,6 +318,7 @@ final class Motor {
                 return S.NEXT;
             });
             case "place_block" -> p.then(placeFront(s -> Hands.isBlock(s) && !NOT_PLACEABLE.matcher(Hands.key(s)).find()));
+            case "place_up" -> p.then(placeAbove(s -> Hands.isBlock(s) && !NOT_PLACEABLE.matcher(Hands.key(s)).find()));
             case "craft_gear" -> craft(p, Hands.GEAR);
             case "smelt" -> smelt(p);
             case "sleep" -> p.then(m -> {
@@ -310,6 +346,7 @@ final class Motor {
             case "place_chest" -> { p.need = "have:chest"; p.then(placeFront(s -> Hands.key(s).equals("chest"))); }
             case "trade" -> trade(p);
             case "read" -> p.then(Motor::read);
+            case "recipe_book" -> recipeBook(p);
             case "approach" -> p.then(m -> {
                 String t = targetName();
                 Entity e = Senses.nearestEntity(m, 16, x -> BuiltInRegistries.ENTITY_TYPE.getKey(x.getType()).getPath().equals(t));
@@ -343,9 +380,20 @@ final class Motor {
                         : path(new GoalXZ(t.get(0).getAsInt(), t.get(1).getAsInt())));
                 }
             }
-            case "explore" -> {
-                double ang = RNG.nextDouble() * 2 * Math.PI;
-                p.then(path(new GoalXZ((int) Math.floor(pl.getX() + 24 * Math.cos(ang)), (int) Math.floor(pl.getZ() + 24 * Math.sin(ang)))));
+            case "explore" -> {                                        // on and on the way I was going (a random
+                if (Double.isNaN(exploreAng) || RNG.nextDouble() < 0.2)    // walk stays where it began: where I
+                    exploreAng = RNG.nextDouble() * 2 * Math.PI;             // have eaten everything) - now and then
+                else                                                         // another way
+                    exploreAng += RNG.nextGaussian() * 0.5;
+                int top = mc.level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    (int) Math.floor(pl.getX()), (int) Math.floor(pl.getZ()));
+                if (pl.getY() < top - 1 && !mc.level.canSeeSky(pl.blockPosition())) {   // under the ground (a cave, my
+                    p.then(path(new baritone.api.pathing.goals.GoalYLevel(top)));          // roofed pit): exploring is
+                                                                                           // getting out first (a
+                } else {                                                                   // walk sideways through rock
+                    double ang = exploreAng = landward(mc, pl.getX(), pl.getZ(), exploreAng);   // only gets stuck)
+                    p.then(path(new GoalXZ((int) Math.floor(pl.getX() + 24 * Math.cos(ang)), (int) Math.floor(pl.getZ() + 24 * Math.sin(ang)))));
+                }
             }
             case "place_frame" -> placeFrame(mc, p);
             case "look_left_fine" -> p.then(turn(-15F, 0F));
@@ -536,6 +584,30 @@ final class Motor {
     }
 
     /** Put a block from the inventory on the ground: in front, else any side (as bot.js placeFront). */
+    /** A block just over my head, stuck to whatever solid block touches that spot (as a hand reaches up). */
+    private static Step placeAbove(java.util.function.Predicate<ItemStack> which) {
+        return m -> {
+            LocalPlayer p = m.player;
+            int inv = Hands.find(p, which);
+            if (inv < 0) return fail("нечего поставить");
+            BlockPos top = p.blockPosition().above(2);
+            if (!m.level.getBlockState(top).canBeReplaced()) return fail("над головой уже закрыто");
+            for (Direction d : new Direction[]{Direction.UP, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                BlockPos nb = top.relative(d);
+                if (!Senses.solid(m, nb)) continue;
+                String name = Hands.key(p.getInventory().items.get(inv));
+                if (!Hands.hold(m, inv)) return fail("не могу взять в руку");
+                Vec3 hit = Vec3.atCenterOf(nb).add(-0.5 * d.getStepX(), -0.5 * d.getStepY(), -0.5 * d.getStepZ());
+                lookAt(m, hit);
+                var r = m.gameMode.useItemOn(p, InteractionHand.MAIN_HAND, new BlockHitResult(hit, d.getOpposite(), nb, false));
+                p.swing(InteractionHand.MAIN_HAND);
+                if (r.consumesAction()) Senses.placed(top, name);
+                return S.NEXT;
+            }
+            return fail("не к чему прилепить");
+        };
+    }
+
     private static Step placeFront(java.util.function.Predicate<ItemStack> which) {
         return m -> {
             LocalPlayer p = m.player;
@@ -562,25 +634,71 @@ final class Motor {
         };
     }
 
+    /**
+     * Exploring is walking, not swimming out to sea: the way I meant, if it ends on land (as far as I can see);
+     * else the nearest way round that does. (Where the sea is the eyes see; the legs do not set out across it.)
+     */
+    private static double landward(Minecraft mc, double x0, double z0, double want) {
+        for (int k = 0; k < 16; k++) {
+            double a = want + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) * (Math.PI / 8);
+            int x = (int) Math.floor(x0 + 24 * Math.cos(a)), z = (int) Math.floor(z0 + 24 * Math.sin(a));
+            if (!mc.level.hasChunkAt(new BlockPos(x, 64, z))) return a;          // (not seen: may be land)
+            int y = mc.level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x, z);
+            if (!mc.level.getFluidState(new BlockPos(x, y - 1, z)).is(net.minecraft.tags.FluidTags.WATER)) return a;
+        }
+        return want;                                                              // water all round: any way
+    }
+
     /** Walk there along a path (Baritone): a motor program, like mineflayer-pathfinder in bot.js. */
     private static Step path(Goal goal) {
-        int[] t = {0};
+        int[] t = {0}, still = {0};
+        double[] ymark = {Double.NaN};                            // my height when I last got on
+        double[] was = {Double.NaN, 0, 0, 0, Double.MAX_VALUE};   // where I was; my health when I set out; the nearest
+                                                                  // I have been to the goal
+        long[] nearer = {System.currentTimeMillis()};             // when I last got nearer (in real time: the way is
+                                                                  // worked out in real milliseconds, however fast
+                                                                  // the world runs)
         return m -> {
             IBaritone b = BaritoneAPI.getProvider().getPrimaryBaritone();
+            Vec3 at = m.player.position();
             if (t[0]++ == 0) {
                 b.getCustomGoalProcess().setGoalAndPath(goal);
+                was[3] = m.player.getHealth();
                 return S.WAIT;
             }
             if (t[0] > 3 && !b.getCustomGoalProcess().isActive() && !b.getPathingBehavior().isPathing()) return S.NEXT;
+            // a walk takes as long as it takes while I am getting on (up to a minute) - not cut off at 8 s halfway;
+            // not getting nearer for 5 s (stuck, bobbing in water, walking in circles), or hurt: I stop, the brain decides
+            double h = goal.heuristic(m.player.blockPosition());     // getting nearer? (bobbing in water, pushing
+            if (Double.isNaN(ymark[0])) ymark[0] = at.y;
+            if (h < was[4] - 0.5) { was[4] = h; still[0] = 0; nearer[0] = System.currentTimeMillis(); }
+            else if (Math.abs(at.y - ymark[0]) >= 1.0) {             // climbing out of my pit, block by block (the
+                ymark[0] = at.y; still[0] = 0; nearer[0] = System.currentTimeMillis();   // way off is up first)
+            }
+            else if (m.gameMode.isDestroying()) { still[0] = 0; nearer[0] = System.currentTimeMillis(); }   // (breaking my way through: stone by hand takes
+            else still[0]++;                                         // seconds a block - that is getting on too)
+            was[0] = at.x; was[1] = at.y; was[2] = at.z;
+            if (m.player.getHealth() < was[3]) { b.getPathingBehavior().cancelEverything(); return fail("больно — остановился"); }
+            if (still[0] > 100 && System.currentTimeMillis() - nearer[0] > 3000) {
+                b.getPathingBehavior().cancelEverything();
+                exploreAng = Double.NaN;                             // (no way on that way: another next time)
+                return fail("застрял по дороге");
+            }
+            if (current != null && current.ticks < 1200) current.limit = Math.max(current.limit, current.ticks + 40);
             return S.WAIT;
         };
     }
 
     private static Step openedWait(Class<? extends AbstractContainerMenu> kind) {
         int[] t = {0};
+        long[] since = {0};
         return m -> {
             if (kind.isInstance(m.player.containerMenu)) { Senses.deeds++; return S.NEXT; }   // it opened
-            return t[0]++ > 30 ? fail("не открылось") : S.WAIT;
+            if (since[0] == 0) since[0] = System.currentTimeMillis();
+            // the server answers in real time, however fast the world runs: 30 ticks, and at least 1.5 s
+            boolean waited = t[0]++ > 30 && System.currentTimeMillis() - since[0] > 1500;
+            if (!waited && current != null) current.limit = Math.max(current.limit, current.ticks + 5);
+            return waited ? fail("не открылось") : S.WAIT;
         };
     }
 
@@ -613,11 +731,16 @@ final class Motor {
             Entity t = foe(m, tg);
             if (t == null) { m.player.swing(InteractionHand.MAIN_HAND); return fail("не по кому бить"); }
             foe[0] = t.getId();
+            if (t.distanceTo(m.player) > 6) p.now(path(new GoalNear(t.blockPosition(), 2)));   // far: go to it first
             return S.NEXT;
         });
+        double[] at = {Double.NaN, 0, 0};                                                // where it was last
         p.then(m -> {
             Entity t = m.level.getEntity(foe[0]);
-            if (t == null || !t.isAlive() || t.distanceTo(m.player) > 16) return S.END;   // it fell, or got away
+            if (t == null || !t.isAlive()) return S.NEXT;                                // it fell
+            if (t.distanceTo(m.player) > 16) return S.END;                               // it got away
+            at[0] = t.getX(); at[1] = t.getY(); at[2] = t.getZ();
+            if (current != null && current.ticks < 300) current.limit = Math.max(current.limit, current.ticks + 20);   // (after it, while it runs)
             lookAt(m, t.position().add(0, t.getBbHeight() * 0.8, 0));
             double d = t.distanceTo(m.player);
             m.options.keyUp.setDown(d > 2.5);                                            // close in
@@ -628,6 +751,13 @@ final class Motor {
                 m.player.swing(InteractionHand.MAIN_HAND);
             }
             return S.WAIT;
+        });
+        p.then(m -> {                                   // it fell: step where it fell, as a person picks up what it left
+            m.options.keyUp.setDown(false);
+            if (Double.isNaN(at[0])) return S.END;
+            Vec3 where = new Vec3(at[0], at[1], at[2]);
+            if (m.player.position().distanceTo(where) > 1.0) p.now(path(new GoalNear(BlockPos.containing(where), 0)));
+            return S.NEXT;
         });
     }
 
@@ -640,18 +770,24 @@ final class Motor {
         }
         String k = tg != null && tg.isJsonPrimitive() ? tg.getAsString() : "";
         if (k.isEmpty()) return Senses.nearestEntity(m, 4.5, e -> living.test(e) && !(e instanceof Player));
-        return Senses.nearestEntity(m, 16, e -> living.test(e) && (k.equals(Senses.kindOf(e))
+        return Senses.nearestEntity(m, 40, e -> living.test(e) && (k.equals(Senses.kindOf(e))
             || k.equals(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).getPath())));
     }
 
     private static void eat(Program p) {
-        int[] before = {-1};
+        int[] before = {-1}, swapped = {0};
         String[] what = {null};
         p.then(m -> {
             List<Integer> foods = new java.util.ArrayList<>();
             var items = m.player.getInventory().items;
             for (int i = 0; i < items.size(); i++) if (!items.get(i).isEmpty() && Hands.isFood(items.get(i))) foods.add(i);
-            if (foods.isEmpty()) return fail("нечего есть", "have:bread");
+            if (foods.isEmpty() && swapped[0] == 0 && Hands.isFood(m.player.getOffhandItem())) {
+                swapped[0] = 1;                                  // the food is in my other hand: into this one first
+                m.getConnection().send(new net.minecraft.network.protocol.game.ServerboundPlayerActionPacket(
+                    net.minecraft.network.protocol.game.ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
+                return S.WAIT;
+            }
+            if (foods.isEmpty()) return fail("нечего есть");   // (what could be eaten, it finds out itself)
             if (m.player.getFoodData().getFoodLevel() >= 20) return fail("не голоден");
             int i = foods.get(RNG.nextInt(foods.size()));
             what[0] = Hands.key(items.get(i));
@@ -659,6 +795,7 @@ final class Motor {
             return Hands.hold(m, i) ? S.NEXT : S.END;
         });
         int[] t = {0};
+        long[] since = {0};
         p.then(m -> {
             if (Hands.count(m.player, what[0]) < before[0]) {
                 m.options.keyUse.setDown(false);
@@ -667,7 +804,11 @@ final class Motor {
                 return S.NEXT;
             }
             m.options.keyUse.setDown(true);
-            return t[0]++ > 45 ? S.NEXT : S.WAIT;
+            if (since[0] == 0) since[0] = System.currentTimeMillis();
+            // (the server says it is eaten, in real time: 45 ticks, and at least 2 s however fast the world runs)
+            boolean waited = t[0]++ > 45 && System.currentTimeMillis() - since[0] > 2000;
+            if (!waited && current != null) current.limit = Math.max(current.limit, current.ticks + 5);
+            return waited ? S.NEXT : S.WAIT;
         });
         p.limit = 80;
     }
@@ -798,10 +939,16 @@ final class Motor {
     }
 
     private static Step takeResult(String name) {
+        int[] t = {0};
+        long[] since = {0};
         return m -> {
             Slot out = m.player.containerMenu.getSlot(0);
-            if (out.hasItem()) Hands.click(m, 0, 0, ClickType.QUICK_MOVE);
-            return S.NEXT;
+            if (out.hasItem()) { Hands.click(m, 0, 0, ClickType.QUICK_MOVE); return S.NEXT; }
+            if (since[0] == 0) since[0] = System.currentTimeMillis();
+            // the server lays the recipe out in real time, however fast the world runs: until it is there, up to 1 s
+            boolean waited = t[0]++ > 10 && System.currentTimeMillis() - since[0] > 1000;
+            if (!waited && current != null) current.limit = Math.max(current.limit, current.ticks + 5);
+            return waited ? S.NEXT : S.WAIT;
         };
     }
 
@@ -1029,6 +1176,22 @@ final class Motor {
         o.add("at", at);
         o.add("items", items);
         return o;
+    }
+
+    /** Open the inventory with its recipe book, read it (what it shows me that I have not read yet), close it. */
+    private static void recipeBook(Program p) {
+        int[] t = {0};
+        p.then(m -> {
+            if (m.screen == null) m.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(m.player));
+            return S.NEXT;
+        }).then(m -> t[0]++ < 10 ? S.WAIT : S.NEXT).then(m -> {       // (a moment to look at it)
+            var got = Hands.readRecipeBook(m);
+            if (m.screen instanceof net.minecraft.client.gui.screens.inventory.InventoryScreen) m.setScreen(null);
+            if (got.isEmpty()) return fail("ничего нового в книге");
+            Senses.recipes = got;
+            Senses.deeds++;
+            return S.NEXT;
+        });
     }
 
     private static S read(Minecraft m) {

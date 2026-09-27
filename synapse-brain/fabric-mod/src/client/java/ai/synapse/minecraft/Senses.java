@@ -67,6 +67,7 @@ public final class Senses {
     private static Integer tamed;
     private static String carerDid;
     static String ate, traded, read;
+    static com.google.gson.JsonArray recipes;             // what the recipe book showed me (new ones), when I opened it
     /** A chest I just had open: where it is and everything in it ({"at": [x, y, z], "items": {...}}). */
     static volatile JsonObject chest;
     static JsonArray trades = new JsonArray();
@@ -741,6 +742,7 @@ public final class Senses {
         e.add("trades", trades);
         if (traded != null) e.addProperty("traded", traded);
         if (read != null) e.addProperty("read", read);
+        if (recipes != null) { e.add("recipes", recipes); recipes = null; }
         JsonObject c = chest;
         if (c != null) { e.add("chest", c); chest = null; }
         while (!evDeaths.isEmpty()) evDeaths.remove(0);

@@ -29,6 +29,7 @@ WORLD = os.path.join(HERE, "world")
 PY = sys.executable
 GROUP = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0   # Ctrl+C reaches only this script
 CFG_VISION = {}                                                          # world.json "vision"
+CFG = {}                                                                 # all of world.json
 PER_AI = {"ram_gb": 5.0, "vram_gb": 1.2, "threads": 3}   # a brain with eyes (~2.4 GB, measured) + a game client (~2.5 GB)
 
 
@@ -164,8 +165,9 @@ def start_server(cfg, d):
 def adapt_pace(cfg, ais, current):
     """As fast as the brains can keep up: while a brain thinks, the world goes on, so the world's pace is set so that
     the slowest brain's thinking (eyes + senses + brain + pause) lasts at most REACTION ticks - about a person's
-    reaction time. A faster brain lets the world run faster. Returns the new tick rate (or the current one)."""
-    REACTION = 5
+    reaction time (world.json server.reaction_ticks: 5 is a quick person's quarter second; more is a faster world
+    and a slower reaction in its time). A faster brain lets the world run faster. Returns the new tick rate."""
+    REACTION = float(cfg["server"].get("reaction_ticks", 5))
     worst = 0.0
     for ai in ais:
         try:
@@ -275,11 +277,18 @@ def start_brain(ai, port):
     stop = os.path.join(d, "STOP")
     if os.path.exists(stop):
         os.remove(stop)
-    if not os.path.exists(os.path.join(d, "brain.npz")):
+    import knowledge
+
+    k = knowledge.merged(CFG, ai)                   # what may come ready-made to this one (world.json "knowledge")
+    if not os.path.exists(os.path.join(d, "brain.npz")) and k["childhood"]:
         shutil.copy(childhood(), os.path.join(d, "brain.npz"))
     out = open(os.path.join(d, "brain.log"), "a", encoding="utf-8")
+    s = CFG.get("server", {})
+    world = {"minecraft": s.get("version"), "seed": s.get("seed"), "difficulty": s.get("difficulty"),
+             "gamerules": s.get("gamerules"), "step_ms": CFG.get("step_ms")}
     return subprocess.Popen(brain_cmd(ai, port), cwd=HERE, stdout=out, stderr=subprocess.STDOUT, creationflags=GROUP,
-                            env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+                            env=dict(os.environ, PYTHONIOENCODING="utf-8", SYNAPSE_KNOWLEDGE=json.dumps(k),
+                                     SYNAPSE_WORLD=json.dumps(world)))
 
 
 def start_client(cfg, ai, i, port, names):
@@ -290,7 +299,8 @@ def start_client(cfg, ai, i, port, names):
         ai["name"], "127.0.0.1", cfg["server"].get("port", 25565), port, ai.get("eyes", True),
         resolution=cfg.get("main_window", "1280x720") if main else cfg.get("background_window", "480x270"),
         game=native_client.game_dir(ai["name"]), peers=names,
-        max_fps=60 if main else 30, render_distance=8 if main else 6, background=not main,
+        max_fps=int(CFG.get("main_fps", 60)) if main else int(CFG.get("background_fps", 30)),   # (a moment's senses wait for
+        render_distance=8 if main else 6, background=not main,                                      # a frame: more is quicker)
         step_ms=int(cfg.get("step_ms", 20)), frame=int(CFG_VISION.get("picture", 256)), zones=int(CFG_VISION.get("zones", 8)))
 
 
@@ -305,6 +315,7 @@ def main():
     a = p.parse_args()
     cfg = json.load(open(a.config, encoding="utf-8"))
     CFG_VISION.update(cfg.get("vision", {}))
+    CFG.update(cfg)
     os.makedirs(WORLD, exist_ok=True)
     stop_flag = os.path.join(WORLD, "STOP")
     if a.stop:
@@ -341,6 +352,9 @@ def main():
     server_dir = prepare_server(cfg, a.accept_eula)
     procs["server"] = start_server(cfg, server_dir)
     speed_up(cfg)
+    import generation
+
+    generation.begin(cfg, log)                           # a new generation: a fresh place, a protected childhood
     if not os.path.exists(os.path.join(HERE, "knowledge", "progress.json")):
         subprocess.run([PY, os.path.join(HERE, "build_progress.py"), os.path.join(server_dir, "server.jar")], cwd=HERE)
     if not os.path.exists(os.path.join(HERE, "guide", "pages.jsonl")):          # the guide, read while they live
@@ -371,10 +385,16 @@ def main():
 
     restarts = {}
     pace, t_pace = int(cfg["server"].get("tick_rate", 20)), time.time()
-    t_disk = 0.0
+    t_disk, t_gen = 0.0, 0.0
     try:
         while True:
             time.sleep(5)
+            if time.time() - t_gen > 60:                    # the childhood: no monsters yet (or the day they come)
+                t_gen = time.time()
+                try:
+                    generation.tick(log)
+                except Exception as e:
+                    log("generation:", e)
             if cfg["server"].get("max_tick_rate") and time.time() - t_pace > 30:
                 t_pace = time.time()
                 pace = adapt_pace(cfg, ais, pace)

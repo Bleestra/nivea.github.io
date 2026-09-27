@@ -11,7 +11,8 @@ ACTIONS = ["forward", "turn_left", "turn_right", "dig_front", "wait",
            # under the crosshair, the hotbar keys, swap hands, drop
            "look_left_fine", "look_right_fine", "look_up_fine", "look_down_fine", "walk", "hit", "use", "hold_use",
            "hotbar_1", "hotbar_2", "hotbar_3", "hotbar_4", "hotbar_5", "hotbar_6", "hotbar_7", "hotbar_8", "hotbar_9",
-           "swap_hands", "drop_item"]
+           "swap_hands", "drop_item",
+           "place_up", "recipe_book"]
 
 RU = {"forward": "вперёд", "turn_left": "повернуть налево", "turn_right": "повернуть направо", "dig_front": "копать впереди",
       "wait": "ждать", "craft_new": "смастерить новое", "eat": "есть", "back": "назад", "strafe_left": "шаг влево",
@@ -25,7 +26,8 @@ RU = {"forward": "вперёд", "turn_left": "повернуть налево",
       "goto_place": "идти домой", "explore": "исследовать", "place_frame": "строить портал",
       "look_left_fine": "голову левее", "look_right_fine": "голову правее", "look_up_fine": "голову выше",
       "look_down_fine": "голову ниже", "walk": "идти, куда смотрю", "hit": "ЛКМ", "use": "ПКМ", "hold_use": "держать ПКМ",
-      "swap_hands": "сменить руку (F)", "drop_item": "бросить (Q)"}
+      "swap_hands": "сменить руку (F)", "drop_item": "бросить (Q)", "place_up": "поставить блок над собой",
+      "recipe_book": "открыть книгу рецептов"}
 for _k in range(1, 10):
     RU[f"hotbar_{_k}"] = f"слот {_k}"
 

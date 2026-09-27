@@ -138,6 +138,50 @@ final class Hands {
     // ------------------------------------------------------------------ the recipe book
     record Craft(String name, RecipeDisplayId id, boolean small) {}
 
+    private static final java.util.Set<String> shown = new java.util.HashSet<>();   // recipes the book showed me already
+
+    /**
+     * Open the recipe book and read it: every recipe it shows me (the game unlocks them as I get what they are
+     * made of) - what it makes, of what, and whether it needs a table. Only the ones not read before:
+     * [[result, {ingredient: count}, needs a table, can make it now], ...].
+     */
+    static com.google.gson.JsonArray readRecipeBook(Minecraft mc) {
+        var out = new com.google.gson.JsonArray();
+        LocalPlayer p = mc.player;
+        if (p == null || mc.level == null) return out;
+        StackedItemContents have = new StackedItemContents();
+        p.getInventory().fillStackedContents(have);
+        var ctx = SlotDisplayContext.fromLevel(mc.level);
+        for (RecipeCollection col : p.getRecipeBook().getCollections()) {
+            for (RecipeDisplayEntry e : col.getRecipes()) {
+                RecipeDisplay d = e.display();
+                java.util.List<net.minecraft.world.item.crafting.display.SlotDisplay> parts;
+                boolean small;
+                if (d instanceof ShapedCraftingRecipeDisplay s) { parts = s.ingredients(); small = s.width() <= 2 && s.height() <= 2; }
+                else if (d instanceof ShapelessCraftingRecipeDisplay s) { parts = s.ingredients(); small = parts.size() <= 4; }
+                else continue;
+                List<ItemStack> result = e.resultItems(ctx);
+                if (result.isEmpty()) continue;
+                String name = key(result.get(0));
+                if (!shown.add(name)) continue;
+                var need = new com.google.gson.JsonObject();
+                for (var part : parts) {
+                    List<ItemStack> alts = part.resolveForStacks(ctx);
+                    if (alts.isEmpty()) continue;
+                    String k = key(alts.get(0));
+                    need.addProperty(k, (need.has(k) ? need.get(k).getAsInt() : 0) + 1);
+                }
+                var r = new com.google.gson.JsonArray();
+                r.add(name);
+                r.add(need);
+                r.add(!small);
+                r.add(e.canCraft(have));
+                out.add(r);
+            }
+        }
+        return out;
+    }
+
     /** Things never held that the recipe book knows a recipe for (craft_new). */
     static List<String> newThings(Minecraft mc) {
         List<String> out = new ArrayList<>();

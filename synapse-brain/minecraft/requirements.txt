@@ -1,5 +1,10 @@
-numpy
+# The Minecraft life (world.py, brain_server.py). Versions: what it runs with now (2026-09).
+numpy>=2.0                  # 2.4.4
+scikit-learn                # 1.8.0
+opencv-python-headless      # 5.0.0
+psutil                      # 7.2.2 (the PC's room: how many AIs, keep_ram_gb)
+faiss-cpu                   # 1.15.1 (episodic memory; without it: exact search over the last moments only)
+torch                       # 2.11 (the eyes; CUDA build for the GPU: https://pytorch.org)
+playwright                  # the dashboard screenshots
+# the language brain (brain_lm.py, voice) only:
 numba
-scikit-learn
-opencv-python-headless
-playwright

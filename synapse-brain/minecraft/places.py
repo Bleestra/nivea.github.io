@@ -18,6 +18,8 @@ import os
 PER_KIND = 6          # places kept for each kind of thing
 KNOW_RADIUS = 96      # "I know where there is X" - within this distance (blocks)
 KNOW_MAX = 12         # how many kinds of remembered things the mind is told about at a time
+MOB_FRESH = 1500     # how long (moments) a creature's place is worth going to
+UNREACH_FRESH = 600  # how long (moments) a place I got stuck on the way to is not set out for again
 FLEETING = {"item", "experience_orb", "arrow", "snowball", "egg", "fishing_bobber", "ender_pearl", "falling_block"}
 
 
@@ -25,6 +27,63 @@ class PlaceMemory:
     def __init__(self):
         self.places = {}          # name -> [[x, y, z, dim, last_seen_age, times]]
         self.chests = {}          # "x,y,z,dim" -> {"at": [x, y, z], "dim": dim, "items": {name: count}, "age": age}
+        self.homes = []           # where I was closed in and safe at night: [x, y, z, dim, times, last age]
+        self.unreachable = []     # where I set out to and got stuck on the way: [x, z, dim, age]
+        self.now = 0
+
+    # ---------------------------------------------------------------- where I could not get
+    def could_not_reach(self, at, m, age):
+        """I set out for it and got stuck on the way (a cliff, water, a wall): not there again for a while."""
+        if not at or len(at) < 2:
+            return
+        x, z = (at[0], at[2]) if len(at) >= 3 else (at[0], at[1])
+        self.unreachable.append([int(x), int(z), str(m.get("dim", "overworld")), age])
+        del self.unreachable[:-24]
+
+    def _blocked(self, s, dim):
+        return any(u[2] == dim and self.now - u[3] < UNREACH_FRESH and abs(u[0] - s[0]) + abs(u[1] - s[2]) <= 3
+                   for u in self.unreachable)
+
+    # ---------------------------------------------------------------- home
+    def remember_home(self, m, age):
+        """Safe here at night, closed in: a home (the place I come back to). The one I was safe at most is my home."""
+        here, dim = m.get("pos"), str(m.get("dim", "overworld"))
+        if not here:
+            return
+        for h in self.homes:
+            if h[3] == dim and self._dist(h, here) <= 6:
+                h[4], h[5] = h[4] + 1, age
+                break
+        else:
+            self.homes.append([int(here[0]), int(here[1]), int(here[2]), dim, 1, age])
+        self.homes.sort(key=lambda h: -h[4])
+        del self.homes[3:]
+
+    def hurt_here(self, what, m, age):
+        """It hurt here (a fall, fire, water, something that struck me): a place to keep away from."""
+        here, dim = m.get("pos"), str(m.get("dim", "overworld"))
+        if not here:
+            return
+        spots = self.places.setdefault("danger:" + what, [])
+        spots.append([int(here[0]), int(here[1]), int(here[2]), dim, age, 1])
+        del spots[:-PER_KIND]
+
+    def danger_near(self, at, m, radius=4):
+        """Did it hurt near this spot before? (the kinds of pain)"""
+        dim = str(m.get("dim", "overworld"))
+        return [k[7:] for k, spots in self.places.items() if k.startswith("danger:")
+                for s in spots if s[3] == dim and self._dist(s, at) <= radius]
+
+    def home(self, m):
+        """My home in this world, if I have one not too far away: [x, y, z], or None."""
+        here, dim = m.get("pos"), str(m.get("dim", "overworld"))
+        hs = [h for h in self.homes if h[3] == dim and (not here or self._dist(h, here) <= 256) and
+              not self._blocked(h, dim)]
+        return [hs[0][0], hs[0][1], hs[0][2]] if hs else None
+
+    def at_home(self, m):
+        h, here = self.home(m), m.get("pos")
+        return bool(h and here and math.sqrt(sum((a - b) ** 2 for a, b in zip(h, here))) <= 3)
 
     # ---------------------------------------------------------------- my chests
     def chest(self, info, m, age):
@@ -52,7 +111,7 @@ class PlaceMemory:
     def where_stored(self, item, m):
         """The nearest chest in my world that holds this item, or None."""
         here, dim = m.get("pos"), str(m.get("dim", "overworld"))
-        cs = [c for c in self.chests.values() if c["dim"] == dim and c["items"].get(item)]
+        cs = [c for c in self.chests.values() if c["dim"] == dim and c["items"].get(item) and not self._blocked(c["at"], dim)]
         if not cs or not here:
             return None
         return list(min(cs, key=lambda c: self._dist(c["at"], here))["at"])
@@ -64,7 +123,7 @@ class PlaceMemory:
 
     def update(self, m, age):
         """Remember what I see now; forget what is no longer where I remember it."""
-        dim = str(m.get("dim", "overworld"))
+        dim, self.now = str(m.get("dim", "overworld")), age
         here = m.get("pos") or [*(m.get("xz") or [0, 0])[:1], m.get("y", 64), *(m.get("xz") or [0, 0])[1:]]
         seen_now = set()
         for entry in m.get("seen", []):
@@ -75,13 +134,14 @@ class PlaceMemory:
             if name in FLEETING:                              # a thing lying or flying has no place
                 continue
             spots = self.places.setdefault(name, [])
+            alive = len(entry) > 2 and entry[2] == "mob"          # a creature walks away: its place grows old
             for s in spots:
                 if s[3] == dim and abs(s[0] - x) + abs(s[1] - y) + abs(s[2] - z) <= 4:
                     s[:3] = [x, y, z]
                     s[4], s[5] = age, s[5] + 1
                     break
             else:
-                spots.append([x, y, z, dim, age, 1])
+                spots.append([x, y, z, dim, age, 1, alive])
                 spots.sort(key=lambda s: (-s[4], -s[5]))
                 del spots[PER_KIND:]
         if here and len(here) >= 3:                           # standing where I remember something that is not here
@@ -96,11 +156,13 @@ class PlaceMemory:
     def _dist(s, here):
         return math.sqrt((s[0] - here[0]) ** 2 + (s[1] - here[1]) ** 2 + (s[2] - here[2]) ** 2)
 
-    def nearest(self, name, m):
-        """The closest remembered place of this kind of thing in my world, or None."""
+    def nearest(self, name, m, age=None):
+        """The closest remembered place of this kind of thing in my world, or None - a creature only if seen there
+        not long ago (it walks away; a zombie seen days ago is no place to look for food)."""
         dim = str(m.get("dim", "overworld"))
         here = m.get("pos")
-        spots = [s for s in self.places.get(name, []) if s[3] == dim]
+        spots = [s for s in self.places.get(name, []) if s[3] == dim and not self._blocked(s, dim) and
+                 not (age is not None and len(s) > 6 and s[6] and age - s[4] > MOB_FRESH)]
         if not spots or not here:
             return None
         s = min(spots, key=lambda s: self._dist(s, here))
@@ -114,7 +176,7 @@ class PlaceMemory:
         visible = {e[0] for e in m.get("seen", [])}
         rows = []
         for name, spots in self.places.items():
-            if name in visible:
+            if name in visible or name.startswith("danger:"):
                 continue
             d = min((self._dist(s, here) for s in spots if s[3] == dim), default=None)
             if d is not None and d <= KNOW_RADIUS:
@@ -126,12 +188,13 @@ class PlaceMemory:
 
     def save(self, path):
         with open(path, "w", encoding="utf-8") as f:
-            json.dump({"places": self.places, "chests": self.chests}, f)
+            json.dump({"places": self.places, "chests": self.chests, "homes": self.homes}, f)
 
     def load(self, path):
         if os.path.exists(path):
             d = json.load(open(path, encoding="utf-8"))
             if "places" in d and isinstance(d.get("chests"), dict):
                 self.places, self.chests = d["places"], d["chests"]
+                self.homes = d.get("homes", [])
             else:                                             # before chests were remembered
                 self.places = d

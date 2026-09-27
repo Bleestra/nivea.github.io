@@ -97,8 +97,10 @@ def settle_options(game=GAME, max_fps=60, render_distance=8, background=False):
     want = {"onboardAccessibility": "false", "skipMultiplayerWarning": "true", "joinedFirstServer": "true",
             "pauseOnLostFocus": "false", "tutorialStep": "none", "autoJump": "true", "fovEffectScale": "0.0",
             "maxFps": str(max_fps), "renderDistance": str(render_distance),
-            # a window nobody watches may draw slowly; the watched one stays smooth
-            "inactivityFpsLimit": "\"afk\"" if background else "\"minimized\""}
+            # never "afk": a body's keys are pressed by the brain, not a person, so the game thinks nobody is there
+            # and drops to a few frames a second - and the eyes and senses wait for a frame each moment (the world
+            # then slowed from 60 to 22 ticks/s). Only a minimized window may draw slowly
+            "inactivityFpsLimit": "\"minimized\""}
     lines = open(path, encoding="utf-8").read().splitlines() if os.path.exists(path) else ["version:4189"]
     for k, v in want.items():
         for i, line in enumerate(lines):
@@ -128,7 +130,7 @@ def install_mods(game):
     os.makedirs(TOOLS, exist_ok=True)
     fetch(url, shared, digest)
     shutil.copy(shared, os.path.join(mods, name))
-    shutil.copy(build_mod(), os.path.join(mods, MOD_JAR))
+    shutil.copy(os.environ.get("SYNAPSE_MOD_JAR") or build_mod(), os.path.join(mods, MOD_JAR))   # (exams: a frozen body)
     baritone = os.path.join(MOD_DIR, "libs", BARITONE)
     if not os.path.exists(baritone):
         raise SystemExit(f"{baritone} is missing - the mod build fetches it (gradlew build)")

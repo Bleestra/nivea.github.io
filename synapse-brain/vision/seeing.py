@@ -196,9 +196,17 @@ class Seeing:
 
     # ---------------------------------------------------------------- memory
     def save(self):
-        self.cortex.save(self.prefix + "_cortex_gpu.npz")        # the large cortex, whichever device it ran on
-        self.teacher.save(self.prefix + "_eyes_gpu.npz")
-        self.rec.save(self.prefix + "_recognition")
+        """Written aside, then swapped in: a brain stopped mid-save keeps its old eyes, not an empty file."""
+        import os
+
+        for part, path in ((self.cortex, self.prefix + "_cortex_gpu.npz"),   # the large cortex, whichever device
+                           (self.teacher, self.prefix + "_eyes_gpu.npz")):
+            tmp = path[:-4] + ".saving.npz"
+            part.save(tmp)
+            os.replace(tmp, path)
+        self.rec.save(self.prefix + "_recognition.saving")
+        for ext in (".npz", ".json"):
+            os.replace(self.prefix + "_recognition.saving" + ext, self.prefix + "_recognition" + ext)
 
     def stats(self):
         acc = self.teacher.acc

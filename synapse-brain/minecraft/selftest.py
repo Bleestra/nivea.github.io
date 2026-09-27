@@ -48,10 +48,25 @@ TESTS = {
     "eat": T(give=["bread 4"], setup=lambda m: ["effect give Tester minecraft:hunger 4 255"], wait=5,
              check=lambda b, a: (bool((a.get("fev") or {}).get("ate")), f"ate {(a.get('fev') or {}).get('ate')}")),
     "attack": T(setup=lambda m: ["summon pig {} {} {} {{NoAI:1b}}".format(*front(m, 2))], wait=3),
+    "hunt": T(action="attack", target="chicken", wait=2,         # felled: step where it fell and pick it up
+              setup=lambda m: ["summon chicken {} {} {}".format(*front(m, 3))],
+              check=lambda b, a: (bool({"chicken", "feather"} & set(gained(b, a))), f"got {gained(b, a)}")),
     "attack_chosen": T(action="attack", target="zombie", wait=3,     # the brain chose whom: go at it, strike when ready
                        setup=lambda m: ["summon husk {} {} {} {{NoAI:1b}}".format(*front(m, 6))]),
     "use_item": T(give=["snowball 8"], pre=["hotbar_1"]),
     "dig_down": T(),
+    "edge": T(action="forward", wait=2,             # the platform's edge, a hundred blocks up: the body crouches
+              setup=lambda m: [f"tp Tester {CX + 0.5} {CY} {CZ - 24.2} 180 0"],
+              check=lambda b, a: (float(a.get("y", 0)) >= CY - 0.5, f"y {a.get('y')}")),
+    "recipe_book": T(give=["oak_log 2"],             # the book shows what the logs unlocked (planks, and on)
+                     check=lambda b, a: (bool((a.get("fev") or {}).get("recipes")),
+                                         f"{len((a.get('fev') or {}).get('recipes') or [])} recipes, e.g. "
+                                         f"{((a.get('fev') or {}).get('recipes') or [[None]])[0][:3]}")),
+    "place_up": T(give=["dirt 4"], setup=lambda m: ["setblock {} {} {} stone".format(*front(m, 1, 2))]),
+    "float": T(action="wait", wait=8,                # the reflex: in water the body keeps its head above it
+               setup=lambda m: [f"fill {CX - 1} {CY - 4} {CZ - 1} {CX + 1} {CY - 1} {CZ + 1} water",
+                                f"tp Tester {CX + 0.5} {CY - 4} {CZ + 0.5}"],
+               check=lambda b, a: (float(a.get("y", 0)) >= CY - 1.6, f"y {a.get('y')} (the surface {CY - 1})")),
     "equip_armor": T(give=["iron_chestplate 1", "iron_helmet 1"],
                      check=lambda b, a: ("worn:iron_chestplate" in a.get("items", {}), "wearing iron")),
     "equip_weapon": T(pre=["hotbar_9"], give=["stone_sword 1"],
@@ -86,6 +101,10 @@ TESTS = {
     "craft_target": T(target="wooden_shovel", give=["oak_planks 4", "stick 2", "crafting_table 1"],
                       check=lambda b, a: ("wooden_shovel" in a.get("items", {}), "shovel")),
     "goto_place": T(target=lambda m: list(front(m, 6))),
+    "goto_far": T(action="goto_place", target=lambda m: list(front(m, 20)),     # a walk longer than 8 s: not cut off
+                  check=lambda b, a: (abs(float(a.get("xz", [0, 0])[0]) - float(b.get("xz", [0, 0])[0])) +
+                                      abs(float(a.get("xz", [0, 0])[1]) - float(b.get("xz", [0, 0])[1])) >= 15,
+                                      f"from {b.get('xz')} to {a.get('xz')}")),
     "explore": T(),
     "place_frame": T(give=["obsidian 10", "cobblestone 8"]),
     "walk": T(),

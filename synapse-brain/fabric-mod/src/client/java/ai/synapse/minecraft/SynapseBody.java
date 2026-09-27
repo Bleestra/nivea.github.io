@@ -53,6 +53,10 @@ public final class SynapseBody implements ClientModInitializer {
             s.chatControl.value = false;        // nobody gives Synapse orders through Baritone's chat commands
             s.logAsToast.value = false;
             s.chatDebug.value = false;
+            s.renderPath.value = false;         // the way and the goal are not drawn into the world: the eyes learn
+            s.renderGoal.value = false;         // from this picture, and a red line and green pillars are not in
+            s.renderSelectionBoxes.value = false;   // any world a person sees
+            s.renderCachedChunks.value = false;
         } catch (Throwable ignored) {
         }
         ClientTickEvents.END_CLIENT_TICK.register(SynapseBody::tick);
