@@ -37,9 +37,10 @@ def tier(items):
 
 
 class Development:
-    def __init__(self, guide=None):
-        path = os.path.join(HERE, "knowledge", "progress.json")
-        self.path = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+    def __init__(self, guide=None, path=True):
+        p = os.path.join(HERE, "knowledge", "progress.json")
+        self.path = json.load(open(p, encoding="utf-8")) if path and os.path.exists(p) else {}
+        self.path_on = path                        # the game's path (tiers, worlds, advancements) as growth: may be shut
         self.guide = guide
         self.best_tier, self.worlds = 0, {"overworld"}
         self.last_growth, self.aimed, self.read = 0, None, set()
@@ -88,6 +89,10 @@ class Development:
     def moment(self, m, child, me, age):
         """Returns (reward, [(kind, words)]) - what growing (or not) feels like this moment."""
         reward, events = 0.0, []
+        if m.get("_unease", 0) > 0.3 and "safe_night" not in self.read:    # afraid in the dark: what does the guide say?
+            events += self.study("safe_night", child, depth=2)
+        if not self.path_on:                          # no path given: what is growth is not told to me
+            return reward, events
         items = (me.me.get("known_items", {}) if me else m.get("items", {}))
         t = tier(items)
         if t > self.best_tier:
@@ -103,8 +108,6 @@ class Development:
             events.append(("develop", f"Я попал в новый мир: {dim}"))
         if m.get("advancements"):
             self.last_growth = age
-        if m.get("_unease", 0) > 0.3 and "safe_night" not in self.read:    # afraid in the dark: what does the guide say?
-            events += self.study("safe_night", child, depth=2)
         idle = age - self.last_growth
         if idle > STAGNATION_AFTER:                       # nothing grows: the unease of standing still
             reward -= min(STAGNATION_MAX, 0.000005 * (idle - STAGNATION_AFTER))
@@ -112,7 +115,7 @@ class Development:
             want = min(ASPIRE_MAX, ASPIRE * (1 + (idle - STAGNATION_AFTER) / ASPIRE_GROW))
             if self.aimed in self.path and want >= getattr(self, "aspire_now", ASPIRE) + 0.3:
                 self.aspire_now = want
-                wants = {c: want for alts in self.path[self.aimed]["wants"] for c in alts}
+                wants = self.wants(self.path[self.aimed]["wants"], want, child)
                 child.mind.tell([], wants, source="путь развития")
                 events.append(("develop", f"Давно не расту — всё сильнее хочу «{self.step_title}» (желание {want:.1f})"))
         # aspiration: the next step of the path, and reading how to get there
@@ -121,7 +124,7 @@ class Development:
             self.aimed, self.aspire_now = nxt, ASPIRE
             step = self.path[nxt]
             self.step_title = step["title"]
-            wants = {c: ASPIRE for alts in step["wants"] for c in alts}
+            wants = self.wants(step["wants"], ASPIRE, child)
             child.mind.tell([], wants, source="путь развития")
             what = ", ".join(sorted({c.split(":", 1)[1] for c in wants}))[:120]
             events.append(("develop", f"Следующая ступень: «{step['title']}» — нужно {what}"))
@@ -129,6 +132,33 @@ class Development:
                 for c in alts[:2]:
                     events += self.study(c, child, depth=2)
         return reward, events
+
+    def wants(self, groups, strength, child):
+        """The next step asks for one of several things (Stone Age: cobblestone, cobbled deepslate or blackstone):
+        of each group, what I know something of is wanted - what I have never seen, held, broken or found out where
+        it is, hardly (blackstone is not even in this world). What was wanted more before is set anew, lower too."""
+        out = {}
+        for alts in groups:
+            fam = {c: self.familiar(child, c) for c in alts}
+            top = max(fam.values()) if fam else 0
+            for c in alts:
+                out[c] = strength * (1.0 if len(alts) == 1 else (0.2 + 0.8 * fam[c] / top) if top > 0 else 0.3)
+                child.mind.revalue(c, out[c])
+        return out
+
+    @staticmethod
+    def familiar(child, concept):
+        """How much I know of it: seen, reached, held, broken, a place I know it at, a block that gives it."""
+        m = child.mind
+        what = concept.partition(":")[2]
+        f = 0.0
+        for pre in ("see:", "reach:", "know:", "broke:"):        # (lived: "have:" may be only told)
+            i = m.idx.get(pre + what)
+            f += float(m.nev[i]) if i is not None and i < len(m.nev) else 0.0
+        ys = getattr(child, "yields", None)
+        if ys is not None:
+            f += sum(1 for b in ys.got if what in ys.got[b])
+        return f
 
     def study(self, concept, child, depth=2):
         """Read the guide about getting this, and about what that needs in turn (a little way down)."""

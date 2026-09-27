@@ -100,7 +100,11 @@ class Telemetry:
         self.decisions.append({"t": time.strftime("%H:%M:%S"), "step": self.step, "a": a, "action": ru(a),
                                "raw": ACTIONS[a] if a < len(ACTIONS) else str(a), "target": target, "goal": goal,
                                "feeling": feel.split(" — ")[0][:60], "reward": round(float(reward), 3),
-                               "hp": m.get("health"), "food": m.get("food")})
+                               "hp": m.get("health"), "food": m.get("food"),
+                               # the transition: what the mind chose, what the body says it did last, and how
+                               "chose": m.get("_chose"), "did_last": m.get("_did"), "how": m.get("_how"), "drawn": m.get("_why"), "meant": m.get("_meant"), "plan": m.get("_plan"),
+                               "last": {k: (m.get("act") or {}).get(k) for k in ("id", "ok", "ticks", "timeout", "interrupted")},
+                               **({"intervention": True} if m.get("_intervention") else {})})
         # what happened in his life
         for adv_id, title in m.get("advancements", []):
             self.event("advancement", f"Достижение: {title}", id=adv_id)
@@ -161,7 +165,7 @@ class Telemetry:
                 "age": age, "life_avg": round(age / (deaths + 1)),
                 "vision": round(seeing.rec.acc, 3) if seeing is not None else None,
                 "places": child.places.count() if child is not None and hasattr(child, "places") else 0,
-                "copied": child.imitation.copied if child is not None and hasattr(child, "imitation") else 0,
+                "copied": child.imitation.copied if getattr(child, "imitation", None) is not None else 0,
                 "fail_rate": self.fail_rate,
                 "reward_avg": round(sum(self.rewards) / max(1, len(self.rewards)), 4)}
 
@@ -193,7 +197,7 @@ class Telemetry:
                 "inventory": dict(sorted(((k, v) for k, v in items.items()), key=lambda kv: -kv[1])[:36]),
                 "decisions": list(self.decisions)[-60:], "events": list(self.events)[-60:],
                 "scores": self.scores(seeing, child, me), "vision": vision,
-                "action_use": self._action_use(),
+                "action_use": self._action_use(), "contract": m.get("_contract"),
                 "development": m.get("_development"),
                 "pace": self.pace,
                 "fails": [[ru(ACTIONS.index(k)) if k in ACTIONS else k, v[0], v[1], v[2]]

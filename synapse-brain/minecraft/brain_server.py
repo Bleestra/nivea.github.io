@@ -135,7 +135,9 @@ if os.path.exists(args.load):
         if z["FB"].shape == agent.FB.shape:
             agent.FB[:] = z["FB"]
     z.close()                                  # (an open file cannot be replaced by the next save on Windows)
-    print(f"loaded {args.load}: {agent.steps} steps of experience", flush=True)
+    healed = agent.heal()                      # (habit weights that ran away before they were bounded)
+    print(f"loaded {args.load}: {agent.steps} steps of experience" + (f"; {healed} runaway habit weights reset" if healed else ""),
+          flush=True)
 if child is None and mind is not None and mind.load(args.mind):
     print(f"mind loaded: {len(mind.names)} concepts, {int(mind.nev.sum())} events remembered", flush=True)
 def frame_of(m):
@@ -163,10 +165,22 @@ def hud():
         return None
     from limbic import STAGE_NAMES
 
+    from recall import ru as ru_item
+
+    def words(c):                                                        # a concept, as a person says it
+        kind, _, x = c.partition(":")
+        x = ru_item(x.split("×")[0]) if x else ""
+        return {"have": x, "see": f"увидеть {x}", "reach": f"добраться до {x}", "killed": f"убить {x}",
+                "hold": f"взять в руку {x}", "wear": f"надеть {x}", "stored": f"{x} в сундуке"}.get(kind) or             {"ate": "поесть", "fed": "наесться", "safe_night": "спокойная ночь", "at_table": "верстак рядом",
+             "sheltered": "укрыться", "at_home": "быть дома"}.get(c, c)
+
     L, mi = child.limbic, child.mind
-    step = mi.names[mi.goal] if getattr(mi, "goal", None) is not None else ""
-    aim = mi.names[mi.intent] if getattr(mi, "intent", None) is not None else ""
+    step = words(mi.names[mi.goal]) if getattr(mi, "goal", None) is not None else ""
+    aim = words(mi.names[mi.intent]) if getattr(mi, "intent", None) is not None else ""
     goal = (f"{aim} · шаг: {step}" if step and step != aim else aim) if aim else step      # what I decided, and the step
+    exp = getattr(core, "expect", None) if core is not None else None
+    if exp:                                                              # ... and what I expect of what I do now
+        goal += " · жду: " + words(exp["effect"])
     t = int(me.me.get("lived_ticks", 0)) if me else 0                   # game time lived: 24000 ticks a day
     lived = f"{t // 24000} д {t % 24000 // 1000} ч" if t >= 24000 else f"{t // 1000} ч {t % 1000 * 60 // 1000} мин"
     return {"name": me.me["name"] if me else "Synapse", "age": int(child.age), "lived": lived, "stage": STAGE_NAMES[L.stage()],
@@ -178,6 +192,13 @@ if child is not None:
     from brain_core import Grown  # noqa: E402
 
     core = Grown(child, me, voice)
+    import knowledge  # noqa: E402
+
+    shut = [c for c, v in knowledge.channels().items() if not v]
+    run = knowledge.manifest(os.path.dirname(os.path.abspath(args.load)), name=args.name, senses=args.senses,
+                             eyes=bool(seeing), episodic=mind.episodic is not None, age=int(child.age))
+    print(f"run written down: {run}" + (f"; shut: {', '.join(shut)}" if shut else "; all knowledge channels open"),
+          flush=True)
 
 
 def grow():
@@ -195,7 +216,18 @@ def grow():
         print("grow:", e, flush=True)
 
 
+import threading as _threading  # noqa: E402
+
+_saving = _threading.Lock()                               # one save at a time (the periodic one and the last one
+                                                          # before sleep once wrote the same file at once)
+
+
 def save():
+    with _saving:
+        _save()
+
+
+def _save():
     grow()
     extra = {"FQ": agent.FQ, "FB": agent.FB} if agent.FQ is not None else {}
     tmp = os.path.splitext(args.load)[0] + ".saving.npz"                    # aside, then swapped in
@@ -203,6 +235,19 @@ def save():
     swap_in(tmp, args.load)
     if child is not None:
         feel_bridge.save(child, args.limbic)
+        if core is not None:                              # body and mind: how often they disagreed, over all runs
+            path = os.path.join(os.path.dirname(os.path.abspath(args.load)), "contract.json")
+            try:
+                total = json.load(open(path)) if os.path.exists(path) else {}
+            except ValueError:
+                total = {}
+            now, before = dict(core.contract), getattr(save, "told", {})
+            for k, v in now.items():
+                total[k] = total.get(k, 0) + v - before.get(k, 0)
+            save.told = now
+            with open(path + ".saving", "w") as f:
+                json.dump(total, f)
+            os.replace(path + ".saving", path)
         try:                                              # a line of the life log: is he growing?
             prog = os.path.join(os.path.dirname(os.path.abspath(args.limbic)), "progress.csv")
             new = not os.path.exists(prog)
@@ -325,7 +370,15 @@ class Handler(socketserver.StreamRequestHandler):
                         else:
                             os.remove(force)
                         print(f"[forced] action {forced}", flush=True)
-                a, tgt, say2, o = core.decide(m, frame, forced)
+                try:
+                    a, tgt, say2, o = core.decide(m, frame, forced)
+                    _failing[0] = 0
+                except Exception:
+                    _failing[0] += 1                         # a brain that fails every moment is asleep on its feet:
+                    if _failing[0] >= 30:                    # it goes to sleep for real (saves; world.py wakes it -
+                        print("failing every moment: asking myself to sleep", flush=True)   # a fresh start)
+                        open(os.path.join(os.path.dirname(os.path.abspath(args.load)), "STOP"), "w").close()
+                    raise
                 say = say or say2
                 fev = m.get("fev") or {}
                 if fev.get("trades") or fev.get("traded") or any(k in ("villager", "golem") for k, _, _ in o["near"]):
@@ -354,8 +407,12 @@ class Handler(socketserver.StreamRequestHandler):
             else:
                 a_body = a
             reply = {"action": a_body}
+            if core is not None:
+                reply["id"] = core.moment_id                          # the body echoes it in its report of the action
             if child is not None and tgt is not None:
                 reply["target"] = tgt                                 # where a motor program is aimed
+            if core is not None:
+                core.last_target = tgt                                # (the body's report of it comes next moment)
             if say:
                 reply["say"] = say
                 print("says:", say, flush=True)
@@ -401,6 +458,9 @@ import signal  # noqa: E402
 
 signal.signal(signal.SIGTERM, _on_term)
 
+_failing = [0]                                              # moments in a row the brain could not think
+
+
 def _watch_stop():
     """world.py asks a brain to go to sleep by leaving a STOP file next to its memory (on Windows a process
     cannot be sent SIGTERM): save everything, then exit."""
@@ -414,9 +474,12 @@ def _watch_stop():
             if os.path.exists(flag):
                 os.remove(flag)
                 print("asked to sleep: saving", flush=True)
-                save()
-                if tele is not None:
-                    tele.offline()
+                try:
+                    save()
+                    if tele is not None:
+                        tele.offline()
+                except Exception as e:                   # (whatever happens, the brain goes to sleep when asked)
+                    print("saving before sleep failed:", e, flush=True)
                 os._exit(0)
     threading.Thread(target=loop, daemon=True).start()
 

@@ -55,6 +55,18 @@ def sealed_sides(around):
     return sum(1 for x in around[:4] if x // 6 in blocked and x % 6 in blocked)
 
 
+def closed_halves(around):
+    """How many of the eight halves of my four sides (at my feet, at my head) are closed."""
+    blocked = (1, 2, 5)
+    return sum((x // 6 in blocked) + (x % 6 in blocked) for x in around[:4])
+
+
+def exposure(m):
+    """How open I am (0..1): half of it the sky over me, half my four sides at my feet and at my head - every
+    block between me and the open night takes a little of it away (a wall at my side, a pit around me, a roof)."""
+    return float(max(0.0, min(1.0, (0.5 if m.get("sky", 1) else 0.0) + 0.0625 * (8 - closed_halves(m.get("around", []))))))
+
+
 def dark_unease(m):
     """Innate apprehension of the dark (0..1), as in people: the darker it is and the more exposed I am (open sky,
     open sides), the stronger. None in the Nether and the End, where darkness is not the danger."""
@@ -66,8 +78,7 @@ def dark_unease(m):
         tod = m.get("time", 6000)
         light = 4 if 13000 <= tod <= 23000 and m.get("sky", 1) else 12
     dark = max(0.0, (8 - float(light)) / 8)
-    exposure = (1.0 if m.get("sky", 1) else 0.6) - 0.15 * sealed_sides(m.get("around", []))
-    return float(max(0.0, min(1.0, dark * exposure)))
+    return float(max(0.0, min(1.0, dark * exposure(m))))
 
 
 def pain_of(entry):
@@ -152,15 +163,60 @@ class MCChild(Child):
                          eat_action=6, wait_action=4, kinds=KINDS)
         self.attack_action = ACTIONS.index("attack")           # anger's innate urge acts through this one
         self.mind.helper_kinds = ("have:", "hold:", "wear:")    # what can make a thing go better: what I carry, hold, wear
+        self.mind.explore_steps = 12                             # after a failure, a short look around - then back
+        self.mind.aversive = ("pain:", "killed:carer", "killed:peer")   # innate: pain is never a thing to want, nor
+                                                                        # the death of a person (anger may strike;
+                                                                        # it does not plan a killing)
         self.m = {}
         from imitation import Imitation
+        from knowledge import channels
         from places import PlaceMemory
 
-        self.places, self.imitation = PlaceMemory(), Imitation()   # where things are; what I saw people do
+        self.knowledge = K = channels()                          # what may come ready-made (world.json "knowledge")
+        self.places = PlaceMemory()                              # where things are
+        from schemas import Schemas
+        from yields import Yields
+
+        self.yields = Yields(item_kind)                          # what each thing gave me when I broke it
+        self.schemas = Schemas(item_kind)                        # what my hands do to what they are aimed at
+        from actions import RU
+        from imagine import Imagination
+        from recall import ru as ru_item
+
+        self.imagination = Imagination(self, ACTIONS, lambda s: RU.get(s) or ru_item(s))   # ways played in my head
+        self.imagined = None
+        self.recipes_read = {}                                   # what the recipe book showed: item -> [need, table]
+        self.kind_of = item_kind                                 # (birch planks will do for oak planks)
+        self.edible = set()                                      # what I know can be eaten (tasted, or read)
+        if K["recipes"]:                                         # the reference, read as a person reads a wiki:
+            import json as _json                                 # what each block gives and with what tool,
+
+            p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge", "sim_rules.json")
+            if os.path.exists(p):
+                rules = _json.load(open(p, encoding="utf-8"))
+                for block, info in rules.get("blocks", {}).items():                   # what falls off whom, what
+                    drops, tools = info.get("drops") or [], info.get("tools") or []   # is food
+                    if drops:
+                        self.yields.tell(f"{block}@{tool_of(tools[0])}" if tools else block, drops)
+                for mob, drops in rules.get("mobs", {}).items():
+                    items = [d for d, pr in drops if pr >= 0.5]
+                    if items:
+                        self.yields.tell("mob:" + mob, items)
+                self.edible |= set(rules.get("foods", {}))
+        self.aim_at = None
+        self.plan_steps = {}                                     # goal -> the step I would take for it, what it brings
+        self.core = None
+        if os.environ.get("SYNAPSE_CORE", "v5") == "v5":        # one model of the world, one planner, goals from needs
+            from core5 import Core
+            self.core = Core(self, seed)
+            self.mind.decide_elsewhere = True
+        self.mind.suggest = self._suggest
+        self.imitation = Imitation() if K["imitation"] else None   # what I saw people do
         from development import Development
         from guide_reader import GuideBook
 
-        self.development = Development(GuideBook())              # the need to grow; the guide to learn how
+        self.development = Development(GuideBook() if K["guide"] else None, path=K["path"])   # the need to grow;
+                                                                                            # the guide to learn how
         self.mind.min_desire = float(os.environ.get("MIN_DESIRE_MC", "0.2"))
         self.relative_value = os.environ.get("RELATIVE", "1") == "1"
         self.mind.secondary = os.environ.get("SECONDARY", "1") == "1"
@@ -177,6 +233,7 @@ class MCChild(Child):
         self._concepts = {}
         # sensations and places are means, not things to want for themselves
         self.mind.means_only = ("see:", "reach:", "walls", "saw:", "deep", "underground", "stuck", "free", "indoors", "sky",
+                                "healthy",           # (health comes back by itself while fed: not a thing to do)
                                 "near:", "day", "in:", "can_craft:", "hear:", "broke:", "know:", "moving:", "dark",
                                 "approach:", "stored:", "bag_room", "hold:", "at_table")
 
@@ -187,6 +244,28 @@ class MCChild(Child):
         if vis:
             s = (s[0], s[1], s[2], np.asarray(vis, np.int64), s[4])
         return s
+
+    def _suggest(self, g):
+        """For a step of my plan: the action and the thing to aim it at that (as I learned) does it here."""
+        goal = self.mind.names[g]
+        s = self.schemas.plan(goal, self.m or {}, self.yields)
+        effect, checked = goal, True                            # (a schema's step: what it needs is there)
+        if s is None:                                            # no one step does it: imagine the way
+            s, words = self.imagination.first_step(goal)
+            if s is None:
+                return None
+            if words:
+                self.imagined = words
+            effect = s[3]
+            last = self.imagination.last or []
+            checked = bool(last and last[0].needs)               # what the step needs, I saw is there (food in
+                                                                 # my bag) - a walk or a search needs nothing I check
+        kind, target, p = s[:3]
+        if kind not in ACTIONS:
+            return None
+        self.aim_at = (kind, target, g)                         # (for this step of my plan only)
+        self.plan_steps[g] = {"kind": kind, "target": target, "effect": effect}   # ... and what I expect of it
+        return ACTIONS.index(kind), p, checked
 
     def concepts(self, o):
         s = state_from(self.m)                        # everything it holds, sky, stuck, day, fed, healthy
@@ -223,6 +302,10 @@ class MCChild(Child):
                 s["killed:" + str(kind)] = 1                                           # it fell by my hand
         if "free_slots" in self.m:
             s["bag_room"] = int(self.m["free_slots"] > 0)                              # there is room in my bag
+        if (self.m.get("fev") or {}).get("ate"):
+            s["ate"] = 1                                                               # I have just eaten something
+        if self.m.get("food") is not None and int(self.m["food"]) < 20:
+            s["hungry"] = 1                                                            # my stomach is not full
         if self.m.get("table_near") or (self.m.get("items") or {}).get("crafting_table"):
             s["at_table"] = 1                                                          # a crafting table at hand
         light = self.m.get("light")
@@ -230,9 +313,14 @@ class MCChild(Child):
             s["dark"] = 1                                                              # it is dark around me
         if sealed_sides(self.m.get("around", [])) == 4 and not self.m.get("sky", 1):
             s["sheltered"] = 1                                                         # walls on every side, a roof
-        night = 13000 <= self.m.get("time", 6000) <= 23000
-        if night and self.m.get("_unease", 1.0) < 0.05 and "nether" not in str(self.m.get("dim", "")):
-            s["safe_night"] = 1                                                        # night, and I am not afraid
+        night = 12000 <= self.m.get("time", 6000) <= 23500                           # (dusk to dawn)
+        places = getattr(self, "places", None)
+        if places is not None and places.home(self.m):
+            s["know:home"] = 1                                                         # I have a home to go to
+            if places.at_home(self.m):
+                s["at_home"] = 1
+        if night and sealed_sides(self.m.get("around", [])) >= 3 and not self.m.get("sky", 1) and                 "nether" not in str(self.m.get("dim", "")):
+            s["safe_night"] = 1                                   # night, and I am closed in (not: the dawn came)
         motion = self.m.get("_motion") or {}                                           # the eyes see it move
         for name in motion.get("moving", []):
             s["moving:" + name] = 1
@@ -261,7 +349,7 @@ class Body:
         night = 13000 <= tod <= 23000
         look = act == 13 or m.get("pitch", 0) < 0            # looking up
         sky = sky_from_frame(frame, look) if frame is not None else sky_from_time(tod, look)
-        hp = float(m.get("health", 20) or 20)
+        hp = float(m["health"]) if m.get("health") is not None else 20.0   # (0 is 0, not "unknown")
         near = [tuple(x) for x in m.get("near", [])]
         hurt = [tuple(x) for x in fev.get("hurt", [])]
         if hp < self.hp:
@@ -305,7 +393,8 @@ class Body:
         around = m.get("around", [])
         walls = sum(2 for x in around[:4] if x // 6 in (1, 2, 5) or x % 6 in (1, 2, 5))
         food = sum(v for k, v in items.items() if k in MC_TASTE and MC_TASTE[k] > 0)
-        o = {"view": np.array(m["obs"], np.int64), "sky": sky, "walls": walls, "hp": int(hp), "hunger": int(m.get("food", 20) or 20),
+        food = int(m["food"]) if m.get("food") is not None else 20              # (starving is 0, not "full")
+        o = {"view": np.array(m["obs"], np.int64), "sky": sky, "walls": walls, "hp": int(hp), "hunger": food,
              "fatigue": self.fatigue, "nausea": int(self.nausea > 0), "t": self.t, "night": night,
              "pos": tuple(m.get("xz", (0, 0))), "dir": int(m.get("heading", 0)),
              "inv": {"log": sum(v for k, v in items.items() if k.endswith("_log")),
@@ -329,6 +418,27 @@ def save(child, path):
     child.mind.save(os.path.join(path, "mind.npz"))
     if getattr(child, "places", None) is not None:
         child.places.save(os.path.join(path, "places.json"))
+    if getattr(child, "yields", None) is not None:
+        child.yields.save(os.path.join(path, "yields.json"))
+    if getattr(child, "schemas", None) is not None:
+        child.schemas.save(os.path.join(path, "schemas.json"))
+    if getattr(child, "recipes_read", None):
+        import json
+
+        with open(os.path.join(path, "recipes_read.json"), "w", encoding="utf-8") as f:
+            json.dump(child.recipes_read, f)
+    if getattr(child, "core", None) is not None:
+        child.core.save(os.path.join(path, "model.json"))
+    if getattr(child, "imagination", None) is not None and child.imagination.rel:
+        import json
+
+        with open(os.path.join(path, "steps.json"), "w", encoding="utf-8") as f:
+            json.dump(child.imagination.rel, f)
+    if getattr(child, "edible", None):                      # what I have tasted (or read) can be eaten
+        import json
+
+        with open(os.path.join(path, "edible.json"), "w", encoding="utf-8") as f:
+            json.dump(sorted(child.edible), f)
     if getattr(child, "imitation", None) is not None:
         import json
 
@@ -351,6 +461,24 @@ def load(child, path):
     child.mind.load(os.path.join(path, "mind.npz"))
     if getattr(child, "places", None) is not None:
         child.places.load(os.path.join(path, "places.json"))
+    if getattr(child, "yields", None) is not None:
+        child.yields.load(os.path.join(path, "yields.json"))
+    if getattr(child, "schemas", None) is not None:
+        child.schemas.load(os.path.join(path, "schemas.json"))
+    if os.path.exists(os.path.join(path, "recipes_read.json")):
+        import json
+
+        child.recipes_read = json.load(open(os.path.join(path, "recipes_read.json"), encoding="utf-8"))
+    if getattr(child, "core", None) is not None:
+        child.core.load(os.path.join(path, "model.json"))
+    if os.path.exists(os.path.join(path, "steps.json")) and getattr(child, "imagination", None) is not None:
+        import json
+
+        child.imagination.rel = json.load(open(os.path.join(path, "steps.json"), encoding="utf-8"))
+    if os.path.exists(os.path.join(path, "edible.json")) and getattr(child, "edible", None) is not None:
+        import json
+
+        child.edible |= set(json.load(open(os.path.join(path, "edible.json"), encoding="utf-8")))
     if getattr(child, "imitation", None) is not None and os.path.exists(os.path.join(path, "imitation.json")):
         import json
 
@@ -409,13 +537,22 @@ _RECIPES = []
 
 
 def recipes():
-    """The recipe book I have read (knowledge/sim_rules.json): item -> [{need: {item: n}, ...}]."""
+    """The recipe book I have read (knowledge/sim_rules.json): item -> [{need: {item: n}, ...}] (none when
+    the reference is shut: world.json "knowledge")."""
     if not _RECIPES:
         import json
+        from knowledge import is_open
 
         p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge", "sim_rules.json")
-        _RECIPES.append(json.load(open(p, encoding="utf-8")).get("recipes", {}) if os.path.exists(p) else {})
+        ok = os.path.exists(p) and is_open("recipes")
+        _RECIPES.append(json.load(open(p, encoding="utf-8")).get("recipes", {}) if ok else {})
     return _RECIPES[0]
+
+
+def tool_of(held):
+    """What my hand held, as a tool kind (a stone pickaxe is a pickaxe of the wooden kind) - or "hand"."""
+    h = str(held or "")
+    return item_kind(h) if re.search(r"_(pickaxe|axe|shovel|hoe|sword)$|^shears$", h) else "hand"
 
 
 def item_kind(name):
@@ -466,20 +603,56 @@ def worth_of(child, item):
     for g, pri in mind.helps_prior.items():                 # what I read it helps with
         if tools & set(pri):
             worth = max(worth, 0.5 * goal_worth(g))
-    for g, (n, s_, per) in mind.helps.items():              # what I found it helps with
+    for (g, _ctx), (n, s_, per) in mind.helps.items():      # what I found it helps with (in some situation)
         for p in tools & set(per):
             if per[p][0] >= 5 and (per[p][1] + 1) / (per[p][0] + 2) - (s_ - per[p][1] + 1) / (max(n - per[p][0], 0) + 2) >= 0.2:
                 worth = max(worth, 0.5 * goal_worth(g))
     return worth
 
 
+def _rng(child):
+    """The body's own chance (seeded with the child): choices of what to aim at can be replayed."""
+    r = getattr(child, "rng_attention", None)
+    if r is None:
+        r = child.rng_attention = np.random.default_rng(getattr(child, "seed", 0) + 7)
+    return r
+
+
+def concrete(kind, target, m):
+    """My plan names things by their kind ("a log", "planks"); my hands need the very thing: the spruce log I see,
+    the spruce planks I can make of the spruce logs I have - not an oak nowhere around."""
+    if not isinstance(target, str):
+        return target
+    if kind == "craft_target":
+        can = m.get("craftable") or []
+        if target in can:
+            return target
+        same = [k for k in can if item_kind(k) == target]
+        return same[0] if same else target
+    if kind in ("mine_target", "approach", "attack"):
+        seen = [(e[1] if len(e) > 1 else 99, e[0]) for e in m.get("seen", []) if e]
+        if any(n == target for _, n in seen):
+            return target
+        same = sorted((d, n) for d, n in seen if item_kind(n) == target)
+        return same[0][1] if same else target
+    return target
+
+
 def attention(child, a, m):
     """What a motor program is aimed at - chosen by the brain: the thing the current plan needs,
     else what I have never seen (novelty draws the eyes), else what I value most; home = the
     place I am most attached to. What to throw away, put away or take - by what things are worth to me."""
+    aim = getattr(child, "aim_at", None)
+    if aim is not None and a < len(ACTIONS) and ACTIONS[a] == aim[0] and aim[2] == child.mind.goal and \
+            getattr(child, "core", None) is not None:
+        child.aim_at = None                                        # what the core aimed this act at (any act)
+        return concrete(aim[0], aim[1], m)
     kind = MOTOR.get(a)
     if kind is None or kind == "explore":
         return None
+    aim, child.aim_at = getattr(child, "aim_at", None), None
+    if aim is not None and aim[0] == kind and aim[2] == child.mind.goal:   # what my learned schema aimed this at
+        return concrete(kind, aim[1], m)
     mind, L = child.mind, child.limbic
     if kind == "craft_new":                                        # curiosity: something never made - but not
         new = [k for k in m.get("craftable", []) if "have:" + k not in mind.idx or mind.nev[mind.idx["have:" + k]] == 0]
@@ -487,7 +660,7 @@ def attention(child, a, m):
             return None                                            # when I need a table and a pickaxe)
         need = plan_needs(child)
         spare = [k for k in new if not spends(k, need)]
-        return spare[int(np.random.randint(len(spare)))] if spare else "#none"
+        return spare[int(_rng(child).integers(len(spare)))] if spare else "#none"
     if kind in ("drop_junk", "store", "take"):
         places = getattr(child, "places", None)
         carried = {k: n for k, n in (m.get("items") or {}).items() if not k.startswith("worn:") and n > 0}
@@ -551,13 +724,23 @@ def attention(child, a, m):
         need = plan_needs(child)
         new = [k for k in new if not spends(k, need)]     # (not out of what my plans need)
         if new:                                           # something I have never made: curiosity
-            return new[int(np.random.randint(len(new)))]
+            return new[int(_rng(child).integers(len(new)))]
         return max(craftable, key=lambda k: mind.R[mind.idx["have:" + k]] if "have:" + k in mind.idx else 0.0)
     if g is not None:
+        gname = mind.names[g]
+        ys = getattr(child, "yields", None)
+        if ys is not None and gname.startswith("have:") and kind in ("mine_target", "approach"):
+            src, here = ys.source(gname[5:], seen)         # what gave it to me when I broke it (learned)
+            if src is not None and not src.startswith("mob:"):
+                return src.split("@")[0]                   # (out of sight: the body says so, I go and look)
+        if ys is not None and gname.startswith("have:") and kind == "attack":
+            src, here = ys.source(gname[5:], ["mob:" + s for s in seen])   # what left it to me when it fell by my
+            if src is not None and here:                                  # hand (a cow: beef) - if it is here
+                return src[4:]
         nodes = [g] + list(mind.pre(g))
         for (e, act), rec in mind.ao.items():
             if e == g and rec[0] >= 2:
-                nodes += list(mind._ao_need(rec))
+                nodes += list(mind.ao_context(rec))        # (not grass that is in sight everywhere)
         for i in nodes:
             name = mind.names[i]
             if name.startswith("see:") and name[4:] in seen:
@@ -572,24 +755,24 @@ def attention(child, a, m):
     for (e, act), rec in mind.ao.items():
         if act != a or rec[0] < 1 or not mind.names[e].startswith("have:"):
             continue
-        need = [mind.names[i] for i in mind._ao_need(rec)] if rec[0] >= 2 else []
+        need = [mind.names[i] for i in mind.ao_context(rec)] if rec[0] >= 2 else []
         for x in seen:
             if "see:" + x in need or "reach:" + x in need:
-                p = rec[0] / (rec[2] + 1.0)
+                p = mind.ao_effect(rec, 0.0)[0]
                 worth[x] = max(worth.get(x, 0.0), p * (max(mind.R[e], 0.0) + 0.3 / np.sqrt(1 + mind.nev[e])))
     im = getattr(child, "imitation", None)
     copy = im.attention(seen, child.age) if im is not None else None
-    if copy is not None and np.random.random() < 0.5:              # what I saw someone use draws my eyes
+    if copy is not None and _rng(child).random() < 0.5:              # what I saw someone use draws my eyes
         return copy
     tried = getattr(child, "tried_on", {})
     child.tried_on = tried
     fresh = [x for x in seen if tried.get((a, x), 0) < 3]          # never really tried this on it: curiosity
-    if fresh and (not worth or np.random.random() < 0.3):
-        x = fresh[int(np.random.randint(len(fresh)))]
+    if fresh and (not worth or _rng(child).random() < 0.3):
+        x = fresh[int(_rng(child).integers(len(fresh)))]
     elif worth:
         x = max(worth, key=worth.get)
     elif seen:
-        x = seen[int(np.random.randint(len(seen)))]
+        x = seen[int(_rng(child).integers(len(seen)))]
     else:
         return None
     tried[(a, x)] = tried.get((a, x), 0) + 1

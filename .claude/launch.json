@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "rift-sigils",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["rift-sigils/tools/serve.js"],
+      "port": 4173
+    }
+  ]
+}

@@ -23,6 +23,9 @@ Every update touches only active synapses: a step costs microseconds, learning i
 import numpy as np
 
 MASK = (1 << 20) - 1
+W_MAX = 2.0           # one cell's share of what an action is worth here (a moment sums tens of cells): a habit
+                      # weight beyond it is a runaway, not knowledge
+DELTA_MAX = 5.0       # a surprise bigger than this is learned as this (one moment does not tip everything)
 
 
 def _h(*xs):
@@ -36,6 +39,7 @@ class BrainAgent:
     def __init__(self, n_actions, seed=0, gamma=0.97, lam=0.7, alpha=0.25, curiosity=0.0,
                  trace_len=30, init=0.02, emotions=False, fear=True, mood=True, n_front=8):
         self.nA, self.g, self.lam = n_actions, gamma, lam
+        self.init = init                              # (what an untrained synapse holds)
         self.rng = np.random.default_rng(seed)
         self.W = np.full((MASK + 1, n_actions), init, np.float32)   # striatal synapses
         self.F = np.zeros((MASK + 1, n_front), np.float32)           # cerebellar forward model
@@ -98,7 +102,21 @@ class BrainAgent:
             cells, a, r, nxt, done = mem[int(i)]
             q = self.W[cells, a].sum()
             tgt = r + (0.0 if done else self.g * self.W[nxt].sum(0).max())
-            self.W[cells, a] += lr * (tgt - q) / len(cells)
+            self.nudge(cells, a, lr * float(np.clip(tgt - q, -DELTA_MAX, DELTA_MAX)) / len(cells))
+
+    def heal(self):
+        """Weights that ran away (before the bound, or read from an old memory) go back to untrained. -> how many."""
+        bad = ~np.isfinite(self.W) | (np.abs(self.W) > W_MAX)
+        n = int(bad.sum())
+        if n:
+            self.W[bad] = self.init
+        return n
+
+    def nudge(self, cells, a, step):
+        """Change the synapses of these cells for this action - never past W_MAX, never by a non-number (learning
+        from another's choices - the planner's, not the habit's - can run away: the weights stay bounded)."""
+        if np.isfinite(step):
+            self.W[cells, a] = np.clip(self.W[cells, a] + step, -W_MAX, W_MAX)
 
     def fear_veto(self, cells):
         """Fear forbids an action only if harm follows IT more than it follows this situation anyway
@@ -160,13 +178,14 @@ class BrainAgent:
         q_sa = self.W[cells, a].sum()
         target_q = r_total + (0.0 if done else self.g * next_q[next_a])
         delta = target_q - q_sa
+        delta = float(np.clip(delta, -DELTA_MAX, DELTA_MAX)) if np.isfinite(delta) else 0.0
         self.hist.append((cells, a))
         if len(self.hist) > self.K:
             self.hist.pop(0)
         lr = self.alpha / len(cells)
         decay = 1.0
         for cs, aa in reversed(self.hist):
-            self.W[cs, aa] += lr * delta * decay
+            self.nudge(cs, aa, lr * delta * decay)
             decay *= self.g * self.lam
             if decay < 0.01:
                 break

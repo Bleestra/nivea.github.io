@@ -24,6 +24,7 @@ class Child:
     def __init__(self, n_actions, seed=0, taste=None, items=("log", "cobble", "apple", "fish", "rotten_flesh"),
                  eat_action=5, wait_action=10, kinds=KINDS, n_front=12):
         self.mind = Mind(n_actions, seed=seed, n_front=n_front)
+        self.seed = seed
         self.mind.urgent_ctx = (3, 7)             # danger (hungry or not): it may break into any intention
         self.mind.planning = False
         self.limbic = Limbic(seed, taste)
@@ -84,9 +85,12 @@ class Child:
         return total
 
     # ---------------------------------------------------------------- one moment
-    def step(self, o, act_prev, front_before, inv_before, extra_reward=0.0):
+    def step(self, o, act_prev, front_before, inv_before, extra_reward=0.0, did=None):
+        """did: what my body reports it really did last (None: what I chose; -1: nothing was done)."""
         m, L = self.mind, self.limbic
         self.age += 1
+        if did is not None and self.prev is not None:   # the self-model learns what my action really was too
+            self.prev = None if did < 0 else (self.prev[0], int(did))
         obs = self.senses(o)
         cells = m.flat.cells(obs)
         # the self-model: how well do I predict what my own action will put in front of me?
@@ -102,6 +106,8 @@ class Child:
             L.fm_surprise = 0.0
         q = m.flat.W[cells].sum(0)
         v_now = float(q.max())
+        if not np.isfinite(v_now):                    # (a value I cannot feel: none)
+            v_now = 0.0
         delta = 0.95 * v_now - getattr(self, "v_prev", 0.0)
         self.v_prev = v_now
         n = len(m.names)
@@ -142,16 +148,39 @@ class Child:
             blamed_near = any(L.grudge(k) > 0.1 for k, _, d in o["near"] if d <= 8)
             m.tendency = np.zeros(m.nA, np.float32)
             m.tendency[atk] = E["anger"] if blamed_near else 0.0
+        # innate drives: what the body wants to end, as strong as the need (the mind wants the state that ends it,
+        # even one it has never been in - the way there it has to find)
+        mm = getattr(self, "m", None) or {}
+        drives = {}
+        if o["hunger"] < 18:
+            drives["ate"] = (18 - o["hunger"]) / 18.0             # hunger wants a bite (each one eases it), not
+                                                                  # "fed to 18" that no one bite brings
+        # (hurt is not a drive of its own: the body heals by itself while fed - hunger is what to act on)
+        if mm.get("_unease") is not None and 12000 <= mm.get("time", 6000) <= 23500:
+            drives["safe_night"] = max(float(mm["_unease"]),          # the dark at night, while I am exposed - and,
+                                       0.9 * float(mm.get("_exposure", 0.0)))   # already at dusk, the wish for shelter
+                                                                  # (in the open: 3.2 - a threat outweighs hunger
+                                                                  # short of starving; a roofed pit: 0)
+        m.drives = {k: 4.0 * v * v for k, v in drives.items()}       # a small need hardly counts; a great one
+                                                                      # outweighs everything (starving: 4)
         if self.relative_value:
             self.r_avg += 0.001 * (r - self.r_avg)
             self.v_avg += 0.001 * (value - self.v_avg)
             r, value = r - self.r_avg, value - self.v_avg
-        a = m.step(obs, state if getattr(self, "cortical_dopamine", False) else self.concepts(o), r, done=bool(o["ev"]["died"]), explore=explore, value=value, ctx=ctx)
+        a = m.step(obs, state if getattr(self, "cortical_dopamine", False) else self.concepts(o), r, done=bool(o["ev"]["died"]), explore=explore, value=value, ctx=ctx, did=did)
+        core = getattr(self, "core", None)
+        if core is not None and stage >= 1:              # (a newborn babbles; the grown mind plans)
+            a2 = core.decide(did)
+            if a2 is not None and a2 != a:
+                a = a2
+                m.acted(a)                               # (what I do is what I learn from)
         # insula veto: food that once made me sick is refused unless I am starving (learned in one shot)
         if a == self.eat_action:
-            foods = [k for k in ("apple", "fish", "rotten_flesh") if o["inv"].get(k)]
+            foods = [k for k in ("apple", "food", "fish", "rotten_flesh") if o["inv"].get(k)]   # ("food": the body's
+                                                                                               # name for apples, bread...)
             bad = [L.aversion.get(("eat", f), 0.0) for f in foods]
             if foods and all(b < -0.2 for b in bad) and o["hunger"] > 3:
                 a = self.wait_action
+                m.acted(a)                            # (what I do is what I learn from)
         self.prev = (m.last_cells, a)
         return a
