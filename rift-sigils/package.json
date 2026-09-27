@@ -1,0 +1,12 @@
+{
+  "name": "rift-sigils",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Печати Разлома — цифровое ядро правил (этап B GDD v0.1)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "serve": "node tools/serve.js",
+    "build": "node tools/build-artifact.js duel && node tools/build-artifact.js classic && node tools/build-artifact.js table"
+  }
+}
