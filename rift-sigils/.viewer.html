@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>viewer</title>
+<link rel="stylesheet" href="src/arena/arena.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<script type="module">
+import * as THREE from 'three';
+import { DayWorld } from './src/arena/world-day.js';
+import { Colossus, preloadColossusModels, setColossusStyle } from './src/arena/colossi.js';
+import { COLOSSI } from './src/core/index.js';
+import { OWNER_GLOW } from './src/arena/fx.js';
+setColossusStyle('bright');
+const world = new DayWorld(document.getElementById('stage'), { quality: 'high' });
+const ids = new URLSearchParams(location.search).get('ids')?.split(',') ?? ['RS-C001', 'RS-C011'];
+await preloadColossusModels();
+const models = ids.map((id, i) => {
+  const m = new Colossus(world, COLOSSI[id], { ownerColor: OWNER_GLOW[i ? 'foe' : 'me'] });
+  m.root.position.set(0, 0.4, i ? -5 : 5);
+  m.root.rotation.y = i ? 0 : Math.PI;
+  world.scene.add(m.root);
+  return m;
+});
+window.V = { world, models, THREE, cam(p, t) { world.focused = true; world.setView(new THREE.Vector3(...p), new THREE.Vector3(...t), true); } };
+V.cam([34, 9.5, 10], [0, 9.5, 0]);
+</script>
+</body>
+</html>

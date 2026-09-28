@@ -5,7 +5,8 @@
       "name": "rift-sigils",
       "runtimeExecutable": "node",
       "runtimeArgs": ["rift-sigils/tools/serve.js"],
-      "port": 4173
+      "port": 4173,
+      "autoPort": true
     }
   ]
 }
