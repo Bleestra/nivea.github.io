@@ -1,7 +1,8 @@
 // Hybrid duel client: a real-time round clock around the pure duel engine, the bot, animations and input.
 // The engine decides everything; this file only keeps time, queues commands and waits for animations.
 import * as D from '../duel/index.js';
-import { World } from './world.js';
+import { DayWorld } from './world-day.js';
+import { setColossusStyle } from './colossi.js';
 import { Fx } from './fx.js';
 import { DuelStage } from './duel-stage.js';
 import { DuelDirector } from './duel-director.js';
@@ -18,13 +19,15 @@ const DEFAULTS = { you: 'attack', bot: 'answers', botKind: 'simple', speed: 'nor
 const REASONS = { life: 'шкала жизни на нуле', 'no-colossi': 'не осталось бойцов', concede: 'сдача', 'round-limit': 'предел раундов' };
 
 let settings = load();
-const world = new World(document.getElementById('stage'), { quality: settings.quality });
+setColossusStyle('bright');
+const world = new DayWorld(document.getElementById('stage'), { quality: settings.quality });
 world.speed = SPEEDS[settings.speed] ?? 1;
 // The duel is fought on one gate in the middle: a closer three-quarter view, like a broadcast of the fight.
 world.fitOverview = function fitDuel() {
   const portrait = this.camera.aspect < 0.8;
-  this.overview.target.set(0, portrait ? 7 : 6, 0);
-  this.overview.pos.set(portrait ? 46 : 37, portrait ? 26 : 15, portrait ? 16 : 12);
+  // low, near eye level with the colossi, so the sky and the skyline stand behind them
+  this.overview.target.set(0, portrait ? 7 : 9.5, 0);
+  this.overview.pos.set(portrait ? 46 : 34, portrait ? 24 : 9.5, portrait ? 16 : 10);
   if (!this.focused) this.goOverview(true);
 };
 world.fitOverview();
@@ -188,7 +191,7 @@ function promptFor(v, mode) {
   const me = v.players[game.human];
   if (me.ready) return { text: 'Вы готовы. Ждём соперника или конца таймера.', wait: true };
   return v.round <= 1 && v.boutNo <= 1
-    ? { text: '<b>Раунд идёт.</b> Играйте карты: клик выбирает, до трёх карт сливаются в одну активацию. Соперник видит только, что вы что-то сыграли; всё вскроется и сработает в конце раунда.', hint: `Ворота лежат закрытыми: их владелец открывает их, когда захочет. Затем силы сталкиваются: слабый теряет разницу в G, сильный — ${Math.round(D.RULES.recoil * 100)}% её, а минус ниже нуля бьёт по шкале жизни.` }
+    ? { title: 'Раунд идёт. Играйте карты!', text: 'Клик выбирает, до трёх карт сливаются в одну активацию. Соперник видит только, что вы что-то сыграли; всё вскроется и сработает в конце раунда.', hint: `Ворота лежат закрытыми: их владелец открывает их, когда захочет. Затем силы сталкиваются: слабый теряет разницу в G, сильный — ${Math.round(D.RULES.recoil * 100)}% её, а минус ниже нуля бьёт по шкале жизни.` }
     : null;
 }
 

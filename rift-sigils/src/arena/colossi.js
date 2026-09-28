@@ -44,13 +44,27 @@ const ico = (r, detail = 0) => cached(`ico:${r}:${detail}`, () => new THREE.Icos
 const box = (w, h, d) => cached(`box:${w}:${h}:${d}`, () => new THREE.BoxGeometry(w, h, d));
 const torus = (R, r, seg = 24, rad = 5) => cached(`torus:${R}:${r}:${seg}:${rad}`, () => new THREE.TorusGeometry(R, r, rad, seg));
 
+// The duel page dresses the colossi in bright heraldic colours of their aspect; the classic board keeps dark armour.
+let STYLE = 'dark';
+export function setColossusStyle(style) { STYLE = style; }
+const BRIGHT = {
+  fire: { armor: 0xc8261c, panel: 0xf2c14e, dark: 0x2b1411, cloth: 0x8e1a17, bone: 0xfff0cf },
+  tide: { armor: 0x1f6fd1, panel: 0xeaf4ff, dark: 0x0d1d38, cloth: 0x164c8f, bone: 0xe8f6ff },
+  stone: { armor: 0x9b6a3c, panel: 0xf0cf86, dark: 0x2c2117, cloth: 0x6b4a2b, bone: 0xf4e6c8 },
+  wind: { armor: 0x18a07a, panel: 0xeaf8ef, dark: 0x0e2b23, cloth: 0x1e6c50, bone: 0xf0fff6 },
+  light: { armor: 0xf1efe8, panel: 0xf2c14e, dark: 0x3b4260, cloth: 0xdad3c1, bone: 0xfffaf0 },
+  shadow: { armor: 0x2b1b40, panel: 0xd9a94c, dark: 0x0f0a17, cloth: 0x7d1638, bone: 0xe9dcff },
+};
+
 class Kit {
   constructor(aspect) {
-    this.armor = new THREE.MeshStandardMaterial({ color: 0x3a4550, metalness: 0.75, roughness: 0.36, flatShading: true });
-    this.panel = new THREE.MeshStandardMaterial({ color: 0x8c96a2, metalness: 0.5, roughness: 0.4, flatShading: true });
-    this.dark = new THREE.MeshStandardMaterial({ color: 0x101316, metalness: 0.5, roughness: 0.6, flatShading: true });
-    this.cloth = new THREE.MeshStandardMaterial({ color: 0x14121a, metalness: 0.1, roughness: 0.95, flatShading: true, side: THREE.DoubleSide });
-    this.bone = new THREE.MeshStandardMaterial({ color: 0xc9c3b4, metalness: 0.2, roughness: 0.55, flatShading: true });
+    const b = STYLE === 'bright' ? BRIGHT[aspect] : null;
+    const std = (color, metalness, roughness, extra = {}) => new THREE.MeshStandardMaterial({ color, metalness, roughness, flatShading: true, ...extra });
+    this.armor = b ? std(b.armor, 0.3, 0.32) : std(0x3a4550, 0.75, 0.36);
+    this.panel = b ? std(b.panel, 0.65, 0.28) : std(0x8c96a2, 0.5, 0.4);
+    this.dark = b ? std(b.dark, 0.3, 0.5) : std(0x101316, 0.5, 0.6);
+    this.cloth = b ? std(b.cloth, 0, 0.85, { side: THREE.DoubleSide }) : std(0x14121a, 0.1, 0.95, { side: THREE.DoubleSide });
+    this.bone = b ? std(b.bone, 0.1, 0.45) : std(0xc9c3b4, 0.2, 0.55);
     this.glass = new THREE.MeshStandardMaterial({ color: 0x5f8fa8, metalness: 0.3, roughness: 0.2, transparent: true, opacity: 0.38, emissive: 0x3a6f8a, emissiveIntensity: 0.06, side: THREE.DoubleSide, depthWrite: false });
     const c = new THREE.Color(ASPECT_GLOW[aspect]);
     // Pale light-aspect seams bloom much harder than saturated ones, so they burn a little lower.

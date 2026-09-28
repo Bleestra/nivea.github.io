@@ -11,11 +11,11 @@ const src = join(root, 'src');
 const THREE_VERSION = '0.170.0';
 const CORE = ['rng', 'board', 'content', 'state', 'power', 'abilities', 'engine', 'visibility', 'replay', 'invariants', 'bots'].map(m => `core/${m}`);
 const DUEL = ['duel/content', 'duel/engine', 'duel/bots'];
-const FONTS = 'family=Forum&family=Golos+Text:wght@400;600&family=IBM+Plex+Mono:wght@400;600;700';
+const FONTS = 'family=Exo+2:ital,wght@0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Forum&family=Golos+Text:wght@400;600&family=IBM+Plex+Mono:wght@400;600;700';
 const TARGETS = {
   duel: {
-    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/fx', 'arena/colossi', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/duel-stage', 'arena/duel-hud', 'arena/duel-director'],
-    entry: 'arena/duel-main', css: ['arena/arena.css', 'arena/duel.css'], title: 'Печати Разлома',
+    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/world-day', 'arena/fx', 'arena/colossi', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/duel-stage', 'arena/duel-hud', 'arena/duel-director'],
+    entry: 'arena/duel-main', css: ['arena/arena.css', 'arena/duel.css', 'arena/duel-skin.css'], title: 'Печати Разлома',
     body: '<div id="stage"></div>\n<div id="hud"></div>\n<noscript>Игре нужен JavaScript и WebGL.</noscript>',
   },
   classic: {

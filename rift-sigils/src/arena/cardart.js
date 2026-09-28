@@ -106,7 +106,7 @@ export function duelCard(def, { cid = '', cls = '', style = '', cost = null } = 
   const kind = c.ops.some(o => o[0] === 'heal') && c.kind === 'defense' && !c.ops.some(o => o[0] === 'shield') ? 'cleanse' : DUEL_ICON[c.kind];
   const shown = cost ?? c.cost;
   const tag = c.unique ? 'уникальная' : c.once ? 'одноразовая' : KIND_NAMES[c.kind];
-  return `<div class="card asp-${c.aspect} ${c.unique ? 'unique' : ''} ${cls}" data-card="${cid}" style="${style}">
+  return `<div class="card asp-${c.aspect} kind-${c.kind} ${c.unique ? 'unique' : ''} ${cls}" data-card="${cid}" style="${style}">
     <div class="card-face">
       <div class="art"><svg viewBox="0 0 100 100" aria-hidden="true">${sigil(def)}<g class="ico">${ICON[kind]}</g></svg></div>
       <div class="gem${shown !== c.cost ? (shown < c.cost ? ' cheaper' : ' dearer') : ''}"><span>${shown}</span></div>

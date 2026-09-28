@@ -33,6 +33,8 @@ const HEX_GLSL = `
   float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; } return v; }
 `;
 
+export { HEX_GLSL };
+
 export class World {
   constructor(container, { quality = 'high' } = {}) {
     this.container = container;
@@ -192,6 +194,12 @@ export class World {
     this.camera.position.y += Math.sin(this.time * 0.21) * 0.2;
     this.camera.lookAt(r.target);
 
+    this.animateEnv(raw);
+    this.composer.render();
+  }
+
+  // The living backdrop: floor pulse, mist, dust and drifting ruins.
+  animateEnv(raw) {
     this.floorMat.uniforms.uTime.value = this.time;
     for (const m of this.mistMats) m.uniforms.uTime.value = this.time;
     this.dust.rotation.y = this.time * 0.01;
@@ -200,7 +208,6 @@ export class World {
       r2.mesh.position.y = r2.y + Math.sin(this.time * r2.s + r2.p) * r2.a;
       r2.mesh.rotation.y += raw * r2.spin;
     }
-    this.composer.render();
   }
 
   project(v) {

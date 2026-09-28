@@ -1,10 +1,23 @@
 // HUD of the hybrid duel. Renders a model prepared by duel-main.js and reports intents; it never decides rules.
 import * as THREE from 'three';
-import { ASPECTS, CARDS, COLOSSI, GATE_KIND_NAMES, GATES, RULES } from '../duel/content.js';
+import { ASPECT_NAMES, ASPECTS, CARDS, COLOSSI, GATE_KIND_NAMES, GATES, RULES } from '../duel/content.js';
 import { backCard, duelCard, duelGateBack, duelGateCard } from './cardart.js';
 import { esc, GLYPH } from '../web/text.js';
 
 const tmp = new THREE.Vector3();
+
+// Emblems of the six aspects for banners and badges (24 x 24, drawn in currentColor).
+const ICON = {
+  fire: '<path fill="currentColor" d="M12 2c.6 3.6 5.4 5.3 5.4 10.6a5.4 5.4 0 0 1-10.8 0c0-2.3 1.1-3.7 2.2-4.6-.1 2 .8 3.3 2 3.6-.9-3.2.2-6.7 1.2-9.6z"/>',
+  tide: '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M2 9c2.5-2.5 5-2.5 7.5 0s5 2.5 7.5 0 3.5-2 5-1M2 15c2.5-2.5 5-2.5 7.5 0s5 2.5 7.5 0 3.5-2 5-1"/>',
+  stone: '<path fill="currentColor" d="M1.5 20.5 9 6.5l4 6.2 2.8-4 6.7 11.8z"/>',
+  wind: '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M3 8h11a3 3 0 1 0-3-3M3 13h16a3 3 0 1 1-3 3M3 18h8"/>',
+  light: '<circle cx="12" cy="12" r="4.6" fill="currentColor"/><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/>',
+  shadow: '<path fill="currentColor" d="M14.5 2.5a9.6 9.6 0 1 0 7 15.8A8.2 8.2 0 0 1 14.5 2.5z"/>',
+};
+export const aspectIcon = a => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[a] ?? ''}</svg>`;
+// What each aspect's standard says under its name.
+const MOTTO = { fire: 'сила натиска', tide: 'сила глубины', stone: 'сила стойкости', wind: 'сила скорости', light: 'сила ясности', shadow: 'сила в контроле' };
 
 function fan(i, n) {
   const o = i - (n - 1) / 2, spread = Math.min(1, 7 / Math.max(n, 1));
@@ -58,6 +71,7 @@ export class DuelHud {
     const top = Math.max(d.startG ?? k.g, d.g, 1);
     const gPct = Math.max(0, Math.min(100, (d.g / top) * 100));
     el.innerHTML = `<div class="gc-top"><span class="gc-pt asp-${k.aspect}">${d.portrait ? `<img src="${d.portrait}" alt="">` : `<i>${GLYPH[k.aspect]}</i>`}</span>
+      <span class="gc-asp asp-${k.aspect}">${aspectIcon(k.aspect)}</span>
       <span class="gc-g"><span class="gnum">${Math.max(0, Math.round(d.g))}</span><small>G</small>${this.forecast(d)}</span></div>
       <div class="gc-name">${esc(k.name)}</div>
       <div class="gc-hp"><i style="width:${gPct}%"></i><span>сила ${Math.max(0, Math.round(d.g))} из ${Math.round(top)}</span></div>
@@ -85,7 +99,10 @@ export class DuelHud {
       c.obj.getWorldPosition(tmp);
       const p = this.world.project(tmp);
       const dx = side === 'me' ? -1.12 : 0.12;
-      c.el.style.transform = `translate(${p.x}px, ${p.y}px) translate(${dx * 100}%, -50%)`;
+      // keep the whole card on screen, however wide apart the fighters stand on a narrow screen
+      const w = c.el.offsetWidth, W = this.world.container.clientWidth;
+      const x = Math.min(Math.max(p.x + dx * w, 8), Math.max(8, W - w - 8));
+      c.el.style.transform = `translate(${x}px, ${p.y}px) translate(0, -50%)`;
       c.el.style.visibility = p.visible ? 'visible' : 'hidden';
     }
     for (const f of this.floats) {
@@ -272,8 +289,12 @@ export class DuelHud {
     this.ui.innerHTML = `
       ${this.life(m, opp, 'foe')}
       ${this.life(m, viewer, 'me')}
+      ${this.pennant(m, viewer, 'me')}
+      ${this.pennant(m, opp, 'foe')}
+      <div class="tagline me" aria-hidden="true">Смелость движет вперёд</div>
+      <div class="tagline foe" aria-hidden="true">Сила в твоих решениях</div>
       ${this.clock(m)}
-      <div class="corner left"><button class="ibtn" type="button" data-i="journal">Журнал</button><button class="ibtn" type="button" data-i="menu">Меню</button></div>
+      <div class="corner left"><button class="ibtn" type="button" data-i="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 5.5C5.6 4.3 8.6 4.4 11 6v13c-2.4-1.5-5.4-1.6-8-.5zM21 5.5c-2.6-1.2-5.6-1.1-8 .5v13c2.4-1.5 5.4-1.6 8-.5z"/></svg>Журнал</button><button class="ibtn" type="button" data-i="menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M4 6.5h16M4 12h16M4 17.5h16"/></svg>Меню</button></div>
       ${this.gatePanel(m)}
       ${this.queue(m, 'foe')}
       ${this.queue(m, 'me')}
@@ -281,7 +302,7 @@ export class DuelHud {
       ${this.fusionBar(m)}
       ${this.mana(me, m)}
       <button class="endturn${m.readyGlow ? ' glow' : ''}" type="button" data-i="ready" ${m.canReady ? '' : 'disabled'}>${esc(m.readyLabel)}</button>
-      ${m.prompt ? `<div class="prompt${m.prompt.wait ? ' wait' : ''}"><div class="ptext">${m.prompt.text}</div>${m.prompt.hint ? `<div class="phint">${m.prompt.hint}</div>` : ''}</div>` : ''}
+      ${m.prompt ? `<div class="prompt${m.prompt.wait ? ' wait' : ''}">${m.prompt.title ? `<div class="ptitle">${esc(m.prompt.title)}</div>` : ''}<div class="ptext">${m.prompt.text}</div>${m.prompt.hint ? `<div class="phint">${m.prompt.hint}</div>` : ''}</div>` : ''}
       ${m.sel.journal ? this.journal(m) : ''}
       ${this.overlay(m)}`;
     this.setClock(m.clock.left, m.clock.total);
@@ -313,6 +334,14 @@ export class DuelHud {
     }).join('')}</div>`;
   }
 
+  // A tall standard of the fighter's aspect at the screen edge, like a team banner.
+  pennant(m, p, side) {
+    const uid = m.v.players[p].fighter;
+    if (!uid) return '';
+    const a = COLOSSI[m.v.units[uid].def].aspect;
+    return `<div class="pennant ${side} asp-${a}" aria-hidden="true">${aspectIcon(a)}<b>${esc(ASPECT_NAMES[a])}</b><small>${esc(MOTTO[a])}</small></div>`;
+  }
+
   // The bout's gate: your own is known to you even while closed and opens by your order; the opponent's is a mystery.
   gatePanel(m) {
     const g = m.gate;
@@ -335,7 +364,8 @@ export class DuelHud {
   clock(m) {
     const v = m.v;
     const label = v.phase === 'round' ? `Раунд ${v.round}` : v.phase === 'gate' ? 'Ворота' : v.phase === 'choose' ? 'Выбор бойцов' : v.phase === 'ended' ? 'Конец' : '';
-    return `<div class="clock" aria-label="таймер раунда"><svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" class="track"/><circle cx="30" cy="30" r="26" class="ring" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg>
+    const wing = s => `<svg class="wing ${s}" viewBox="0 0 80 40" aria-hidden="true"><path d="M78 20 60 4 6 0l18 10-14 2 20 8-14 6 22 2 10 8z"/><path class="edge" d="M60 4 6 0l18 10M24 30l20 6"/></svg>`;
+    return `<div class="clock" aria-label="таймер раунда">${wing('l')}${wing('r')}<svg viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" class="track"/><circle cx="30" cy="30" r="26" class="ring" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg>
       <b class="secs">—</b><span class="clabel">${esc(label)} · бой ${v.boutNo}</span>
       ${v.bout?.gateDef ? `<span class="cgate">${esc(GATES[v.bout.gateDef].name)}</span>` : ''}</div>`;
   }

@@ -1,0 +1,238 @@
+/* Duel skin: a bright arena broadcast. Navy glass panels with blue frames for you and gold frames for the opponent,
+   a heavy italic game face, card frames coloured by kind, aspect standards at the screen edges. Loaded after duel.css. */
+:root {
+  --display: 'Exo 2', 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Exo 2', 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Exo 2', 'IBM Plex Mono', ui-monospace, monospace;
+  --me: #3fb2ff;
+  --foe: #ffb43b;
+  --sk-navy: rgba(20, 48, 104, 0.93);
+  --sk-navy-2: rgba(7, 18, 48, 0.95);
+  --sk-edge: #041030;
+  --sk-gold: #ffc449;
+  --sk-cyan: #7fdcff;
+  --card-w: 138px;
+}
+body { background: #bcdcf8; }
+
+/* one panel look for everything framed */
+.life, .gatebox, .gcard, .prompt, .mana.me, .corner .ibtn, .fusionbar, .obox, .toast, .ctile, .endturn {
+  background: linear-gradient(180deg, var(--sk-navy), var(--sk-navy-2));
+  border: 2px solid var(--fr, var(--me));
+  border-radius: 10px;
+  box-shadow: 0 0 0 2px var(--sk-edge), 0 0 18px -3px var(--fr, var(--me)), inset 0 0 20px rgba(95, 180, 255, 0.16), 0 10px 26px rgba(0, 20, 60, 0.35);
+  backdrop-filter: none;
+}
+
+/* ---------------------------------------------------------------- life gauges */
+.life { min-width: 340px; padding: 10px 18px 10px 10px; }
+.life.me { --fr: var(--me); bottom: calc(34px + var(--safe-b)); }
+.life.foe { --fr: var(--foe); padding: 10px 10px 10px 18px; }
+.life.ready { box-shadow: 0 0 0 2px var(--sk-edge), 0 0 26px var(--fr), inset 0 0 20px rgba(95, 180, 255, 0.16); }
+.lf-emb { width: 66px; height: 66px; }
+.lf-emb svg { fill: #0c2a66; stroke: var(--fr); stroke-width: 3; filter: drop-shadow(0 0 6px var(--fr)); }
+.lf-emb b { font: 800 30px var(--display); color: #fff; text-shadow: 0 0 12px var(--fr); }
+.lf-name { font: 700 23px/1 var(--display); color: #fff; }
+.lf-num { font: 800 28px/1 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge); }
+.lf-bar { padding: 3px; background: #04102e; border-color: rgba(127, 220, 255, 0.35); }
+.lf-bar i { height: 15px; background: #122a58; }
+.lf-sub { font: 700 12px var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #cfe3ff; }
+.lf-sub .dot { width: 14px; height: 14px; border-width: 2px; }
+
+.tagline { position: absolute; font: italic 700 12px var(--display); letter-spacing: 0.2em; text-transform: uppercase; color: #eaf6ff; text-shadow: 0 1px 3px #0a2a6a, 0 0 8px #0a2a6a; pointer-events: none; }
+.tagline.me { left: 44px; bottom: calc(10px + var(--safe-b)); }
+.tagline.foe { right: 44px; bottom: calc(10px + var(--safe-b)); }
+
+/* ---------------------------------------------------------------- aspect standards */
+.pennant {
+  position: absolute; top: calc(300px + var(--safe-t)); width: 112px; padding: 20px 8px 46px; display: grid; justify-items: center; gap: 6px; text-align: center; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 62%, #2a0616), color-mix(in srgb, var(--acc) 30%, #12061c));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 88%, 0 100%);
+  box-shadow: inset 0 0 0 3px var(--sk-gold), inset 0 0 0 5px rgba(4, 16, 48, 0.6), inset 0 0 30px rgba(0, 0, 0, 0.35);
+}
+.pennant.me { left: 14px; }
+.pennant.foe { right: 14px; }
+.pennant svg { width: 62px; height: 62px; color: #ffe08a; filter: drop-shadow(0 0 10px var(--acc)) drop-shadow(0 2px 0 #4a2a00); }
+.pennant b { font: italic 800 16px var(--display); letter-spacing: 0.08em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
+.pennant small { font: 700 10.5px var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: #ffe8b0; }
+
+/* ---------------------------------------------------------------- round clock with wings */
+.clock { top: calc(4px + var(--safe-t)); }
+.clock svg:not(.wing) { width: 88px; height: 88px; filter: drop-shadow(0 0 10px rgba(79, 195, 255, 0.6)); }
+.clock circle { fill: #0c2458; stroke-width: 5; }
+.clock .track { stroke: #1a3f86; }
+.clock .ring { stroke: #5fd0ff; filter: drop-shadow(0 0 6px #5fd0ff); }
+.clock .secs { top: 22px; font: 800 36px/1.2 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge), 0 0 14px #4fc3ff; }
+.clock .wing { position: absolute; top: 4px; width: 100px; height: 50px; transform: none; }
+.clock .wing.l { right: calc(50% + 32px); }
+.clock .wing.r { left: calc(50% + 32px); transform: scaleX(-1); }
+.clock .wing path { fill: #1d5ad0; stroke: var(--sk-cyan); stroke-width: 1.5; stroke-linejoin: round; }
+.clock .wing path.edge { fill: none; stroke: var(--sk-gold); stroke-width: 2; }
+.clock .clabel {
+  font: 800 13px var(--display); letter-spacing: 0.12em; color: #fff; padding: 5px 18px; border-radius: 4px;
+  background: linear-gradient(#1a4a9a, #0b2050); border: 2px solid var(--me); box-shadow: 0 0 0 2px var(--sk-edge), 0 0 12px rgba(63, 178, 255, 0.5);
+}
+.clock .cgate { font: 700 13px var(--display); color: #fff; text-shadow: 0 1px 3px #0a2a6a; }
+
+/* ---------------------------------------------------------------- corner buttons, gate panel */
+#hud .corner .ibtn { --fr: var(--me); display: inline-flex; align-items: center; gap: 9px; padding: 8px 18px; font: 700 15px var(--display); color: #fff; }
+.corner .ibtn svg { width: 20px; height: 20px; color: #cfe8ff; }
+.corner .ibtn:hover { --fr: var(--sk-cyan); }
+.gatebox { --fr: var(--me); top: calc(66px + var(--safe-t)); width: 310px; padding: 10px 12px 10px 70px; gap: 3px; }
+.gatebox.foe, .gatebox.gk-trap:not(.mine) { --fr: var(--foe); }
+.gatebox::before {
+  content: ''; position: absolute; left: 12px; top: 12px; width: 46px; height: 56px;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 46 56'%3E%3Cpath d='M23 2 44 14v28L23 54 2 42V14z' fill='%230c2a66' stroke='%23ffc449' stroke-width='2.5'/%3E%3Cpath d='M23 12v32M13 22l10 8 10-8M15 38h16' stroke='%23ffc449' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  filter: drop-shadow(0 0 6px rgba(255, 196, 73, 0.6));
+}
+.gatebox .gk { font: 800 12px var(--display); letter-spacing: 0.1em; text-transform: uppercase; color: #9fd0ff; }
+.gatebox > b { font: italic 800 21px var(--display); color: var(--sk-gold); text-shadow: 0 1px 0 #4a2a00; }
+.gatebox small, .gatebox .gbon, .gatebox .gst { font: 500 13px/1.3 var(--body); color: #e3eeff; }
+
+/* ---------------------------------------------------------------- fighter G cards */
+.gcard { --fr: var(--gc); width: 204px; padding: 8px 10px 10px; gap: 6px; }
+.gcard.me { --gc: var(--me); }
+.gcard.foe { --gc: var(--foe); }
+.gc-top { position: relative; }
+.gc-pt { width: 64px; height: 64px; border: 2px solid var(--gc); border-radius: 8px; }
+.gc-g { background: rgba(3, 10, 32, 0.55); border: 1px solid rgba(127, 220, 255, 0.3); }
+.gnum { font: 800 40px/1 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge), 0 0 14px var(--gc); }
+.gc-g small { display: none; }
+.gc-asp { position: absolute; right: -6px; top: -8px; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #0c2458; border: 2px solid var(--acc); color: var(--acc); box-shadow: 0 0 10px var(--acc); z-index: 1; }
+.gc-asp svg { width: 17px; height: 17px; }
+.gc-name { font: 700 16px/1.1 var(--display); color: #fff; }
+.gc-hp { height: 24px; border-radius: 12px; background: #04102e; border: 2px solid rgba(255, 255, 255, 0.28); }
+.gcard.me .gc-hp i { background: linear-gradient(180deg, #7cf58a, #1f9c4a); }
+.gcard.foe .gc-hp i { background: linear-gradient(180deg, #ffd66b, #d6800f); }
+.gc-hp span { font: 800 12px/20px var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
+.gc-shield { font: 700 12px var(--display); color: #dff4ff; background: rgba(63, 178, 255, 0.28); }
+
+/* ---------------------------------------------------------------- the round prompt */
+.prompt { --fr: var(--me); box-sizing: border-box; width: min(660px, calc(100vw - 24px)); padding: 12px 46px 14px; gap: 5px; }
+.prompt.wait { --fr: var(--foe); }
+.prompt::before, .prompt::after { content: '‹'; position: absolute; top: 50%; transform: translateY(-54%); font: 800 34px/1 var(--display); color: var(--sk-cyan); text-shadow: 0 0 10px #4fc3ff; }
+.prompt::before { left: 14px; }
+.prompt::after { content: '›'; right: 14px; }
+.ptitle { font: italic 800 23px/1.1 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge); }
+.ptext { font: 500 15px/1.35 var(--body); color: #eaf2ff; }
+.prompt.wait .ptext { color: #ffe3a0; }
+.phint { font: italic 500 12.5px/1.35 var(--body); color: #a9c6ec; }
+
+/* ---------------------------------------------------------------- ready, mana */
+#hud .endturn {
+  --fr: var(--sk-cyan); min-width: 196px; padding: 14px 52px 14px 34px; font: italic 800 30px/1 var(--display); color: #fff; letter-spacing: 0.02em;
+  background: linear-gradient(180deg, #2a78ec, #0d3a9a); text-shadow: 0 2px 0 var(--sk-edge);
+}
+.endturn::after { content: '»'; position: absolute; right: 16px; top: 50%; transform: translateY(-54%); font: 800 34px/1 var(--display); color: var(--sk-cyan); }
+.endturn.glow { box-shadow: 0 0 0 2px var(--sk-edge), 0 0 30px rgba(79, 195, 255, 0.85); }
+#hud .endturn:disabled { background: linear-gradient(#34507e, #1a2c52); color: #b4c6e4; font-size: 22px; box-shadow: 0 0 0 2px var(--sk-edge); }
+.mana.me { --fr: var(--me); padding: 8px 16px; gap: 12px; }
+.mnum { font: 800 30px/1 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge), 0 0 10px #4fc3ff; }
+.gems { gap: 4px; }
+.mana.me .gems i { width: 20px; height: 22px; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.gems i.full { background: linear-gradient(135deg, #f2fbff, #7fdcff 40%, #1d6fd6); }
+.gems i.spent { background: #1f3f7c; }
+.gems i.locked { background: #0b1a3a; opacity: 0.8; }
+
+/* ---------------------------------------------------------------- cards framed by kind */
+.card.kind-attack { --kc: #3aa6ff; } .card.kind-counter { --kc: #ff4242; } .card.kind-power { --kc: #ff9a2e; }
+.card.kind-defense { --kc: #2fe0a8; } .card.kind-tactic { --kc: #b784ff; }
+.card[class*='kind-'] .card-face {
+  background: linear-gradient(170deg, color-mix(in srgb, var(--kc) 24%, #0b1a3c), #07102a 62%);
+  border-color: var(--kc);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 16px -2px var(--kc), 0 10px 26px rgba(0, 20, 60, 0.45);
+}
+.card[class*='kind-'] .art {
+  background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--kc) 85%, #fff), color-mix(in srgb, var(--kc) 35%, #06102a) 42%, #050b1f 82%);
+  border-color: var(--kc);
+}
+.card[class*='kind-'] .sig { stroke: #fff; opacity: 0.35; }
+.card[class*='kind-'] .ico { stroke: #fff; filter: drop-shadow(0 0 5px var(--kc)); }
+.card[class*='kind-'] .banner { background: linear-gradient(#1c3f84, #0b1c44); border-color: var(--kc); font: 800 calc(var(--cw) * 0.088)/1.05 var(--display); color: #fff; }
+.card[class*='kind-'] .ctext { color: #eef4ff; font-weight: 500; }
+.card[class*='kind-'] .ribbon { color: var(--kc); font-family: var(--display); font-weight: 800; }
+.hand .card.can .card-face { box-shadow: 0 0 0 2px var(--kc, var(--me)), 0 0 24px -2px var(--kc, var(--me)), 0 10px 26px rgba(0, 20, 60, 0.5); }
+.hand .card:not(.can) { filter: brightness(0.8) saturate(0.75); }
+.hand .card.sel .card-face { box-shadow: 0 0 0 3px var(--sk-gold), 0 0 30px var(--sk-gold); }
+/* gate cards: gold for a bonus, blue for a field, red for a trap */
+.card.gatecard { --acc: var(--gkc, var(--me)); }
+.card.gatecard .card-face { background: linear-gradient(170deg, #173a7a, #07102a 65%); border-color: var(--gkc); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 16px -2px var(--gkc), 0 10px 26px rgba(0, 20, 60, 0.45); }
+.card.gatecard .art { background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--gkc) 75%, #fff), color-mix(in srgb, var(--gkc) 30%, #06102a) 45%, #050b1f 82%); border-color: var(--gkc); }
+.card.gatecard .sig { stroke: #fff; opacity: 0.55; }
+.card.gatecard .banner { background: linear-gradient(#1c3f84, #0b1c44); border-color: var(--gkc); font-family: var(--display); font-weight: 800; color: #fff; }
+.card.gatecard .bonus span { background: rgba(4, 16, 48, 0.55); }
+.card.gatecard .ctext { color: #eef4ff; }
+.card.gatecard .ribbon { color: #9fd0ff; font-family: var(--display); font-weight: 800; }
+
+/* ---------------------------------------------------------------- queue, fusion bar, toasts, overlays */
+.queue .qt { font: 800 11px var(--display); letter-spacing: 0.12em; color: #fff; text-shadow: 0 1px 3px #0a2a6a; }
+.qi { background: linear-gradient(180deg, var(--sk-navy), var(--sk-navy-2)); border: 1px solid rgba(127, 220, 255, 0.35); border-left: 4px solid var(--qc); color: #fff; font-weight: 500; }
+.queue.me .qi { --qc: var(--me); } .queue.foe .qi { --qc: var(--foe); }
+.qi small { color: #a9c6ec; }
+.fusionbar { --fr: var(--sk-gold); }
+.fusionbar span { font: 800 15px var(--display); color: #ffe3a0; }
+.fusionbar .note { color: #bcd6ff; }
+.toast { --fr: var(--me); font: 600 14px var(--body); color: #fff; }
+#hud .pbtn { background: linear-gradient(#1c4390, #0c2257); border: 1px solid #5fb8ff; color: #fff; font-weight: 600; }
+.pbtn:hover { border-color: var(--sk-cyan); }
+#hud .pbtn.primary { background: linear-gradient(#2c8cff, #1450c4); border-color: #9fe0ff; color: #fff; font-weight: 800; }
+.overlay { background: rgba(6, 22, 60, 0.45); }
+.overlay.light { background: rgba(6, 22, 60, 0.2); }
+.obox { --fr: var(--me); }
+.obox h2 { font: italic 800 34px/1 var(--display); color: #fff; text-shadow: 0 2px 0 var(--sk-edge); }
+.obox p { color: #d6e6ff; }
+.ctile { --fr: var(--me); }
+.ctile.big:hover { background: linear-gradient(180deg, rgba(34, 72, 150, 0.95), var(--sk-navy-2)); }
+.cinfo b { font: 700 15px var(--display); color: #fff; }
+.cbase, .cstat { color: #bcd6ff; font-family: var(--display); }
+.result h1 { font: italic 900 clamp(64px, 14vw, 140px)/1 var(--display); }
+.result.win h1 { color: #fff; text-shadow: 0 4px 0 #0d3a9a, 0 0 40px rgba(79, 195, 255, 0.9); }
+.result.lose h1 { color: #ffe3a0; text-shadow: 0 4px 0 #7a3a00, 0 0 40px rgba(255, 150, 60, 0.7); }
+.result p { font: 700 16px var(--display); color: #eaf2ff; }
+.banner-fx b { font: italic 800 64px/1 var(--display); color: #fff; text-shadow: 0 4px 0 #0d3a9a, 0 0 26px rgba(79, 195, 255, 0.9), 0 8px 18px rgba(0, 0, 0, 0.5); }
+.banner-fx span { font: 800 14px var(--display); letter-spacing: 0.14em; color: #fff; text-shadow: 0 1px 3px #0a2a6a; }
+.pop { font: 800 24px var(--display); }
+
+@media (min-width: 901px) {
+  /* the standards take the screen edges: ready and the opponent's plays move inward */
+  .endturn { right: 146px; }
+  .queue.foe { right: 142px; top: calc(136px + var(--safe-t)); }
+}
+@media (max-width: 900px) {
+  :root { --card-w: 112px; }
+  .pennant, .tagline, .clock .wing { display: none; }
+  .life { min-width: 0; padding: 6px 8px 6px 6px; }
+  .life.me { bottom: auto; }
+  .life { width: calc(50vw - 36px); }
+  .life.foe { padding: 6px 6px 6px 8px; }
+  .lf-bar i { height: 9px; }
+  .lf-sub { font-size: 10px; }
+  .clock svg:not(.wing) { width: 64px; height: 64px; }
+  .clock .secs { top: 15px; font-size: 26px; }
+  .clock .clabel { font-size: 11px; padding: 3px 10px; }
+  #hud .corner .ibtn { font-size: 0; gap: 0; padding: 8px 10px; }
+  .gatebox { top: calc(12px + var(--safe-t)); width: calc(50vw - 84px); }
+  .gatebox > b { font-size: 16px; }
+  .clock .clabel { font-size: 10px; letter-spacing: 0.06em; }
+  /* one row above the hand: mana on the left, ready on the right; the round prompt above them */
+  .mana.me { right: auto; left: 12px; bottom: calc(var(--card-w) * 1.12 + 66px + var(--safe-b)); padding: 5px 10px; gap: 8px; }
+  .prompt { bottom: calc(var(--card-w) * 1.12 + 120px + var(--safe-b)); padding: 10px 30px 12px; }
+  .ptext { font-size: 13px; }
+  .mnum { font-size: 22px; }
+  .mana.me .gems i { width: 12px; height: 14px; }
+  .phint { display: none; }
+  .lf-emb { width: 38px; height: 38px; }
+  .lf-emb b { font-size: 18px; }
+  .lf-name, .lf-num { font-size: 16px; }
+  .gatebox { width: calc(50vw - 54px); padding: 6px 8px; }
+  .gatebox::before { display: none; }
+  .gcard { width: 124px; padding: 5px 6px 6px; }
+  .gc-pt { width: 40px; height: 40px; }
+  .gnum { font-size: 26px; }
+  .gc-name { font-size: 12px; }
+  .gc-hp { height: 18px; }
+  .gc-hp span { font-size: 9.5px; line-height: 14px; }
+  #hud .endturn { min-width: 0; padding: 10px 40px 10px 22px; font-size: 22px; }
+  .prompt { padding: 10px 34px 12px; }
+  .ptitle { font-size: 18px; }
+}
