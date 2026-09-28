@@ -4,7 +4,7 @@
 import { ASPECTS, ASPECT_NAMES, COLOSSI as BASE_COLOSSI, GATES as BASE_GATES } from '../core/content.js';
 import { hashString } from '../core/rng.js';
 
-export const DUEL_RULES_VERSION = '0.3.0';
+export const DUEL_RULES_VERSION = '0.3.1';
 export { ASPECTS, ASPECT_NAMES };
 
 // Tunable numbers of the format. Everything the rules count lives here.
@@ -86,10 +86,11 @@ export const GATES = Object.fromEntries(Object.values(BASE_GATES).map(g => {
 
 // Ability cards. kind: attack / defense / power / tactic / counter. once: removed from the game after use.
 // ops are applied in order to the activating player's fighter ("self") and the opposing fighter ("foe").
+// Tactic cards are not combat cards: they take effect as soon as they are played and cannot be cancelled.
 // A counter is a condition, not a target: at the end of the round it cancels the first matching action of the opponent
 // (in the order they were played), whenever it was played. ['counter', what, drawOnMiss].
 export const COUNTER_WHAT = {
-  any: 'первое действие соперника', attack: 'первую атаку соперника', defense: 'первую защиту соперника',
+  any: 'первое боевое действие соперника или открытие ворот', attack: 'первую атаку соперника', defense: 'первую защиту соперника',
   gate: 'открытие ворот соперника', counter: 'первую отмену соперника',
 };
 export const KIND_NAMES = { attack: 'Атака', defense: 'Защита', power: 'Сила', tactic: 'Тактика', counter: 'Отмена' };
@@ -100,9 +101,9 @@ export const CARDS = Object.fromEntries([
   C('D-N02', 'Рывок', 'neutral', 2, 'power', false, 'Свой боец +150 G.', [['gain', 150]]),
   C('D-N03', 'Щит', 'neutral', 2, 'defense', false, 'Щит 150: поглощает урон до конца боя.', [['shield', 150]]),
   C('D-N04', 'Перевязка', 'neutral', 2, 'defense', false, 'Восстановить 180 G, но не выше полной силы.', [['heal', 180]]),
-  C('D-N05', 'Отмена', 'neutral', 3, 'counter', false, 'В конце раунда отменяет первое действие соперника (карты или открытие ворот).', [['counter', 'any']]),
-  C('D-N06', 'Тактический резерв', 'neutral', 0, 'tactic', true, 'Взять 2 карты.', [['draw', 2]]),
-  C('D-N07', 'Прилив сил', 'neutral', 0, 'tactic', true, '+2 маны в следующем раунде и взять карту.', [['mana', 2], ['draw', 1]]),
+  C('D-N05', 'Отмена', 'neutral', 3, 'counter', false, 'В конце раунда отменяет первое боевое действие соперника или открытие ворот.', [['counter', 'any']]),
+  C('D-N06', 'Тактический резерв', 'neutral', 0, 'tactic', true, 'Сразу взять 2 карты.', [['draw', 2]]),
+  C('D-N07', 'Прилив сил', 'neutral', 0, 'tactic', true, 'Сразу взять карту; +2 маны в следующем раунде.', [['mana', 2], ['draw', 1]]),
   C('D-N08', 'Сокрушение', 'neutral', 4, 'attack', false, 'Враг теряет 280 G.', [['damage', 280]]),
   C('D-N09', 'Второе дыхание', 'neutral', 4, 'power', true, 'Сила своего бойца снова полная.', [['restore', 1]]),
   C('D-N10', 'Кража силы', 'neutral', 3, 'attack', false, 'Перенести 150 G от врага своему бойцу.', [['steal', 150]]),
@@ -127,7 +128,7 @@ export const CARDS = Object.fromEntries([
   C('D-W01', 'Восходящий поток', 'wind', 2, 'power', false, 'Свой боец +170 G.', [['gain', 170]]),
   C('D-W02', 'Разрыв строя', 'wind', 3, 'attack', false, 'Перенести 150 G от врага своему бойцу.', [['steal', 150]]),
   C('D-W03', 'Штормовая связка', 'wind', 4, 'attack', false, 'Враг теряет 160 G, свой боец +160 G.', [['damage', 160], ['gain', 160]]),
-  C('D-W04', 'Попутный ветер', 'wind', 0, 'tactic', true, '+2 маны в следующем раунде и взять карту.', [['mana', 2], ['draw', 1]]),
+  C('D-W04', 'Попутный ветер', 'wind', 0, 'tactic', true, 'Сразу взять карту; +2 маны в следующем раунде.', [['mana', 2], ['draw', 1]]),
   // ---- Свет
   C('D-L01', 'Световой щит', 'light', 1, 'defense', false, 'Щит 110.', [['shield', 110]]),
   C('D-L02', 'Очищение', 'light', 2, 'defense', false, 'Восстановить 200 G, но не выше полной силы.', [['heal', 200]]),
@@ -137,12 +138,12 @@ export const CARDS = Object.fromEntries([
   C('D-D01', 'Тихий приказ', 'shadow', 2, 'counter', false, 'Отменяет первую атаку соперника в этом раунде.', [['counter', 'attack']]),
   C('D-D02', 'Долг силы', 'shadow', 3, 'attack', false, 'Перенести 150 G от врага своему бойцу.', [['steal', 150]]),
   C('D-D03', 'Цена самоуверенности', 'shadow', 3, 'attack', false, 'Враг теряет 300 G, если у него не меньше 430 G; иначе 130.', [['damageIfStrong', 300, 130, 430]]),
-  C('D-D04', 'Скрытая тропа', 'shadow', 0, 'tactic', false, 'Взять карту.', [['draw', 1]]),
+  C('D-D04', 'Скрытая тропа', 'shadow', 0, 'tactic', false, 'Сразу взять карту.', [['draw', 1]]),
   // ---- уникальные способности колоссов
   C('D-U01', 'Пепельное дыхание', 'fire', 5, 'attack', false, 'Враг теряет 320 G, Виверн +120 G.', [['damage', 320], ['gain', 120]], 'RS-C001'),
   C('D-U02', 'Печное сердце', 'fire', 4, 'power', false, 'Рыцарь +280 G.', [['gain', 280]], 'RS-C002'),
   C('D-U03', 'Прилив глубин', 'tide', 3, 'defense', false, 'Левиафан восстанавливает 200 G и получает щит 200.', [['heal', 200], ['shield', 200]], 'RS-C003'),
-  C('D-U04', 'Архив раковины', 'tide', 2, 'tactic', false, 'Взять 2 карты и +1 мана в следующем раунде.', [['draw', 2], ['mana', 1]], 'RS-C004'),
+  C('D-U04', 'Архив раковины', 'tide', 2, 'tactic', false, 'Сразу взять 2 карты; +1 мана в следующем раунде.', [['draw', 2], ['mana', 1]], 'RS-C004'),
   C('D-U05', 'Базальтовый обвал', 'stone', 6, 'attack', false, 'Враг теряет 520 G.', [['damage', 520]], 'RS-C005'),
   C('D-U06', 'Стена копий', 'stone', 3, 'defense', false, 'Щит 300.', [['shield', 300]], 'RS-C006'),
   C('D-U07', 'Штормовой порыв', 'wind', 4, 'attack', false, 'Перенести 220 G от врага Грифону.', [['steal', 220]], 'RS-C007'),

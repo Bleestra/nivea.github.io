@@ -273,6 +273,7 @@ export class DuelDirector {
         this.hud.toast('Ловушка не сработала: боец соперника не сильнее', 1600);
         break;
       case 'mana':
+        if (e.amount === undefined) break; // the opponent's tactic mana stays hidden until the reveal
         this.hud.bubble(this.side(e.player), `${e.amount > 0 ? '+' : '−'}${Math.abs(e.amount)} маны в следующем раунде`);
         break;
       case 'attack':

@@ -4,8 +4,9 @@
 // Flow: coin flip -> bout { a gate laid face down in turn, fighters chosen in secret, rounds } -> next bout -> ...
 // until a life gauge hits 0 or a player has no colossi left.
 // A round: both play cards and the gate owner may order the gate open; the opponent only sees that something was done.
-// At the end of the round everything is revealed: counters look for what they cancel, the gate opens, the cards take
-// effect in the order they were played, then the forces meet: the weaker fighter loses the difference, the stronger
+// Tactic cards (draws, mana) are not combat cards: they take effect as they are played and no counter can touch them.
+// At the end of the round everything is revealed: counters look for what they cancel, the gate opens, the combat cards
+// take effect in the order they were played, then the forces meet: the weaker fighter loses the difference, the stronger
 // one takes part of the blow back. G below zero knocks the colossus out and hits the life gauge.
 // Mana and the round timer grow while both fighters survive and start over with each bout.
 // Back from a bout a colossus is tired: it keeps what G it has left (at least half) until it sits out a bout.
@@ -324,7 +325,8 @@ function damage(ctx, uid, n, { pierce = false, why } = {}) {
 const HOSTILE = ['damage', 'pierce', 'damageIfStrong', 'steal'];
 
 // A card's operations. In the round the Чаша отражений trap opens, the opponent's attacks turn onto their own fighter.
-function applyOps(ctx, p, def, fusion) {
+// `now`: a tactic card played mid-round, whose mana stays its player's secret until the reveal.
+function applyOps(ctx, p, def, fusion, now = false) {
   const s = ctx.s, self = s.players[p].fighter, foe = s.players[other(p)].fighter;
   const reflect = roundRule(s, 'reflect');
   const reflected = !!reflect && reflect.owner !== p;
@@ -365,7 +367,7 @@ function applyOps(ctx, p, def, fusion) {
       case 'draw': for (let i = 0; i < a; i++) draw(ctx, p); break;
       case 'mana':
         s.players[p].nextMana += a;
-        emit(ctx, { t: 'mana', player: p, amount: a, next: true });
+        emit(ctx, now ? { t: 'mana', player: p, secret: { to: p, amount: a, next: true } } : { t: 'mana', player: p, amount: a, next: true });
         break;
       default: throw new Error(`unknown op ${op}`);
     }
@@ -378,8 +380,10 @@ function applyOps(ctx, p, def, fusion) {
 }
 
 const isCounterCard = def => CARDS[def].ops.some(o => o[0] === 'counter');
+const isTactic = def => CARDS[def].kind === 'tactic';
 
-// Playing cards only queues them, face down for the opponent: everything happens at the end of the round.
+// Playing cards queues them, face down for the opponent: combat cards take effect at the end of the round, tactic cards
+// at once (in a fusion, the tactic part at once and the rest at the end of the round).
 function activate(ctx, p, cardIds) {
   const s = ctx.s, pl = s.players[p];
   const cost = activationCost(s, p, cardIds);
@@ -392,6 +396,7 @@ function activate(ctx, p, cardIds) {
   const entry = { id, player: p, kind: 'cards', cards: cardIds, defs, cost, fusion: cardIds.length > 1, cancelled: false };
   s.bout.queue.push(entry);
   emit(ctx, { t: 'activate', id, player: p, secret: { to: p, kind: 'cards', cards: cardIds, defs, cost, fusion: entry.fusion } });
+  for (const def of defs.filter(isTactic)) applyOps(ctx, p, def, false, true);
 }
 
 // Ordering the gate open is free and uses no activation, but to the opponent it looks like any other action.
@@ -402,12 +407,13 @@ function orderGate(ctx, p) {
   emit(ctx, { t: 'activate', id, player: p, secret: { to: p, kind: 'gate' } });
 }
 
-// What an opponent's action is, for a counter's condition.
+// What an opponent's action is, for a counter's condition. Tactic cards are not combat cards: nothing cancels them,
+// so an action of tactic cards alone is no target at all.
 function matchesCounter(a, what) {
   if (a.kind === 'gate') return what === 'any' || what === 'gate';
   const kinds = a.defs.map(d => CARDS[d].kind);
   switch (what) {
-    case 'any': return true;
+    case 'any': return a.defs.some(d => !isTactic(d));
     case 'attack': return kinds.includes('attack');
     case 'defense': return kinds.includes('defense');
     case 'counter': return a.defs.some(isCounterCard);
@@ -428,7 +434,8 @@ function settleCounters(ctx) {
           const victim = q.find(x => x.player !== a.player && !x.cancelled && matchesCounter(x, what));
           if (victim) {
             victim.cancelled = true;
-            emit(ctx, { t: 'countered', id: victim.id, by: a.id, byDef: def, what, player: victim.player, kind: victim.kind, defs: victim.defs ?? [] });
+            // a fusion's tactic part has already happened: only its combat cards are cancelled
+            emit(ctx, { t: 'countered', id: victim.id, by: a.id, byDef: def, what, player: victim.player, kind: victim.kind, defs: (victim.defs ?? []).filter(d => !isTactic(d)) });
           } else {
             emit(ctx, { t: 'counterMiss', id: a.id, def, what, player: a.player });
             for (let i = 0; i < (drawOnMiss ?? 0); i++) draw(ctx, a.player);
@@ -439,8 +446,9 @@ function settleCounters(ctx) {
   }
 }
 
-// End of the round, part one: everything is revealed, counters are settled, the gate opens, then the cards take
-// effect in the order they were played. A knockout stops the rest: those cards are spent without effect.
+// End of the round, part one: everything is revealed, counters are settled, the gate opens, then the combat cards take
+// effect in the order they were played (tactic cards already did when played). A knockout stops the rest: those cards
+// are spent without effect.
 function resolveQueue(ctx) {
   const s = ctx.s;
   if (s.bout.queue.length) {
@@ -451,12 +459,14 @@ function resolveQueue(ctx) {
   if (gate) openGateNow(ctx, gate.player);
   for (const a of s.bout.queue) {
     if (a.kind !== 'cards' || a.cancelled) continue;
+    const combat = a.defs.filter(d => !isTactic(d));
+    if (!combat.length && !a.fusion) continue;
     if (SEATS.some(p => s.units[s.players[p].fighter]?.down)) {
-      emit(ctx, { t: 'fizzle', id: a.id, player: a.player, defs: a.defs });
+      emit(ctx, { t: 'fizzle', id: a.id, player: a.player, defs: combat });
       continue;
     }
     emit(ctx, { t: 'resolve', id: a.id, player: a.player, defs: a.defs, fusion: a.fusion });
-    for (const def of a.defs) applyOps(ctx, a.player, def, false);
+    for (const def of combat) applyOps(ctx, a.player, def, false);
     if (a.fusion) applyOps(ctx, a.player, null, true);
   }
 }

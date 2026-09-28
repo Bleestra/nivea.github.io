@@ -313,6 +313,67 @@ test('отмены отмен разбираются раньше остальн
   assert.equal(fighter(s, 'B').g, 460);
 });
 
+test('тактическая карта срабатывает сразу: карты приходят в руку при розыгрыше, а не в конце раунда', () => {
+  let s = duel({ gate: 'RS-G008' });
+  const card = give(s, 'A', 'D-N06'); // Тактический резерв: сразу взять 2 карты
+  const hand = s.players.A.hand.length;
+  s = act(s, 'A', { type: 'activate', cards: [card] });
+  assert.equal(s.players.A.hand.length, hand - 1 + 2, 'карта ушла из руки, две пришли');
+  assert.equal(s.phase, 'round', 'раунд ещё идёт');
+  assert.ok(D.legalActions(s, 'A').some(a => a.type === 'activate'), 'новые карты можно играть в этом же раунде');
+  const v = D.viewDuel(s, 'B');
+  assert.deepEqual(v.bout.queue, [{ id: s.bout.queue[0].id, player: 'A', hidden: true }], 'для соперника это скрытое действие');
+  s = act(s, 'system', sys);
+  assert.ok(!s.log.some(e => e.t === 'resolve' && e.defs.includes('D-N06')), 'в конце раунда карта не срабатывает второй раз');
+});
+
+test('мана тактической карты — тайна до вскрытия', () => {
+  let s = duel({ a: 'RS-C004', b: 'RS-C009', da: 'answers', gate: 'RS-G008' });
+  s = act(s, 'A', { type: 'activate', cards: [give(s, 'A', 'D-U04')] }); // Архив раковины: 2 карты и +1 мана
+  assert.equal(s.players.A.nextMana, 1);
+  const seen = D.viewDuel(s, 'B').log.filter(e => e.t === 'mana');
+  assert.deepEqual(seen.map(e => e.amount), [undefined], 'сопернику не видно, сколько маны');
+  assert.equal(D.viewDuel(s, 'A').log.filter(e => e.t === 'mana').at(-1).amount, 1);
+});
+
+test('тактику нельзя отменить: Отмена пропускает её и бьёт первое боевое действие', () => {
+  let s = duel({ ...PLAIN, gate: 'RS-G008' });
+  setFighters(s, { ga: 400, gb: 400 });
+  s.players.A.mana = 10;
+  s.players.B.mana = 10;
+  s = act(s, 'A', { type: 'activate', cards: [give(s, 'A', 'D-N05')] });
+  s = act(s, 'B', { type: 'activate', cards: [give(s, 'B', 'D-N06')] }); // тактика
+  s = act(s, 'B', { type: 'activate', cards: [give(s, 'B', 'D-N02')] }); // B: +150
+  const [, tactic, power] = s.bout.queue.map(a => a.id);
+  s = act(s, 'system', sys);
+  assert.ok(!s.log.some(e => e.t === 'countered' && e.id === tactic));
+  assert.ok(s.log.some(e => e.t === 'countered' && e.id === power), 'Отмена досталась усилению');
+
+  let t = duel({ ...PLAIN, gate: 'RS-G008' });
+  t.players.A.mana = 10;
+  t = act(t, 'A', { type: 'activate', cards: [give(t, 'A', 'D-N05')] });
+  t = act(t, 'B', { type: 'activate', cards: [give(t, 'B', 'D-N06')] });
+  t = act(t, 'system', sys);
+  assert.ok(t.log.some(e => e.t === 'counterMiss' && e.player === 'A'), 'кроме тактики отменять нечего — промах');
+});
+
+test('в слиянии тактическая часть срабатывает сразу, а отмена снимает только боевую', () => {
+  let s = duel({ ...PLAIN, gate: 'RS-G008' });
+  setFighters(s, { ga: 400, gb: 400 });
+  s.players.A.mana = 10;
+  s.players.B.mana = 10;
+  s = act(s, 'A', { type: 'activate', cards: [give(s, 'A', 'D-N05')] });
+  const fusion = [give(s, 'B', 'D-N06'), give(s, 'B', 'D-N02')];
+  const hand = s.players.B.hand.length;
+  s = act(s, 'B', { type: 'activate', cards: fusion });
+  assert.equal(s.players.B.hand.length, hand - 2 + 2, 'две карты сыграны, две взяты сразу');
+  s = act(s, 'system', sys);
+  const hit = s.log.find(e => e.t === 'countered' && e.player === 'B');
+  assert.deepEqual(hit.defs, ['D-N02'], 'отменено только усиление');
+  assert.ok(!s.log.some(e => e.t === 'gain' && e.why === 'D-N02'));
+  assert.equal(s.players.B.hand.length, hand + 1, 'взятые карты остались в руке, плюс карта нового раунда');
+});
+
 test('оба «Готов» заканчивают раунд досрочно; таймер — системная команда', () => {
   let s = duel({ gate: 'RS-G008' });
   const r0 = s.round;

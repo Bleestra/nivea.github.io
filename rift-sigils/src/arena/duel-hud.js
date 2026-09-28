@@ -304,12 +304,12 @@ export class DuelHud {
   queue(m, side) {
     const items = m.queue[side];
     if (!items.length) return '';
-    return `<div class="queue ${side}"><span class="qt">${side === 'me' ? 'вы сыграли · сработает в конце раунда' : 'соперник сыграл · скрыто до конца раунда'}</span>${items.map(a => {
+    return `<div class="queue ${side}"><span class="qt">${side === 'me' ? 'вы сыграли · боевые карты сработают в конце раунда' : 'соперник сыграл · скрыто до конца раунда'}</span>${items.map(a => {
       const body = a.hidden ? `<span class="qback" aria-hidden="true">?</span><span class="qh">Скрытое действие ${a.n}</span>`
         : a.kind === 'gate' ? '<span class="gopen">Открыть ворота</span>'
           : a.defs.map(d => `<span class="asp-${CARDS[d].aspect}">${esc(CARDS[d].name)}</span>`).join('<i>+</i>');
       return `<div class="qi${a.hidden ? ' hidden' : ''}${a.fusion ? ' fusion' : ''}" data-q="${a.id}">
-        ${body}${a.counterNote ? `<small>${esc(a.counterNote)}</small>` : ''}</div>`;
+        ${body}${a.note ? `<small>${esc(a.note)}</small>` : ''}</div>`;
     }).join('')}</div>`;
   }
 
@@ -363,7 +363,7 @@ export class DuelHud {
     return `<div class="fusionbar${n > 1 ? ' multi' : ''}"><span>${label} · ${cost} маны</span>
       <button class="pbtn primary" type="button" data-i="activate" ${ok ? '' : 'disabled'}>${n > 1 ? 'Слить и активировать' : 'Активировать'}</button>
       <button class="pbtn" type="button" data-i="clear">Сброс</button>
-      ${!ok ? `<span class="why">${esc(m.selWhy)}</span>` : m.counterNote ? `<span class="note">${esc(m.counterNote)}</span>` : ''}</div>`;
+      ${!ok ? `<span class="why">${esc(m.selWhy)}</span>` : m.selNote ? `<span class="note">${esc(m.selNote)}</span>` : ''}</div>`;
   }
 
   journal(m) {

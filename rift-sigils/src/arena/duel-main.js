@@ -45,10 +45,16 @@ let botTimer = null, botPlan = { round: 0, thoughts: 0 };
 let recordText = '', resultDismissed = false;
 
 function freshSel(keep = {}) { return { cards: [], journal: keep.journal ?? false, menu: false }; }
-// A counter needs no target: at the end of the round it cancels the first matching action of the opponent.
-function counterNote(defs) {
-  const op = defs.flatMap(d => D.CARDS[d].ops).find(o => o[0] === 'counter');
-  return op ? `в конце раунда отменит ${D.COUNTER_WHAT[op[1]]}` : '';
+// When an activation takes effect: a counter needs no target and cancels the first matching action of the opponent
+// at the end of the round; tactic cards work at once and cannot be cancelled.
+function actionNote(defs, played = false) {
+  const cards = defs.map(d => D.CARDS[d]);
+  const op = cards.flatMap(c => c.ops).find(o => o[0] === 'counter');
+  if (op) return `в конце раунда отменит ${D.COUNTER_WHAT[op[1]]}`;
+  const tactic = cards.filter(c => c.kind === 'tactic').length;
+  if (!tactic) return '';
+  if (tactic < cards.length) return 'тактика — сразу, остальное — в конце раунда';
+  return played ? 'сработала сразу' : 'сработает сразу, отменить нельзя';
 }
 function load() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORE) ?? '{}') }; } catch { return { ...DEFAULTS }; } }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch { /* per-viewer convenience */ } }
@@ -217,7 +223,8 @@ function journalLines(v) {
       case 'trapMissed': out.push({ html: `Ловушка ${gate(e.gate)} не сработала` }); break;
       case 'stealBlocked': out.push({ html: 'Кража силы не действует' }); break;
       case 'healBlocked': out.push({ html: 'Восстановление не действует' }); break;
-      case 'mana': out.push({ html: `${who(e.player)}: ${e.amount > 0 ? '+' : '−'}${Math.abs(e.amount)} маны в следующем раунде${e.why === 'rally' ? ' за проигранную атаку' : ''}` }); break;
+      case 'mana': if (e.amount === undefined) break; // the opponent's tactic mana stays hidden until the reveal
+        out.push({ html: `${who(e.player)}: ${e.amount > 0 ? '+' : '−'}${Math.abs(e.amount)} маны в следующем раунде${e.why === 'rally' ? ' за проигранную атаку' : ''}` }); break;
       case 'tired': if (e.g < e.full) out.push({ html: `${k(e.unit)} устал: ${e.g} G из ${e.full}, пока не пропустит бой` }); break;
       case 'boutEnd': if (e.gateReturned) out.push({ html: e.owner === game.human ? 'Ваши ворота не открылись и вернулись к вам' : 'Ворота соперника не открылись и вернулись к нему закрытыми' }); break;
       case 'damage': out.push({ html: `${k(e.unit)} −${e.amount} G${e.why === 'recoil' ? ' отдачи' : ''} → ${e.g}${e.over ? `, <b class="bad">ушёл в минус на ${e.over}: −${e.over + (e.ko ?? 0)} жизни</b>` : ''}` }); break;
@@ -243,7 +250,7 @@ function refresh(v = view()) {
   const queue = { me: [], foe: [] };
   const foeActs = (v.bout?.queue ?? []).filter(a => a.player !== game.human);
   for (const a of v.bout?.queue ?? []) {
-    if (a.player === game.human) queue.me.push({ ...a, counterNote: counterNote(a.defs ?? []) });
+    if (a.player === game.human) queue.me.push({ ...a, note: actionNote(a.defs ?? [], true) });
     else queue.foe.push({ ...a, n: foeActs.indexOf(a) + 1 });
   }
   let gate = null;
@@ -264,7 +271,7 @@ function refresh(v = view()) {
   const w = v.result?.winner;
   hud.render({
     v, viewer: game.human, mode, sel, portraits: director.portraits, playableCards: [...singles], queue, gate,
-    counterNote: counterNote(sel.cards.map(c => s.cards[c].def)),
+    selNote: actionNote(sel.cards.map(c => s.cards[c].def)),
     selCost, selLegal, selWhy, prompt: promptFor(v, mode),
     canReady: !busy && mode === 'round' && !me.ready, readyGlow: mode === 'round' && !me.ready && !singles.size,
     readyLabel: mode === 'round' ? (me.ready ? 'Ждём…' : 'Готов') : mode === 'ended' ? 'Конец' : 'Ждём',
