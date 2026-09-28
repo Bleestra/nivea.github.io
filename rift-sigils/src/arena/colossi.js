@@ -1,8 +1,78 @@
 // Procedural colossi. One art direction for all twelve: dark faceted armour, light-grey panels and seams that glow in
 // the colossus' aspect colour. Silhouettes follow the "Образ" lines of GDD appendix A; none reproduces a canonical design.
+// Colossi listed in MODELS also have a model made in Blender (tools/blender/colossi.py). A page that preloads them
+// shows the models; the procedural build stays as the fallback until a model arrives, or if it cannot be loaded.
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { ASPECT_GLOW } from './fx.js';
 import { ease } from './world.js';
+
+const MODELS = {
+  'RS-C001': 'assets/colossi/RS-C001.glb',
+  'RS-C011': 'assets/colossi/RS-C011.glb',
+};
+const models = new Map(); // id -> { scene, clips, height }
+const loading = new Map(); // id -> Promise<boolean>
+
+// Loads the Blender models (all of them by default). Resolves when every requested load has finished or failed.
+export function preloadColossusModels(ids = Object.keys(MODELS)) {
+  const loader = new GLTFLoader();
+  return Promise.all(ids.filter(id => MODELS[id]).map(id => {
+    if (!loading.has(id)) {
+      loading.set(id, loader.loadAsync(MODELS[id]).then(gltf => {
+        const scene = gltf.scene;
+        scene.updateMatrixWorld(true);
+        scene.traverse(o => { if (o.isMesh) o.castShadow = !/Glow/.test(o.material.name); });
+        models.set(id, { scene, clips: gltf.animations, height: new THREE.Box3().setFromObject(scene).max.y });
+        return true;
+      }).catch(err => {
+        console.warn(`${id}: the model did not load, the procedural colossus stands in`, err);
+        return false;
+      }));
+    }
+    return loading.get(id);
+  }));
+}
+
+export const hasColossusModel = id => models.has(id);
+
+// A loaded model inside the pose group. Nodes named p_* are the armour pieces that assemble() and dissolve() move;
+// the joints between them carry the `idle` and `attack` clips. Seams in the "Glow" material take the kit's aspect glow,
+// other glowing materials (eyes, cores) follow its intensity.
+function fromModel(kit, pose, model) {
+  const scene = model.scene.clone(true);
+  scene.scale.setScalar(1 / 1.4);
+  pose.add(scene);
+  const own = new Map();
+  kit.extraGlow = [];
+  scene.traverse(o => {
+    if (o.name.startsWith('p_')) kit.parts.push(o);
+    if (!o.isMesh) return;
+    const key = o.material.name.split(' ').pop();
+    if (key === 'Glow') o.material = kit.glow;
+    else if (key.startsWith('Glow')) {
+      if (!own.has(o.material)) {
+        const mat = o.material.clone();
+        own.set(o.material, mat);
+        kit.extraGlow.push(mat);
+      }
+      o.material = own.get(o.material);
+    }
+  });
+  const mixer = new THREE.AnimationMixer(scene);
+  const actions = Object.fromEntries(model.clips.map(c => [c.name, mixer.clipAction(c)]));
+  actions.idle?.play();
+  let last = null;
+  return {
+    height: model.height / 1.4, chest: new THREE.Vector3(), chestNode: scene.getObjectByName('chest') ?? scene, mixer, actions,
+    anim(t) {
+      if (last === null || t < last) mixer.setTime(t);
+      else mixer.update(t - last);
+      last = t;
+      for (const mat of kit.extraGlow) mat.emissiveIntensity = kit.glow.emissiveIntensity * 1.1;
+    },
+  };
+}
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const geoCache = new Map();
@@ -673,15 +743,13 @@ export class Colossus {
     this.root.add(this.body);
     this.pose = new THREE.Group();
     this.body.add(this.pose);
-    const spec = BUILDERS[def.id](this.kit, this.pose);
-    this.height = spec.height * 1.4;
-    this.animFn = spec.anim;
     this.anchor = new THREE.Object3D();
-    this.anchor.position.copy(spec.chest);
-    this.pose.add(this.anchor);
     this.head = new THREE.Object3D();
-    this.head.position.set(0, spec.height * 1.4 + 0.8, 0);
     this.root.add(this.head);
+    const model = models.get(def.id);
+    this.setup(model ? fromModel(this.kit, this.pose, model) : BUILDERS[def.id](this.kit, this.pose));
+    // a model still on its way replaces the procedural build as soon as it arrives
+    if (!model && loading.has(def.id)) loading.get(def.id).then(ok => { if (ok && !this.disposed) this.swap(models.get(def.id)); });
     // owner ring under the feet: brass for the opponent, verdigris for you
     this.ringMat = new THREE.MeshBasicMaterial({ color: ownerColor, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
     this.ring = new THREE.Mesh(new THREE.RingGeometry(4.0, 4.4, 6), this.ringMat);
@@ -693,20 +761,55 @@ export class Colossus {
       this.animFn(time + this.phase);
       this.ring.rotation.z += dt * 0.3;
     });
+  }
+
+  // Takes a built body (procedural or a model): its height, idle animation, chest anchor and the pieces at rest.
+  setup(spec) {
+    this.spec = spec;
+    this.height = spec.height * 1.4;
+    this.animFn = spec.anim;
+    (spec.chestNode ?? this.pose).add(this.anchor);
+    this.anchor.position.copy(spec.chest);
+    this.head.position.set(0, this.height + 0.8, 0);
     this.rest = this.kit.parts.map(m => ({ m, p: m.position.clone(), q: m.quaternion.clone(), s: m.scale.clone() }));
+  }
+
+  // The model arrived after this colossus was built: drop the procedural parts and put the model in their place.
+  swap(model) {
+    this.pose.clear();
+    this.kit.parts = [];
+    this.setup(fromModel(this.kit, this.pose, model));
   }
 
   setAspect(aspect) { this.kit.setAspect(aspect); }
 
+  // A model plays its `attack` clip once, then eases back into `idle`. Procedural colossi have no clip.
+  strike() {
+    const { mixer, actions } = this.spec;
+    const attack = actions?.attack;
+    if (!attack) return;
+    const idle = actions.idle;
+    attack.reset().setLoop(THREE.LoopOnce, 1);
+    attack.timeScale = this.world.speed ?? 1;
+    attack.fadeIn(0.12).play();
+    idle?.fadeOut(0.12);
+    const done = e => {
+      if (e.action !== attack) return;
+      mixer.removeEventListener('finished', done);
+      if (idle) { idle.enabled = true; idle.fadeIn(0.3); }
+    };
+    mixer.addEventListener('finished', done);
+  }
+
   // Parts fly in from scattered positions and lock into place (~1 s).
   async assemble(speed = 1) {
-    const n = this.rest.length;
+    const rest = this.rest, n = rest.length;
     const rnd = () => (Math.random() - 0.5) * 2;
-    const from = this.rest.map(() => new THREE.Vector3(rnd() * 3, 2 + Math.random() * 4, rnd() * 3));
-    this.rest.forEach(({ m }) => m.scale.setScalar(0.001));
+    const from = rest.map(() => new THREE.Vector3(rnd() * 3, 2 + Math.random() * 4, rnd() * 3));
+    rest.forEach(({ m }) => m.scale.setScalar(0.001));
     this.kit.glow.emissiveIntensity = 9;
     await this.world.tween(1.0 / speed, (e, t) => {
-      this.rest.forEach(({ m, p, s }, i) => {
+      rest.forEach(({ m, p, s }, i) => {
         const k = THREE.MathUtils.clamp((t - (i / n) * 0.45) / 0.55, 0, 1);
         const ke = ease.outCubic(k);
         m.position.copy(p).addScaledVector(from[i], 1 - ke);
@@ -714,16 +817,17 @@ export class Colossus {
       });
       this.kit.glow.emissiveIntensity = this.kit.baseGlow + (1 - e) * 7;
     }, ease.linear);
-    this.rest.forEach(({ m, p, s }) => { m.position.copy(p); m.scale.copy(s); });
+    rest.forEach(({ m, p, s }) => { m.position.copy(p); m.scale.copy(s); });
   }
 
   async dissolve(fx, { color, up = true } = {}) {
     const center = new THREE.Vector3();
     this.anchor.getWorldPosition(center);
     fx.emit(center, 90, { color, speed: 9, spread: 1, up: up ? 0.8 : 0.1, life: 1.1, size: 1.5, gravity: up ? 2 : -9, radius: 2.5 });
-    const dirs = this.rest.map(() => new THREE.Vector3((Math.random() - 0.5) * 6, up ? 2 + Math.random() * 6 : Math.random() * 2, (Math.random() - 0.5) * 6));
+    const rest = this.rest;
+    const dirs = rest.map(() => new THREE.Vector3((Math.random() - 0.5) * 6, up ? 2 + Math.random() * 6 : Math.random() * 2, (Math.random() - 0.5) * 6));
     await this.world.tween(0.8, e => {
-      this.rest.forEach(({ m, p, s }, i) => {
+      rest.forEach(({ m, p, s }, i) => {
         m.position.copy(p).addScaledVector(dirs[i], e);
         m.scale.copy(s).multiplyScalar(Math.max(0.001, 1 - e));
       });
@@ -732,11 +836,14 @@ export class Colossus {
   }
 
   dispose() {
+    this.disposed = true;
     this.off();
+    this.spec.mixer?.stopAllAction();
     this.root.parent?.remove(this.root);
     this.ring.geometry.dispose();
     this.ringMat.dispose();
     for (const k of ['armor', 'panel', 'dark', 'cloth', 'bone', 'glass', 'glow']) this.kit[k].dispose();
+    for (const mat of this.kit.extraGlow ?? []) mat.dispose();
   }
 }
 

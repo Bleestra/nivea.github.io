@@ -321,6 +321,8 @@ export class DuelDirector {
     const mid = pa.clone().add(pb).multiplyScalar(0.5);
     // the forces that meet: G plus the aspect edge and abilities
     this.hud.banner(`${e[this.viewer].value} против ${e[this.viewer === 'A' ? 'B' : 'A'].value}`, e.inverted ? 'атака · ловушка: разницу теряет сильный' : 'атака', 1.0);
+    a.m.strike();
+    b.m.strike();
     await W.tween(0.55, k => {
       a.m.root.position.copy(pa).addScaledVector(dir, -1.2 * k);
       b.m.root.position.copy(pb).addScaledVector(dir, 1.2 * k);

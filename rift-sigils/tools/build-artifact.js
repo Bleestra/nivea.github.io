@@ -2,7 +2,7 @@
 // Three.js stays an external module from the CDN, resolved through an import map.
 // The module transform is deliberately narrow: it understands exactly the import/export forms this codebase uses.
 // Usage: node tools/build-artifact.js [duel|classic|table] [out.html]
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -100,5 +100,6 @@ ${code.replace(/<\/script/gi, '<\\/script')}
 </script>
 `;
 const out = resolve(outArg ?? join(root, `dist/rift-sigils-${which}.html`));
+await mkdir(dirname(out), { recursive: true });
 await writeFile(out, html);
 console.log(`${which}: ${out} (${(html.length / 1024).toFixed(0)} КБ)`);

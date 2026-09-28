@@ -2,7 +2,7 @@
 // The engine decides everything; this file only keeps time, queues commands and waits for animations.
 import * as D from '../duel/index.js';
 import { DayWorld } from './world-day.js';
-import { setColossusStyle } from './colossi.js';
+import { preloadColossusModels, setColossusStyle } from './colossi.js';
 import { Fx } from './fx.js';
 import { DuelStage } from './duel-stage.js';
 import { DuelDirector } from './duel-director.js';
@@ -20,6 +20,7 @@ const REASONS = { life: 'шкала жизни на нуле', 'no-colossi': 'н
 
 let settings = load();
 setColossusStyle('bright');
+const modelsLoaded = preloadColossusModels();
 const world = new DayWorld(document.getElementById('stage'), { quality: settings.quality });
 world.speed = SPEEDS[settings.speed] ?? 1;
 // The duel is fought on one gate in the middle: a closer three-quarter view, like a broadcast of the fight.
@@ -358,7 +359,17 @@ function boot(data = {}) {
   newGame();
 }
 
+// The first match waits a few seconds for the Blender models; a model that comes later swaps in on the spot,
+// and the roster portraits are redrawn from it.
+const modelsOrTimeout = Promise.race([modelsLoaded, new Promise(r => setTimeout(r, 6000))]);
+modelsLoaded.then(() => {
+  if (!game) return;
+  director.portraits = portraitsFor(Object.values(game.state.units).map(u => u.def));
+  if (!busy) refresh();
+});
+const bootWhenReady = data => modelsOrTimeout.then(() => boot(data));
+
 try { window.claude?.hot?.snapshot?.(() => ({ settings, duelRecord: game?.record })); } catch { /* not in an artifact */ }
-if (window.claude?.hot?.ready) window.claude.hot.ready(boot);
-else boot(window.claude?.hot?.data ?? {});
+if (window.claude?.hot?.ready) window.claude.hot.ready(bootWhenReady);
+else bootWhenReady(window.claude?.hot?.data ?? {});
 

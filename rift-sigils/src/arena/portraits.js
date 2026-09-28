@@ -1,12 +1,14 @@
-// Roster portraits rendered from the same procedural models, once per colossus, on a throwaway WebGL context.
+// Roster portraits rendered from the same models the arena shows, once per colossus, on a throwaway WebGL context.
+// A colossus whose Blender model loads later gets a new portrait on the next call.
 import * as THREE from 'three';
 import { COLOSSI } from '../core/index.js';
-import { Colossus } from './colossi.js';
+import { Colossus, hasColossusModel } from './colossi.js';
 
 const cache = new Map();
 
 export function portraitsFor(defs) {
-  const todo = [...new Set(defs)].filter(d => !cache.has(d));
+  const slot = d => `${d}:${hasColossusModel(d) ? 'model' : 'built'}`;
+  const todo = [...new Set(defs)].filter(d => !cache.has(slot(d)));
   if (todo.length) {
     const canvas = document.createElement('canvas');
     let renderer;
@@ -38,11 +40,11 @@ export function portraitsFor(defs) {
       cam.position.set(h * 0.75, h * 0.85, h * 1.55);
       cam.lookAt(0, h * 0.55, 0);
       renderer.render(scene, cam);
-      cache.set(def, canvas.toDataURL('image/png'));
+      cache.set(slot(def), canvas.toDataURL('image/png'));
       model.dispose();
     }
     renderer.dispose();
     renderer.forceContextLoss();
   }
-  return Object.fromEntries(defs.map(d => [d, cache.get(d) ?? '']));
+  return Object.fromEntries(defs.map(d => [d, cache.get(slot(d)) ?? '']));
 }
