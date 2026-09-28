@@ -5,7 +5,7 @@ import { ASPECTS, GATE_KIND_NAMES, GATES } from '../duel/content.js';
 import { ASPECT_GLOW, OWNER_GLOW } from './fx.js';
 import { ease } from './world.js';
 
-const W = 15, D = 20;
+const W = 24, D = 32;
 const GLYPH = { fire: '▲', tide: '≈', stone: '■', wind: '◆', light: '✦', shadow: '◐' };
 const hex = n => `#${n.toString(16).padStart(6, '0')}`;
 const KIND_COLOR = { bonus: '#ffd66b', field: '#7fd4ff', trap: '#ff6b5e' };
@@ -117,7 +117,7 @@ export class DuelStage {
     const slab = new THREE.Mesh(new RoundedBoxGeometry(W, 0.4, D, 3, 0.45), new THREE.MeshStandardMaterial({ color: 0x10181d, metalness: 0.7, roughness: 0.35 }));
     slab.castShadow = slab.receiveShadow = true;
     this.card.add(slab);
-    this.faceMat = new THREE.MeshStandardMaterial({ emissive: 0xffffff, emissiveIntensity: 0.6, roughness: 0.6, metalness: 0.1 });
+    this.faceMat = new THREE.MeshStandardMaterial({ emissive: 0xffffff, emissiveIntensity: 0.12, roughness: 0.6, metalness: 0.1 });
     this.face = new THREE.Mesh(new THREE.PlaneGeometry(W - 0.4, D - 0.4), this.faceMat);
     this.face.rotation.x = -Math.PI / 2;
     this.face.position.y = 0.21;
@@ -134,10 +134,21 @@ export class DuelStage {
     this.slot.rotation.x = -Math.PI / 2;
     this.slot.position.y = 0.03;
     this.holder.add(this.slot);
+    world.arenaReady.then(asset => {
+      if (!asset) return;
+      asset.getObjectByName('GateFace')?.removeFromParent();
+      this.card.remove(slab);
+      slab.geometry.dispose(); slab.material.dispose();
+      this.card.add(asset);
+      this.face.geometry.dispose();
+      this.face.geometry = new THREE.PlaneGeometry(23.1, 31);
+      this.face.position.y = 0.391;
+      under.position.y = -0.01;
+    });
   }
 
   // Your fighter stands on the near half of the card, the opponent's on the far half.
-  pos(side) { return new THREE.Vector3(0, 0.4, side === 'me' ? 5 : -5); }
+  pos(side) { return new THREE.Vector3(0, 0.61, side === 'me' ? 7 : -7); }
 
   setFace(kind, def, owner) {
     const t = gateTexture(kind, def, owner);
@@ -201,11 +212,11 @@ export class DuelStage {
     await this.world.tween(0.6, e => {
       this.card.position.y = 0.2 + e * 3;
       this.card.scale.setScalar(1 - e * 0.3);
-      this.faceMat.emissiveIntensity = 0.6 + e * 4;
+      this.faceMat.emissiveIntensity = 0.12 + e * 4;
     }, ease.inCubic);
     this.fx.emit(new THREE.Vector3(0, 3, 0), 160, { color, speed: 14, spread: 1, up: 0.5, life: 1.2, size: 1.6, gravity: -6, radius: 6 });
     this.fx.flash(new THREE.Vector3(0, 4, 0), color, { intensity: 900, duration: 0.7 });
-    this.faceMat.emissiveIntensity = 0.6;
+    this.faceMat.emissiveIntensity = 0.12;
     this.show(null);
   }
 }

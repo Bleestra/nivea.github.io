@@ -19,7 +19,8 @@ export class DuelDirector {
   spawn(uid, def, owner) {
     const side = this.side(owner);
     const m = new Colossus(this.world, BASE[def], { ownerColor: OWNER_GLOW[side] });
-    m.root.rotation.y = side === 'me' ? Math.PI : 0;
+    const revealChest = ['RS-C001', 'RS-C011'].includes(def) ? 0.5 : 0;
+    m.root.rotation.y = side === 'me' ? Math.PI - revealChest : revealChest;
     m.root.position.copy(this.stage.pos(side));
     m.root.traverse(o => { o.userData.unit = uid; });
     this.world.scene.add(m.root);

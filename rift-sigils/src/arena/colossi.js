@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { ASPECT_GLOW } from './fx.js';
 import { ease } from './world.js';
+import { buildFighterModel } from './fighter-models.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const geoCache = new Map();
@@ -659,7 +660,7 @@ export class Colossus {
     this.root.add(this.body);
     this.pose = new THREE.Group();
     this.body.add(this.pose);
-    const spec = BUILDERS[def.id](this.kit, this.pose);
+    const spec = buildFighterModel(def.id, this.kit, this.pose) ?? BUILDERS[def.id](this.kit, this.pose);
     this.height = spec.height * 1.4;
     this.animFn = spec.anim;
     this.anchor = new THREE.Object3D();
@@ -722,6 +723,7 @@ export class Colossus {
     this.root.parent?.remove(this.root);
     this.ring.geometry.dispose();
     this.ringMat.dispose();
+    for (const material of this.kit.importedMaterials ?? []) material.dispose();
     for (const k of ['armor', 'panel', 'dark', 'cloth', 'bone', 'glass', 'glow']) this.kit[k].dispose();
   }
 }

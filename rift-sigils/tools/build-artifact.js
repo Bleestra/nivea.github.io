@@ -2,7 +2,7 @@
 // Three.js stays an external module from the CDN, resolved through an import map.
 // The module transform is deliberately narrow: it understands exactly the import/export forms this codebase uses.
 // Usage: node tools/build-artifact.js [duel|classic|table] [out.html]
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,12 +14,12 @@ const DUEL = ['duel/content', 'duel/engine', 'duel/bots'];
 const FONTS = 'family=Forum&family=Golos+Text:wght@400;600&family=IBM+Plex+Mono:wght@400;600;700';
 const TARGETS = {
   duel: {
-    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/fx', 'arena/colossi', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/duel-stage', 'arena/duel-hud', 'arena/duel-director'],
+    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/fx', 'arena/fighter-models', 'arena/colossi', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/celestial-world', 'arena/duel-stage', 'arena/duel-hud', 'arena/duel-director'],
     entry: 'arena/duel-main', css: ['arena/arena.css', 'arena/duel.css'], title: 'Печати Разлома',
     body: '<div id="stage"></div>\n<div id="hud"></div>\n<noscript>Игре нужен JavaScript и WebGL.</noscript>',
   },
   classic: {
-    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/fx', 'arena/colossi', 'arena/field', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/hud', 'arena/director'],
+    modules: [...CORE, 'web/text', ...DUEL, 'arena/world', 'arena/fx', 'arena/fighter-models', 'arena/colossi', 'arena/field', 'arena/cardart', 'arena/portraits', 'arena/sfx', 'arena/hud', 'arena/director'],
     entry: 'arena/main', css: ['arena/arena.css'], title: 'Печати Разлома — классика',
     body: '<div id="stage"></div>\n<div id="hud"></div>\n<noscript>Игре нужен JavaScript и WebGL.</noscript>',
   },
@@ -86,7 +86,13 @@ const importMap = external.size ? `<script type="importmap">
 } }
 </script>
 ` : '';
-const code = [...external].join('\n') + '\n\n' + parts.join('\n\n');
+let code = [...external].join('\n') + '\n\n' + parts.join('\n\n');
+if (which === 'duel') {
+  const asset = await readFile(join(root, 'assets/arena/celestial-arena.glb'));
+  code = code.replace("'assets/arena/celestial-arena.glb'", JSON.stringify('data:model/gltf-binary;base64,' + asset.toString('base64')));
+  const fighters = await readFile(join(root, 'assets/monsters/reference-fighters.glb'));
+  code = code.replace("'assets/monsters/reference-fighters.glb'", JSON.stringify('data:model/gltf-binary;base64,' + fighters.toString('base64')));
+}
 const html = `<title>${target.title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,5 +106,6 @@ ${code.replace(/<\/script/gi, '<\\/script')}
 </script>
 `;
 const out = resolve(outArg ?? join(root, `dist/rift-sigils-${which}.html`));
+await mkdir(dirname(out), { recursive: true });
 await writeFile(out, html);
 console.log(`${which}: ${out} (${(html.length / 1024).toFixed(0)} КБ)`);

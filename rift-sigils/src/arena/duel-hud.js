@@ -1,6 +1,6 @@
 // HUD of the hybrid duel. Renders a model prepared by duel-main.js and reports intents; it never decides rules.
 import * as THREE from 'three';
-import { ASPECTS, CARDS, COLOSSI, GATE_KIND_NAMES, GATES, RULES } from '../duel/content.js';
+import { ASPECTS, ASPECT_NAMES, CARDS, COLOSSI, GATE_KIND_NAMES, GATES, RULES } from '../duel/content.js';
 import { backCard, duelCard, duelGateBack, duelGateCard } from './cardart.js';
 import { esc, GLYPH } from '../web/text.js';
 
@@ -57,11 +57,14 @@ export class DuelHud {
     const k = COLOSSI[d.def];
     const top = Math.max(d.startG ?? k.g, d.g, 1);
     const gPct = Math.max(0, Math.min(100, (d.g / top) * 100));
-    el.innerHTML = `<div class="gc-top"><span class="gc-pt asp-${k.aspect}">${d.portrait ? `<img src="${d.portrait}" alt="">` : `<i>${GLYPH[k.aspect]}</i>`}</span>
-      <span class="gc-g"><span class="gnum">${Math.max(0, Math.round(d.g))}</span><small>G</small>${this.forecast(d)}</span></div>
-      <div class="gc-name">${esc(k.name)}</div>
-      <div class="gc-hp"><i style="width:${gPct}%"></i><span>сила ${Math.max(0, Math.round(d.g))} из ${Math.round(top)}</span></div>
-      ${d.shield > 0 ? `<div class="gc-shield">щит ${Math.round(d.shield)}</div>` : ''}`;
+    el.className = `gcard ${side} asp-${k.aspect}`;
+    el.innerHTML = `<div class="gc-portrait">${d.portrait ? `<img src="${d.portrait}" alt="${esc(k.name)}">` : `<i>${GLYPH[k.aspect]}</i>`}<span class="gc-aspect">${GLYPH[k.aspect]}</span></div>
+      <div class="gc-name">${esc(k.name)}<small>${ASPECT_NAMES[k.aspect]} · ${esc(k.ability.name)}</small></div>
+      <div class="gc-g"><span>${GLYPH[k.aspect]}</span><span class="gnum">${Math.max(0, Math.round(d.g))}</span><small>G</small>${this.forecast(d)}</div>
+      <div class="gc-hp"><i style="width:${gPct}%"></i></div>
+      <div class="gc-stat"><span>Базовая сила</span><b>${k.g}</b></div>
+      <div class="gc-stat"><span>Щит</span><b>${Math.round(d.shield || 0)}</b></div>
+      <div class="gc-ability">${esc(k.ability.text)}</div>`;
   }
 
   // What this fighter's G becomes when the queued cards of the round take effect.
@@ -81,13 +84,6 @@ export class DuelHud {
   }
 
   place() {
-    for (const [side, c] of Object.entries(this.cards)) {
-      c.obj.getWorldPosition(tmp);
-      const p = this.world.project(tmp);
-      const dx = side === 'me' ? -1.12 : 0.12;
-      c.el.style.transform = `translate(${p.x}px, ${p.y}px) translate(${dx * 100}%, -50%)`;
-      c.el.style.visibility = p.visible ? 'visible' : 'hidden';
-    }
     for (const f of this.floats) {
       f.obj.getWorldPosition(tmp);
       const p = this.world.project(tmp);
@@ -293,8 +289,8 @@ export class DuelHud {
     const segs = Array.from({ length: 10 }, (_, i) => `<i class="${(i + 1) * 10 <= pct + 0.001 ? 'on' : (i * 10 < pct ? 'part' : '')}"></i>`).join('');
     const name = side === 'me' ? 'Вы' : pl.name;
     return `<section class="life ${side}${pl.ready ? ' ready' : ''}" aria-label="шкала жизни ${esc(name)}">
-      <div class="lf-emb"><svg viewBox="0 0 40 40" aria-hidden="true"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11"/></svg><b>${esc(name.slice(0, 1))}</b></div>
-      <div class="lf-body"><div class="lf-top"><span class="lf-name">${esc(name)}</span><span class="lf-num">${Math.max(0, pl.life)}</span></div>
+      <div class="lf-emb"><svg viewBox="0 0 40 40" aria-hidden="true"><polygon points="20,2 36,11 36,29 20,38 4,29 4,11"/></svg><b>${pl.fighter ? GLYPH[COLOSSI[m.v.units[pl.fighter].def].aspect] : side === 'me' ? '✦' : '◈'}</b></div>
+      <div class="lf-body"><div class="lf-top"><span class="lf-name">${esc(name)}</span><span class="lf-value"><span class="lf-num">${Math.max(0, pl.life)}</span> / ${RULES.life}</span></div>
         <div class="lf-bar" style="--pct:${pct}%">${segs}</div>
         <div class="lf-sub">${pl.units.map(u => `<span class="dot ${m.v.units[u].zone}" title="${esc(COLOSSI[m.v.units[u].def].name)}"></span>`).join('')}
           <span>рука ${pl.handCount} · колода ${pl.deckCount}</span>${pl.ready ? '<span class="rdy">готов</span>' : ''}</div></div>
@@ -351,7 +347,7 @@ export class DuelHud {
 
   handHtml(m, hand, fresh) {
     const playable = new Set(m.playableCards);
-    return `<div class="hand" aria-label="рука">${hand.map((h, i) => duelCard(h.def, {
+    return `<div class="hand" aria-label="рука" style="--hand-gaps:${Math.max(1, hand.length - 1)};--fan-drop:${Math.pow((hand.length - 1) / 2, 2) * 2.4}px">${hand.map((h, i) => duelCard(h.def, {
       cid: h.card, style: fan(i, hand.length),
       cls: `${playable.has(h.card) ? 'can' : ''}${m.sel.cards.includes(h.card) ? ' sel' : ''}${fresh.has(h.card) ? ' enter' : ''}`,
     })).join('')}</div>`;

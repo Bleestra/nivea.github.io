@@ -1,13 +1,14 @@
 // Hybrid duel client: a real-time round clock around the pure duel engine, the bot, animations and input.
 // The engine decides everything; this file only keeps time, queues commands and waits for animations.
 import * as D from '../duel/index.js';
-import { World } from './world.js';
+import { CelestialWorld } from './celestial-world.js';
 import { Fx } from './fx.js';
 import { DuelStage } from './duel-stage.js';
 import { DuelDirector } from './duel-director.js';
 import { DuelHud } from './duel-hud.js';
 import { Sfx } from './sfx.js';
 import { portraitsFor } from './portraits.js';
+import { preloadFighterModels } from './fighter-models.js';
 import { esc, GLYPH } from '../web/text.js';
 
 const STORE = 'rift-sigils:duel';
@@ -18,13 +19,17 @@ const DEFAULTS = { you: 'attack', bot: 'answers', botKind: 'simple', speed: 'nor
 const REASONS = { life: 'шкала жизни на нуле', 'no-colossi': 'не осталось бойцов', concede: 'сдача', 'round-limit': 'предел раундов' };
 
 let settings = load();
-const world = new World(document.getElementById('stage'), { quality: settings.quality });
+const world = new CelestialWorld(document.getElementById('stage'), { quality: settings.quality });
+world.renderer.toneMappingExposure = 0.95;
+world.bloom.strength = 0.2;
+world.bloom.threshold = 1.5;
 world.speed = SPEEDS[settings.speed] ?? 1;
-// The duel is fought on one gate in the middle: a closer three-quarter view, like a broadcast of the fight.
+// Low side-on composition, with space reserved for the portrait rails and hand.
 world.fitOverview = function fitDuel() {
-  const portrait = this.camera.aspect < 0.8;
-  this.overview.target.set(0, portrait ? 7 : 6, 0);
-  this.overview.pos.set(portrait ? 46 : 37, portrait ? 26 : 15, portrait ? 16 : 12);
+  const aspect = this.camera.aspect;
+  const distance = Math.max(42, 60 / Math.max(aspect, .6));
+  this.overview.target.set(-3, 5.8, 0);
+  this.overview.pos.set(distance, 17 + (distance - 42) * .15, 3);
   if (!this.focused) this.goOverview(true);
 };
 world.fitOverview();
@@ -55,8 +60,23 @@ const botSeat = () => (game.human === 'A' ? 'B' : 'A');
 function newGame() {
   const seed = String(settings.seed).trim() || String(Date.now() % 1e9);
   const deck = k => structuredClone(D.DUEL_DECKS[k] ?? D.DUEL_DECKS.attack);
-  const { record, state } = D.newDuelRecord({ seed, matchId: `duel-${seed}`, players: [{ name: 'Вы', deck: deck(settings.you) }, { name: 'Бот', deck: deck(settings.bot) }] });
-  start(record, state);
+  const showcase = new URLSearchParams(location.search).get('fighters') === 'reference';
+  const { record, state } = D.newDuelRecord({ seed, matchId: `duel-${seed}`, players: [{ name: 'Вы', deck: deck(showcase ? 'attack' : settings.you) }, { name: 'Бот', deck: deck(showcase ? 'answers' : settings.bot) }] });
+  let opening = state;
+  if (showcase) {
+    // A playable showcase uses exactly the same validated commands as normal setup.
+    const owner = ['A', 'B'].find(p => D.legalActions(opening, p).some(a => a.type === 'placeGate'));
+    const gate = D.legalActions(opening, owner).find(a => a.type === 'placeGate');
+    const placed = D.applyDuelRecorded(record, opening, { ...gate, player: owner });
+    if (placed.ok) opening = placed.state;
+    for (const player of ['A', 'B']) {
+      const def = opening.players[player].entrant === 0 ? 'RS-C001' : 'RS-C011';
+      const unit = opening.players[player].units.find(id => opening.units[id].def === def);
+      const chosen = D.applyDuelRecorded(record, opening, { type: 'choose', player, unit });
+      if (chosen.ok) opening = chosen.state;
+    }
+  }
+  start(record, opening);
 }
 
 function start(record, state) {
@@ -177,7 +197,7 @@ function promptFor(v, mode) {
   const me = v.players[game.human];
   if (me.ready) return { text: 'Вы готовы. Ждём соперника или конца таймера.', wait: true };
   return v.round <= 1 && v.boutNo <= 1
-    ? { text: '<b>Раунд идёт.</b> Играйте карты: клик выбирает, до трёх карт сливаются в одну активацию. Соперник видит только, что вы что-то сыграли; всё вскроется и сработает в конце раунда.', hint: 'Ворота лежат закрытыми: их владелец открывает их, когда захочет. Затем силы сталкиваются: слабый теряет разницу в G, а минус ниже нуля бьёт по шкале жизни.' }
+    ? { text: 'Выберите карты · до 3 карт в слиянии · затем «Готов»', hint: 'Карты раскрываются и срабатывают в конце раунда.' }
     : null;
 }
 
@@ -285,7 +305,10 @@ function onIntent(type, x) {
     case 'setting':
       settings[x.key] = x.value;
       save();
-      if (x.key === 'speed') world.speed = SPEEDS[x.value] ?? 1;
+      if (x.key === 'speed') world.renderer.toneMappingExposure = 0.95;
+world.bloom.strength = 0.2;
+world.bloom.threshold = 1.5;
+world.speed = SPEEDS[x.value] ?? 1;
       if (x.key === 'quality') world.setQuality(x.value);
       if (x.key === 'sound') sfx.enabled = x.value;
       break;
@@ -347,6 +370,7 @@ function boot(data = {}) {
 }
 
 try { window.claude?.hot?.snapshot?.(() => ({ settings, duelRecord: game?.record })); } catch { /* not in an artifact */ }
-if (window.claude?.hot?.ready) window.claude.hot.ready(boot);
-else boot(window.claude?.hot?.data ?? {});
+const bootWithModels = data => preloadFighterModels().then(() => boot(data));
+if (window.claude?.hot?.ready) window.claude.hot.ready(bootWithModels);
+else bootWithModels(window.claude?.hot?.data ?? {});
 
