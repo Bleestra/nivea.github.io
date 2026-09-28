@@ -196,7 +196,19 @@ export class DuelStage {
     this.fx.ring(new THREE.Vector3(), col, { radius: 22, duration: 0.9 });
   }
 
-  // End of a bout: the gate burns away.
+  // End of a bout with the gate still closed: it flies back to its owner, face down.
+  async returnGate(owner) {
+    const start = this.card.position.clone();
+    const end = new THREE.Vector3(owner === 'me' ? 8 : -8, 18, owner === 'me' ? 36 : -36);
+    await this.world.tween(0.7, (e, t) => {
+      this.card.position.lerpVectors(start, end, e);
+      this.card.position.y += Math.sin(Math.PI * t) * 5;
+      this.card.rotation.set(e * Math.PI * 1.2, e * 2, 0);
+    }, ease.inCubic);
+    this.show(null);
+  }
+
+  // End of a bout: the opened gate burns away.
   async burn(color) {
     await this.world.tween(0.6, e => {
       this.card.position.y = 0.2 + e * 3;

@@ -44,7 +44,12 @@ let clock = { round: 0, left: 0, total: 0, ending: false };
 let botTimer = null, botPlan = { round: 0, thoughts: 0 };
 let recordText = '', resultDismissed = false;
 
-function freshSel(keep = {}) { return { cards: [], target: null, journal: keep.journal ?? false, menu: false }; }
+function freshSel(keep = {}) { return { cards: [], journal: keep.journal ?? false, menu: false }; }
+// A counter needs no target: at the end of the round it cancels the first matching action of the opponent.
+function counterNote(defs) {
+  const op = defs.flatMap(d => D.CARDS[d].ops).find(o => o[0] === 'counter');
+  return op ? `в конце раунда отменит ${D.COUNTER_WHAT[op[1]]}` : '';
+}
 function load() { try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORE) ?? '{}') }; } catch { return { ...DEFAULTS }; } }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch { /* per-viewer convenience */ } }
 const view = () => D.viewDuel(game.state, game.human);
@@ -177,7 +182,7 @@ function promptFor(v, mode) {
   const me = v.players[game.human];
   if (me.ready) return { text: 'Вы готовы. Ждём соперника или конца таймера.', wait: true };
   return v.round <= 1 && v.boutNo <= 1
-    ? { text: '<b>Раунд идёт.</b> Играйте карты: клик выбирает, до трёх карт сливаются в одну активацию. Соперник видит только, что вы что-то сыграли; всё вскроется и сработает в конце раунда.', hint: 'Ворота лежат закрытыми: их владелец открывает их, когда захочет. Затем силы сталкиваются: слабый теряет разницу в G, а минус ниже нуля бьёт по шкале жизни.' }
+    ? { text: '<b>Раунд идёт.</b> Играйте карты: клик выбирает, до трёх карт сливаются в одну активацию. Соперник видит только, что вы что-то сыграли; всё вскроется и сработает в конце раунда.', hint: `Ворота лежат закрытыми: их владелец открывает их, когда захочет. Затем силы сталкиваются: слабый теряет разницу в G, сильный — ${Math.round(D.RULES.recoil * 100)}% её, а минус ниже нуля бьёт по шкале жизни.` }
     : null;
 }
 
@@ -187,6 +192,8 @@ function journalLines(v) {
   const card = d => `«${esc(D.CARDS[d].name)}»`;
   const gate = d => `«${esc(D.GATES[d].name)}»`;
   const acted = a => (a.kind === 'gate' ? 'открыть ворота' : `${a.fusion ? 'слияние ' : ''}${a.defs.map(card).join(' + ')}`);
+  // the attack counts the aspect edge and abilities on top of G
+  const force = x => (x.value !== x.g ? `${x.value} (${x.g} G)` : `${x.g} G`);
   const out = [];
   for (const e of v.log) {
     switch (e.t) {
@@ -200,6 +207,8 @@ function journalLines(v) {
       case 'activate': out.push({ html: e.kind === 'gate' ? 'вы: приказ открыть ворота' : e.defs ? `вы: ${acted(e)} за ${e.cost}` : `${who(e.player)}: скрытое действие` }); break;
       case 'roundEnd': out.push({ html: 'Конец раунда: вскрытие' }); break;
       case 'reveal': for (const a of e.actions) if (a.player !== game.human) out.push({ html: `${who(a.player)} сыграл: ${acted(a)}` }); break;
+      case 'counterMiss': out.push({ html: `${card(e.def)} (${who(e.player)}): отменять нечего` }); break;
+      case 'fizzle': out.push({ html: `${acted(e)} (${who(e.player)}): боец уже выбит, карта сгорает` }); break;
       case 'countered': out.push({ html: e.kind === 'gate' ? `Отменено открытие ворот (${who(e.player)})` : `Отменено: ${e.defs.map(card).join(' + ')} (${who(e.player)})` }); break;
       case 'recall': out.push({ html: `${k(e.unit)} возвращается в резерв` }); break;
       case 'gain': out.push({ html: `${k(e.unit)} +${e.amount} G${e.why === 'gateBonus' ? ' от ворот' : ''} → ${e.g}` }); break;
@@ -208,14 +217,15 @@ function journalLines(v) {
       case 'trapMissed': out.push({ html: `Ловушка ${gate(e.gate)} не сработала` }); break;
       case 'stealBlocked': out.push({ html: 'Кража силы не действует' }); break;
       case 'healBlocked': out.push({ html: 'Восстановление не действует' }); break;
-      case 'mana': out.push({ html: `${who(e.player)}: ${e.amount > 0 ? '+' : '−'}${Math.abs(e.amount)} маны в следующем раунде` }); break;
-      case 'boutEnd': if (e.gate && !e.gateOpened && e.gateDef) out.push({ html: `Ворота ${gate(e.gateDef)} так и не открылись и сгорели` }); break;
-      case 'damage': out.push({ html: `${k(e.unit)} −${e.amount} G → ${e.g}${e.over ? `, <b class="bad">ушёл в минус на ${e.over}: −${e.over} жизни</b>` : ''}` }); break;
+      case 'mana': out.push({ html: `${who(e.player)}: ${e.amount > 0 ? '+' : '−'}${Math.abs(e.amount)} маны в следующем раунде${e.why === 'rally' ? ' за проигранную атаку' : ''}` }); break;
+      case 'tired': if (e.g < e.full) out.push({ html: `${k(e.unit)} устал: ${e.g} G из ${e.full}, пока не пропустит бой` }); break;
+      case 'boutEnd': if (e.gateReturned) out.push({ html: e.owner === game.human ? 'Ваши ворота не открылись и вернулись к вам' : 'Ворота соперника не открылись и вернулись к нему закрытыми' }); break;
+      case 'damage': out.push({ html: `${k(e.unit)} −${e.amount} G${e.why === 'recoil' ? ' отдачи' : ''} → ${e.g}${e.over ? `, <b class="bad">ушёл в минус на ${e.over}: −${e.over + (e.ko ?? 0)} жизни</b>` : ''}` }); break;
       case 'shield': out.push({ html: `${k(e.unit)}: щит ${e.shield}` }); break;
       case 'shieldAbsorb': out.push({ html: `${k(e.unit)}: щит поглотил ${e.amount}` }); break;
       case 'heal': out.push({ html: `${k(e.unit)} восстанавливает ${e.amount} G → ${e.g}` }); break;
-      case 'attack': out.push({ html: `Атака: ${k(e.A.unit)} ${e.A.g} G — ${k(e.B.unit)} ${e.B.g} G${e.inverted ? ' (ловушка: теряет сильный)' : ''}`, big: true }); break;
-      case 'knockout': out.push({ html: `${k(e.unit)} ${e.removed ? `удалён из игры (минус ${e.over})` : 'выбыл и вернулся в резерв'}`, big: true }); break;
+      case 'attack': out.push({ html: `Атака: ${k(e.A.unit)} ${force(e.A)} — ${k(e.B.unit)} ${force(e.B)}${e.inverted ? ' (ловушка: теряет сильный)' : ''}`, big: true }); break;
+      case 'knockout': out.push({ html: `${k(e.unit)} ${e.removed ? `удалён из игры: разница сил ${e.diff}, больше ${D.RULES.removeOver}` : 'выбыл и вернулся в резерв'}`, big: true }); break;
       case 'matchEnd': out.push({ html: e.winner ? `Партия окончена: побеждает ${who(e.winner)} — ${REASONS[e.reason] ?? e.reason}` : 'Ничья', big: true }); break;
       default:
     }
@@ -229,25 +239,23 @@ function refresh(v = view()) {
   const acts = busy ? [] : D.legalActions(s, game.human);
   const singles = new Set(acts.filter(a => a.type === 'activate').flatMap(a => a.cards));
   const selKey = sel.cards.slice().sort().join();
-  const targeting = sel.cards.some(c => D.CARDS[s.cards[c].def].ops.some(o => o[0] === 'counter'));
-  const selLegal = acts.some(a => a.type === 'activate' && a.cards.slice().sort().join() === selKey && (a.target ?? null) === (targeting ? sel.target : null));
+  const selLegal = acts.some(a => a.type === 'activate' && a.cards.slice().sort().join() === selKey);
   const queue = { me: [], foe: [] };
   const foeActs = (v.bout?.queue ?? []).filter(a => a.player !== game.human);
-  const hiddenName = id => `скрытое действие ${foeActs.findIndex(x => x.id === id) + 1}`;
   for (const a of v.bout?.queue ?? []) {
-    if (a.player === game.human) queue.me.push({ ...a, targetName: a.target ? hiddenName(a.target) : '' });
+    if (a.player === game.human) queue.me.push({ ...a, counterNote: counterNote(a.defs ?? []) });
     else queue.foe.push({ ...a, n: foeActs.indexOf(a) + 1 });
   }
   let gate = null;
   if (v.bout?.gate && s.phase !== 'gate') {
     const mine = v.bout.owner === game.human;
-    const f = p => v.players[p].fighter && v.units[v.players[p].fighter];
-    const bonusOf = u => (u && v.bout.gateDef ? D.GATES[v.bout.gateDef].bonus[D.ASPECTS.indexOf(D.COLOSSI[u.def].aspect)] : 0);
+    const fighter = v.players[game.human].fighter && v.units[v.players[game.human].fighter];
     gate = {
       def: v.bout.gateDef, mine, open: v.bout.gateOpen,
       ordered: mine && (v.bout.queue ?? []).some(a => a.kind === 'gate'),
       canOpen: acts.some(a => a.type === 'openGate'),
-      bonus: v.bout.gateDef && f(game.human) && f(botSeat()) ? { me: bonusOf(f(game.human)), foe: bonusOf(f(botSeat())) } : null,
+      // only the owner's fighter gets the aspect bonus
+      bonus: mine && fighter ? D.GATES[v.bout.gateDef].bonus[D.ASPECTS.indexOf(D.COLOSSI[fighter.def].aspect)] : 0,
     };
   }
   const selCost = sel.cards.length ? D.activationCost(s, game.human, sel.cards) : 0;
@@ -255,7 +263,8 @@ function refresh(v = view()) {
     : selCost > me.mana ? 'не хватает маны' : 'сейчас не сыграть';
   const w = v.result?.winner;
   hud.render({
-    v, viewer: game.human, mode, sel, portraits: director.portraits, playableCards: [...singles], queue, targeting, gate,
+    v, viewer: game.human, mode, sel, portraits: director.portraits, playableCards: [...singles], queue, gate,
+    counterNote: counterNote(sel.cards.map(c => s.cards[c].def)),
     selCost, selLegal, selWhy, prompt: promptFor(v, mode),
     canReady: !busy && mode === 'round' && !me.ready, readyGlow: mode === 'round' && !me.ready && !singles.size,
     readyLabel: mode === 'round' ? (me.ready ? 'Ждём…' : 'Готов') : mode === 'ended' ? 'Конец' : 'Ждём',
@@ -301,19 +310,12 @@ function onIntent(type, x) {
     case 'ready': act({ type: 'ready' }); break;
     case 'openGate': act({ type: 'openGate' }); break;
     case 'clear': sel.cards = []; refresh(); break;
-    case 'activate': act({ type: 'activate', cards: sel.cards.slice(), ...(sel.target ? { target: sel.target } : {}) }); break;
-    case 'dragPlay': {
-      const counter = D.CARDS[s.cards[x].def].ops.some(o => o[0] === 'counter');
-      if (counter) { sel.cards = [x]; refresh(); hud.toast('Выберите скрытое действие соперника, которое отменить'); break; }
-      act({ type: 'activate', cards: [x] });
-      break;
-    }
-    case 'target': sel.target = sel.target === x ? null : x; refresh(); break;
+    case 'activate': act({ type: 'activate', cards: sel.cards.slice() }); break;
+    case 'dragPlay': act({ type: 'activate', cards: [x] }); break;
     case 'card': {
       if (s.phase !== 'round' || busy) break;
       if (sel.cards.includes(x)) sel.cards = sel.cards.filter(c => c !== x);
       else if (sel.cards.length < D.RULES.fusionMax) sel.cards.push(x);
-      if (!sel.cards.some(c => D.CARDS[s.cards[c].def].ops.some(o => o[0] === 'counter'))) sel.target = null;
       else hud.toast(`В слиянии не больше ${D.RULES.fusionMax} карт`);
       refresh();
       break;

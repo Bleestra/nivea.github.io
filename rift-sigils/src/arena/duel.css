@@ -68,10 +68,12 @@
 .fusionbar {
   position: absolute; left: 50%; bottom: calc(var(--card-w) * 1.72 + var(--safe-b)); transform: translateX(-50%);
   display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 14px; background: var(--panel-2); border: 1px solid rgba(255, 214, 107, 0.4); z-index: 5;
+  width: max-content; max-width: calc(100vw - 24px);
 }
 .fusionbar.multi { border-color: #ffd66b; box-shadow: 0 0 24px -6px #ffd66b; }
 .fusionbar span { font: 600 14px var(--mono); color: #ffe3a0; }
 .fusionbar .why { font: 12px var(--body); color: var(--bad); }
+.fusionbar .note { font: 12px var(--body); color: var(--muted); }
 .ui.picking .prompt { display: none; }
 .mana.me { bottom: calc(96px + var(--safe-b)); }
 .mana.me .gems i { width: 11px; height: 13px; }
@@ -120,9 +122,6 @@
 .qi i { font-style: normal; color: #ffd66b; }
 .qi small { flex-basis: 100%; color: var(--muted); font-size: 11px; }
 .qi.fusion { box-shadow: 0 0 14px -4px #ffd66b; }
-.qi.pick { cursor: pointer; border-color: var(--bad); }
-.qi.pick:hover, .qi.chosen { background: rgba(255, 107, 94, 0.18); }
-.qi.chosen { outline: 2px solid var(--bad); }
 .qi.go { border-color: #ffd66b; }
 .qi.off { opacity: 0.45; text-decoration: line-through; }
 .gc-g .fc { font-style: normal; font: 600 12px var(--mono); }
@@ -138,7 +137,6 @@
   background: radial-gradient(circle at 50% 45%, #15343c, #060e11 75%); border: 1px solid #2c5a60; }
 .qi .qh { color: var(--muted); font-weight: 400; }
 .qi .gopen { color: #ffd66b; }
-.qi.pick.hidden { color: var(--ink); }
 .flyset.hidden-play .card { --cw: 130px; }
 
 /* the bout's gate */
@@ -184,4 +182,10 @@
   .rv-who { min-width: 0; flex-basis: 100%; text-align: center; }
 }
 .overlay .pick .card.gatecard { --cw: min(170px, 27vw); }
-.card.gatecard .ctext { font-size: calc(var(--cw) * 0.062); }
+/* two-line card names fit the banner */
+.card .banner { top: 41.5%; height: 13.5%; font-size: calc(var(--cw) * 0.086); }
+/* duel gates carry a bonus row and longer rules: a smaller sigil leaves room for a two-line name and the whole text */
+.card.gatecard .art { top: 5%; height: 26%; }
+.card.gatecard .banner { top: 32%; height: 13.5%; font-size: calc(var(--cw) * 0.085); }
+.card.gatecard .bonus { top: 47%; }
+.card.gatecard .ctext { top: 63%; bottom: 9.5%; font-size: calc(var(--cw) * 0.062); }

@@ -305,14 +305,11 @@ export class DuelHud {
     const items = m.queue[side];
     if (!items.length) return '';
     return `<div class="queue ${side}"><span class="qt">${side === 'me' ? 'вы сыграли · сработает в конце раунда' : 'соперник сыграл · скрыто до конца раунда'}</span>${items.map(a => {
-      const pick = m.targeting && side === 'foe';
-      const chosen = m.sel.target === a.id;
-      const tag = pick ? 'button type="button" data-i="target" data-x="' + a.id + '"' : 'div';
       const body = a.hidden ? `<span class="qback" aria-hidden="true">?</span><span class="qh">Скрытое действие ${a.n}</span>`
         : a.kind === 'gate' ? '<span class="gopen">Открыть ворота</span>'
           : a.defs.map(d => `<span class="asp-${CARDS[d].aspect}">${esc(CARDS[d].name)}</span>`).join('<i>+</i>');
-      return `<${tag} class="qi${a.hidden ? ' hidden' : ''}${a.fusion ? ' fusion' : ''}${chosen ? ' chosen' : ''}${pick ? ' pick' : ''}" data-q="${a.id}">
-        ${body}${a.targetName ? `<small>отменяет: ${esc(a.targetName)}</small>` : ''}</${pick ? 'button' : 'div'}>`;
+      return `<div class="qi${a.hidden ? ' hidden' : ''}${a.fusion ? ' fusion' : ''}" data-q="${a.id}">
+        ${body}${a.counterNote ? `<small>${esc(a.counterNote)}</small>` : ''}</div>`;
     }).join('')}</div>`;
   }
 
@@ -325,7 +322,7 @@ export class DuelHud {
         <small>Бонус, поле или ловушка — откроются, когда соперник захочет.</small></div>`;
     }
     const gate = GATES[g.def];
-    const bonus = g.bonus ? `<span class="gbon">при открытии: вашему +${g.bonus.me} G, сопернику +${g.bonus.foe} G</span>` : '';
+    const bonus = g.bonus ? `<span class="gbon">при открытии: вашему бойцу +${g.bonus} G</span>` : '';
     const state = g.open ? '<span class="gst open">открыты</span>'
       : g.ordered ? '<span class="gst">откроются в конце раунда</span>'
         : g.mine ? '<span class="gst">закрыты · соперник не знает, что это</span>' : '';
@@ -366,7 +363,7 @@ export class DuelHud {
     return `<div class="fusionbar${n > 1 ? ' multi' : ''}"><span>${label} · ${cost} маны</span>
       <button class="pbtn primary" type="button" data-i="activate" ${ok ? '' : 'disabled'}>${n > 1 ? 'Слить и активировать' : 'Активировать'}</button>
       <button class="pbtn" type="button" data-i="clear">Сброс</button>
-      ${m.targeting ? `<span class="why">${m.sel.target ? 'цель отмены выбрана' : m.queue.foe.length ? 'нажмите скрытое действие соперника: какое из них что — неизвестно' : 'соперник ещё ничего не сыграл'}</span>` : ok ? '' : `<span class="why">${esc(m.selWhy)}</span>`}</div>`;
+      ${!ok ? `<span class="why">${esc(m.selWhy)}</span>` : m.counterNote ? `<span class="note">${esc(m.counterNote)}</span>` : ''}</div>`;
   }
 
   journal(m) {
@@ -384,7 +381,7 @@ export class DuelHud {
     }
     if (m.mode === 'gate') {
       const gates = v.players[viewer].gates.filter(g => !g.used);
-      return `<div class="overlay light"><div class="obox"><h2>Ваши ворота</h2><p>Выберите карту ворот: она ляжет в центр арены <b>закрытой</b> на весь бой. Соперник не узнает, что это. Открыть её можете только вы — в любом раунде, кнопкой «Открыть ворота»: при открытии оба бойца получают бонус своего аспекта, затем срабатывает эффект ворот. Бонус помогает вам, поле меняет правила, ловушка бьёт по сопернику.</p>
+      return `<div class="overlay light"><div class="obox"><h2>Ваши ворота</h2><p>Выберите карту ворот: она ляжет в центр арены <b>закрытой</b> на весь бой. Соперник не узнает, что это. Открыть её можете только вы — в любом раунде, кнопкой «Открыть ворота»: при открытии ваш боец получает бонус своего аспекта, затем срабатывает эффект ворот. Бонус помогает вам, поле меняет правила, ловушка бьёт по сопернику. Если не откроете, с концом боя ворота вернутся к вам.</p>
         <div class="row wrap">${gates.map(g => `<div class="pick" data-i="gate" data-x="${g.gate}">${duelGateCard(g.def)}</div>`).join('')}</div></div></div>`;
     }
     if (m.mode === 'choose') {
